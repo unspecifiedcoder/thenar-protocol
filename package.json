@@ -3,12 +3,21 @@
   "private": true,
   "packageManager": "pnpm@10.29.2",
   "scripts": {
-    "test:protocol": "tsx packages/protocol/test/run.ts",
+    "test:protocol": "tsx packages/protocol/test/run.ts && tsx packages/protocol/test/foundry.ts && tsx packages/protocol/test/episode.ts",
+    "test:contracts": "cd packages/contracts && forge test",
+    "test:log": "tsx services/log/test/log.test.ts",
+    "test": "pnpm test:contracts && pnpm test:protocol && pnpm test:log",
     "vectors": "tsx packages/protocol/test/vectors.ts",
-    "test:contracts": "cd packages/contracts && forge test -vv",
+    "log": "tsx services/log/src/cli.ts",
     "deploy:fuji": "cd packages/contracts && forge script script/Deploy.s.sol:Deploy --rpc-url fuji --broadcast --slow"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3"
+    ]
+  },
   "devDependencies": {
+    "@types/node": "^22.10.2",
     "tsx": "^4.19.2",
     "typescript": "^5.9.3",
     "viem": "^2.55.19"
