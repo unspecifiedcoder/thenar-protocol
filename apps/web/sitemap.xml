@@ -10,4 +10,5 @@
   <url><loc>https://thenar.io/verify</loc><lastmod>2026-08-29</lastmod><priority>0.8</priority></url>
   <url><loc>https://thenar.io/terms</loc><lastmod>2026-08-29</lastmod><priority>0.6</priority></url>
   <url><loc>https://thenar.io/privacy</loc><lastmod>2026-08-29</lastmod><priority>0.6</priority></url>
+  <url><loc>https://thenar.io/build</loc><priority>0.8</priority></url>
 </urlset>

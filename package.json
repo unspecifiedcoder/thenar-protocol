@@ -9,11 +9,13 @@
     "test": "pnpm test:contracts && pnpm test:protocol && pnpm test:log && pnpm test:export && pnpm test:web",
     "vectors": "tsx packages/protocol/test/vectors.ts",
     "log": "tsx services/log/src/cli.ts",
-    "deploy:foundry": "cd packages/contracts && forge script script/DeployFoundry.s.sol:DeployFoundry --rpc-url fuji --broadcast --slow",
-    "deploy:verifier": "cd packages/contracts && forge script script/DeployVerifier.s.sol:DeployVerifier --rpc-url fuji --broadcast --slow",
-    "test:web": "node apps/web/test/grasp.test.mjs && node apps/web/test/imports.test.mjs && tsx apps/web/test/keccak.test.mjs && tsx apps/web/test/scene.test.mjs && tsx apps/web/test/corpus.test.mjs",
+    "deploy:foundry": "cd packages/contracts && forge script script/DeployFoundry.s.sol:DeployFoundry --rpc-url monad_testnet --broadcast --slow",
+    "deploy:verifier": "cd packages/contracts && forge script script/DeployVerifier.s.sol:DeployVerifier --rpc-url monad_testnet --broadcast --slow",
+    "test:web": "node apps/web/test/grasp.test.mjs && node apps/web/test/imports.test.mjs && tsx apps/web/test/keccak.test.mjs && tsx apps/web/test/scene.test.mjs && tsx apps/web/test/corpus.test.mjs && tsx apps/web/test/taskspec.test.mjs && tsx apps/web/test/build.test.mjs",
     "test:export": "tsx services/export/test/lerobot.test.ts",
     "export": "tsx scripts/export-corpus.mjs",
+    "test:parity": "node scripts/check-parity.mjs . ../thenar-avax",
+    "gen:embodiments": "tsx scripts/gen-embodiments.mjs",
     "deploy:fuji": "cd packages/contracts && forge script script/Deploy.s.sol:Deploy --rpc-url fuji --broadcast --slow"
   },
   "pnpm": {
