@@ -130,6 +130,7 @@
     </div>
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
       <button class="btn primary" type="submit">Ask the contract</button>
+      <button class="btn" type="button" id="vsample">Load a real capture</button>
       <span id="vout" class="verdict wait">nothing checked yet</span>
     </div>
   </form>
@@ -229,6 +230,24 @@ function encodeVerify(index, preimage, proof, leafIndex) {
     + pad(bytesLen) + padded
     + pad(proof.length) + proof.map((h) => h.replace(/^0x/, "").padStart(64, "0")).join("");
 }
+
+/* A worked example nobody can reproduce is not evidence. This loads a capture
+   that is genuinely in the anchored log, written by the end-to-end run. */
+$("#vsample").addEventListener("click", async () => {
+  const out = $("#vout");
+  try {
+    const s = await fetch("./sample-proof.json").then((r) => r.json());
+    $("#vindex").value = s.anchorIndex;
+    $("#vpre").value = s.preimage;
+    $("#vleaf").value = s.leafIndex;
+    $("#vproof").value = s.proof.join(", ");
+    out.className = "verdict wait";
+    out.textContent = "loaded — now ask the contract";
+  } catch {
+    out.className = "verdict no";
+    out.textContent = "no sample published yet";
+  }
+});
 
 $("#vform").addEventListener("submit", async (e) => {
   e.preventDefault();

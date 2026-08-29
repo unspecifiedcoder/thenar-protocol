@@ -13,20 +13,25 @@ import { SparseTree } from "../packages/protocol/src/sparse.ts";
 
 const env = Object.fromEntries(readFileSync(".env.deployer", "utf8").split("\n").filter(Boolean)
   .map((l) => { const i = l.indexOf("="); return [l.slice(0, i), l.slice(i + 1)]; }));
-const LOG = "0x12f6b43fed667785D40E9A280a4137AfD186B0c5";
-const MARKET = "0xdF6fC73b5bEeDf1166ff7DF2BC5A5Bfe47770F62";
+const LOG = process.env.GRASP_LOG ?? "";
+const MARKET = process.env.GRASP_MARKET ?? "";
 
-const chain = { id: 10143, name: "Monad Testnet", nativeCurrency: { name: "Monad", symbol: "MON", decimals: 18 },
-  rpcUrls: { default: { http: ["https://testnet-rpc.monad.xyz"] } } };
+if (!LOG || !MARKET) {
+  throw new Error("Set GRASP_LOG and GRASP_MARKET — nothing is deployed on Fuji yet.");
+}
+const chain = { id: 43113, name: "Avalanche Fuji", nativeCurrency: { name: "Avalanche", symbol: "AVAX", decimals: 18 },
+  rpcUrls: { default: { http: ["https://api.avax-test.network/ext/bc/C/rpc"] } } };
 const account = privateKeyToAccount(env.DEPLOYER_PRIVATE_KEY);
 const pub = createPublicClient({ chain, transport: http() });
 const wallet = createWalletClient({ account, chain, transport: http() });
 // Monad reserves value + gas_limit x price, not value + gas_used, so an
 // oversized limit locks up balance that the transaction never spends. These
 // are sized to the actual cost of each call with headroom, not guessed high.
-const GAS_ANCHOR = 180000n;
-const GAS_TERMS = 200000n;
-const GAS_PURCHASE = 220000n;
+// Measured with eth_estimateGas, not guessed: purchase writes a nine-field
+// receipt and makes an external call, and came in at 252,867.
+const GAS_ANCHOR = 200000n;
+const GAS_TERMS = 220000n;
+const GAS_PURCHASE = 400000n;
 
 const logAbi = parseAbi([
   "function anchor(bytes32 root, uint64 size, bytes32 revocationRoot) returns (uint256)",
@@ -55,7 +60,7 @@ const send = async (address, abi, functionName, args, value, gas = GAS_ANCHOR) =
 };
 const h = (s) => keccak256(toHex(s));
 
-console.log(`\nGRASP end-to-end · Monad Testnet\nlog    ${LOG}\nmarket ${MARKET}`);
+console.log(`\nGRASP end-to-end · Avalanche Fuji\nlog    ${LOG}\nmarket ${MARKET}`);
 console.log(`balance ${formatEther(await pub.getBalance({ address: account.address }))} MON\n`);
 
 // ---- a real batch of captured clips ----------------------------------------
@@ -193,5 +198,5 @@ writeFileSync("apps/web/sample-proof.json", JSON.stringify({
 console.log(`\nwrote apps/web/sample-proof.json — real values for /verify`);
 console.log(`anchors now ${await pub.readContract({ address: LOG, abi: logAbi, functionName: "anchorCount" })}`);
 console.log(`balance left ${formatEther(await pub.getBalance({ address: account.address }))} MON`);
-console.log(failed === 0 ? "\nGRASP verified end to end on Monad\n" : `\n${failed} check(s) failed\n`);
+console.log(failed === 0 ? "\nGRASP verified end to end on Avalanche Fuji\n" : `\n${failed} check(s) failed\n`);
 process.exit(failed ? 1 : 0);
