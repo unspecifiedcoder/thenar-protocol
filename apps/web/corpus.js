@@ -144,9 +144,18 @@ function card(c, task, receipts) {
       ${capTable(c, task ? task.curatorBps : 0)}
     </div>
     <div class="actions">
-      <a class="btn sm" href="./verify.html?anchor=&amp;corpus=${c.index}">Verify an episode</a>
+      <a class="btn sm" href="./corpus-${c.index}/meta/info.json">Dataset metadata</a>
+      <a class="btn sm ghost" href="./verify.html">Verify an episode</a>
       <a class="btn sm ghost" href="${MONAD.explorer}/address/${MONAD.market}">Market on the explorer</a>
-    </div>`;
+    </div>
+    <p class="cmeta" style="margin-top:10px">
+      Exported as <strong>LeRobotDataset v3</strong>, the format the ecosystem already
+      reads — <a href="./corpus-${c.index}/meta/episodes.jsonl" style="color:#8E6BFF">episode index</a>,
+      one file per episode under <code>data/</code>. Every episode carries the leaf it was
+      committed under, the anchor that fixed it, and the seed its world was sampled from.
+      Observation and action columns are null: there is no trajectory recorder yet, and a
+      zero would read as data.
+    </p>`;
   wireCopy(el);
   return el;
 }

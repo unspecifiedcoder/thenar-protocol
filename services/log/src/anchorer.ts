@@ -13,6 +13,34 @@ import { SparseTree, ZERO } from "../../../packages/protocol/src/sparse.ts";
  * describe. That incoherence is what made earlier anchors unverifiable.
  */
 
+export const LOG_ABI = parseAbi([
+  "function anchor(bytes32 root, uint64 size, bytes32 revocationRoot) returns (uint256)",
+  "function anchorCount() view returns (uint256)",
+  "function anchorAt(uint256) view returns ((bytes32 root, bytes32 prevRoot, bytes32 revocationRoot, uint64 size, uint64 at, uint64 blockNumber))",
+]);
+
+export function deployerKey(): Hex {
+  const env = Object.fromEntries(
+    readFileSync(".env.deployer", "utf8").split("\n").filter(Boolean)
+      .map((l) => { const i = l.indexOf("="); return [l.slice(0, i), l.slice(i + 1)]; }),
+  );
+  if (!env.DEPLOYER_PRIVATE_KEY) throw new Error("DEPLOYER_PRIVATE_KEY missing from .env.deployer");
+  return env.DEPLOYER_PRIVATE_KEY as Hex;
+}
+
+export function revocationRoot(store: LogStore): Hex {
+  const rs = store.revocations();
+  if (rs.length === 0) return ZERO;
+  const t = new SparseTree();
+  for (const r of rs) t.set(r.consentKey, r.value);
+  return t.root();
+}
+
+export type AnchorResult = {
+  index: number; root: Hex; size: number; revocationRoot: Hex;
+  txHash: Hex; blockNumber: number;
+};
+
 /** Anchor the current head. Returns null when there is nothing new to anchor. */
 export async function anchorHead(store: LogStore, logAddress: Hex): Promise<AnchorResult | null> {
   const size = store.size();
