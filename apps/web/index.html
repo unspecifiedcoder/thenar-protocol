@@ -1,0 +1,949 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>THENAR — contact data for physical AI</title>
+<meta name="description" content="Robots can see. They still cannot feel. Thenar instruments the human hand and sells the one signal manipulation models are missing: force.">
+<link rel="icon" href="./mark.svg" type="image/svg+xml">
+<meta property="og:title" content="THENAR — contact data for physical AI">
+<meta property="og:description" content="Manipulation models train on pixels and joint angles. Neither records how hard the hand squeezed. We do.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://thenar.io/">
+<meta property="og:image" content="https://thenar.io/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="THENAR, contact data for physical AI">
+<meta property="og:site_name" content="THENAR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://thenar.io/og.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./site.css">
+<style>
+/* Thenar runs on Hotaru's design system so the parent and the product read as
+   one house. Same tokens, same curve, same palette. Only the argument changes. */
+/* The header is fixed, so an anchor jump would otherwise park the section
+   heading underneath it. */
+section[id]{scroll-margin-top:80px}
+.chero{padding-top:var(--s-900);padding-bottom:var(--s-700)}
+/* The hero heading now runs on the .fh1 scale (64px / 1.03 / -2px at weight
+   500). Only the gradient stays, which is the one background gradient the
+   design system permits. */
+.fh1{background:linear-gradient(90deg,#FFFFFF 0%,#9B9B9B 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+
+.big{font-size:48px;line-height:1;font-weight:500;letter-spacing:-1px;
+  text-align:center;text-wrap:balance}
+@media(min-width:768px){ .big{font-size:96px;line-height:1} }
+.big .dim{color:var(--fg-mute)}
+
+/* stat strip: only numbers we can actually stand behind */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:var(--s-200);margin-top:var(--s-700);border-top:1px solid var(--line);
+  padding-top:var(--s-400)}
+.stats b{display:block;font-size:36px;line-height:40px;letter-spacing:-0.02em}
+.stats span{display:block;margin-top:var(--s-50);font-size:14px;line-height:20px;
+  color:var(--fg-mute)}
+
+.loop{counter-reset:s}
+.loop .card{position:relative;padding-top:var(--s-500)}
+.loop .card::before{counter-increment:s;content:"0" counter(s);
+  position:absolute;top:var(--s-300);left:var(--s-300);
+  font-size:14px;line-height:20px;font-weight:700;color:var(--blue)}
+
+.tagbar{display:flex;gap:var(--s-75);flex-wrap:wrap;margin-top:var(--s-200)}
+.tg{font-size:12px;line-height:16px;font-weight:600;color:var(--fg-mute);
+  border:1px solid var(--line-2);border-radius:9999px;padding:2px 12px}
+.tg.live{color:var(--fg);border-color:var(--blue);background:rgba(77,23,245,.16)}
+.prod .card{display:flex;flex-direction:column}
+/* Only the tag row drops to the card floor. space-between on the whole
+   card pushed a gap under the heading of the card with no button. */
+.prod .card .tagbar{margin-top:auto;padding-top:var(--s-200)}
+/* Two cards span half the container each, which is wide enough that an
+   uncapped paragraph runs past a comfortable measure. */
+.prod .card p{max-width:52ch}
+
+.rail{border-left:1px solid var(--line);padding-left:var(--s-300);
+  display:grid;gap:var(--s-400);max-width:760px}
+.rail h3{font-size:20px;line-height:28px}
+.rail p{color:var(--fg-dim);margin-top:var(--s-75)}
+
+.note{border:1px solid var(--line-2);border-radius:16px;padding:var(--s-300);
+  color:var(--fg-dim);max-width:760px;margin-top:var(--s-500)}
+.note b{color:var(--fg)}
+
+/* comparison: wide content scrolls in its own box, never the page body */
+.tscroll{overflow-x:auto;margin-top:var(--s-600);border:1px solid var(--line);
+  border-radius:16px}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px;
+  line-height:20px}
+th,td{text-align:left;padding:var(--s-200) var(--s-300);
+  border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--fg-mute);font-size:12px;line-height:16px;
+  letter-spacing:.04em;text-transform:uppercase}
+tbody tr:last-child td{border-bottom:0}
+tr.us{background:rgba(77,23,245,.10)}
+tr.us td{color:var(--fg)}
+td.what{color:var(--fg-dim)}
+
+.namebox{display:flex;gap:var(--s-300);align-items:flex-start;flex-wrap:wrap;
+  border:1px solid var(--line);border-radius:16px;padding:var(--s-300);
+  max-width:760px;margin-top:var(--s-600);background:var(--surface)}
+.namebox svg{flex:none;width:64px;height:64px}
+.namebox p{color:var(--fg-dim);flex:1;min-width:240px}
+.namebox b{color:var(--fg)}
+/* ---- the demo: one grasp, two recordings ---- */
+.demo{border:1px solid var(--line);border-radius:20px;background:var(--surface);
+  padding:var(--s-300);margin-top:var(--s-600)}
+@media(min-width:900px){ .demo{padding:var(--s-400)} }
+.demo .stage{display:grid;grid-template-columns:1fr;gap:var(--s-400);
+  align-items:center}
+@media(min-width:900px){ .demo .stage{grid-template-columns:250px 1fr} }
+.hand{width:100%;max-width:250px;margin:0 auto;display:block}
+.hand .skin{fill:#313131}
+.hand .emin{fill:rgba(77,23,245,.22);stroke:var(--blue);stroke-width:1.5;
+  stroke-dasharray:3 3}
+.hand .lbl{fill:var(--fg-mute);font-size:12px;font-weight:600;
+  font-family:Manrope,sans-serif;letter-spacing:.06em}
+#trace{width:100%;height:300px;display:block;cursor:ew-resize;touch-action:none}
+@media(min-width:900px){ #trace{height:330px} }
+.demo .foot{display:flex;gap:var(--s-200);flex-wrap:wrap;align-items:center;
+  justify-content:space-between;margin-top:var(--s-300);
+  padding-top:var(--s-300);border-top:1px solid var(--line)}
+.tagline .dim w.lit{color:var(--fg-mute)}
+.demo .foot p{color:var(--fg-mute);font-size:12px;line-height:16px;max-width:64ch}
+.demo .ctrl{display:flex;gap:var(--s-75);flex:none}
+.readout{display:flex;gap:var(--s-300);flex-wrap:wrap;margin-top:var(--s-200)}
+.readout div{font-size:12px;line-height:16px;color:var(--fg-mute)}
+.readout b{color:var(--fg);font-weight:700}
+
+/* ---- the shipped robot, in the proof card ---- */
+.viz{position:relative;border-radius:12px;overflow:hidden;background:var(--surface-2);
+  aspect-ratio:4/3;margin-bottom:var(--s-200)}
+.viz canvas{width:100%;height:100%;display:block;opacity:0;
+  transition:opacity 700ms var(--ease)}
+.viz.ready canvas{opacity:1}
+.viz.band::after{content:"ONE CLOCK \00b7 RATES ARE A DESIGN TARGET"}
+.viz.band canvas{opacity:1}
+.viz::after{content:"LIVE MODEL, NOT A RENDER";position:absolute;left:10px;
+  bottom:8px;font-size:12px;font-weight:700;letter-spacing:.08em;
+  color:var(--fg-mute)}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- NAV:START -->
+<header class="top solid">
+  <a class="brand" href="./index.html" aria-label="Thenar home"><svg viewBox="0 0 340 92" aria-hidden="true" style="height:24px"><text x="0" y="70" font-family="Manrope,sans-serif" font-size="72" font-weight="700" letter-spacing="-2" fill="currentColor">THENAR</text></svg></a>
+  <nav class="topnav" aria-label="Primary">
+    <a href="./products.html">Products</a>
+    <a href="./protocol.html">Protocol</a>
+    <a href="./market.html">Market</a>
+    <a href="./faq.html">FAQ</a>
+    <a href="./company.html">Company</a>
+    <a href="./verify.html">Verify</a>
+  </nav>
+  <a class="btn primary" href="./index.html#contact">Talk to us</a>
+</header>
+<!-- NAV:END -->
+
+<main id="main">
+
+  <section class="fwrap chero" style="padding-bottom:var(--s-600)">
+    <p class="feyebrow">Contact data for physical AI</p>
+    <h1 class="fh1">Robots can see.<br>They still cannot feel.</h1>
+    <p class="flede" style="margin-top:var(--s-300)">
+      Manipulation models train on pixels and joint angles. Neither records the
+      signal that decides whether the glass lifts or shatters: how hard the hand
+      squeezed, and how fast it corrected when the object began to slip. We
+      build the instrument that records it.</p>
+    <div class="actions" style="justify-content:center;display:flex;
+      gap:var(--s-100);flex-wrap:wrap;margin-top:var(--s-400)">
+      <a class="btn primary" href="#band">See the Band</a>
+      <a class="btn ghost" href="#demo">Why force matters</a>
+    </div>
+
+    <div class="stage3d" id="stage">
+      <canvas id="bandc3d"></canvas>
+      <span class="hint3d">DRAG TO ROTATE</span>
+      <span class="state" id="state3d">ASSEMBLED</span>
+    </div>
+
+    <div class="creds">
+      <span>Open CAD in pure Python</span>
+      <span>Watertight, audited geometry</span>
+      <span>Every part on a 180 mm bed</span>
+      <span>Printable STLs published</span>
+    </div>
+  </section>
+
+  <section class="fwrap" id="demo" style="padding-top:var(--s-700)">
+    <p class="feyebrow">The whole argument, in 2.4 seconds</p>
+    <h2 class="fh2">One grasp.<br>Two recordings.</h2>
+    <p class="flede" style="margin-top:var(--s-300)">
+      Somebody picks up a glass and it starts to slide. Watch what each sensor
+      has to say about the moment it happens. Drag the trace to scrub.</p>
+
+    <div class="demo">
+      <div class="stage">
+        <svg class="hand" viewBox="3 22 196 302" role="img"
+             aria-label="Right hand, palm view, with pressure at the thenar eminence and the fingertips">
+          <defs>
+            <radialGradient id="pg">
+              <stop offset="0%"   stop-color="#FA9DCD" stop-opacity=".95"/>
+              <stop offset="55%"  stop-color="#FA9DCD" stop-opacity=".32"/>
+              <stop offset="100%" stop-color="#FA9DCD" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <path class="skin" d="M 10.6 147.2 L 21.5 191.9 L 24.0 198.6 L 43.8 239.4 L 69.3 273.0 L 82.0 300.0 L 110.0 316.0 L 150.0 312.0 L 176.0 284.0 L 185.0 240.2 L 179.6 186.0 L 186.3 141.9 L 191.0 90.1 L 190.6 87.6 L 189.2 85.0 L 187.3 83.3 L 184.7 82.2 L 182.1 82.1 L 179.3 82.9 L 177.3 84.4 L 175.7 86.8 L 167.9 137.5 L 163.5 158.7 L 162.6 160.9 L 161.1 162.5 L 159.0 163.1 L 156.9 162.7 L 154.7 160.5 L 154.2 157.4 L 158.2 52.1 L 157.5 48.6 L 156.0 46.1 L 151.8 43.2 L 147.1 43.0 L 142.6 45.4 L 140.2 49.2 L 132.2 132.6 L 130.5 136.6 L 128.6 137.7 L 126.5 137.7 L 123.7 135.8 L 122.7 132.2 L 118.6 38.0 L 115.8 33.0 L 110.8 30.4 L 105.1 31.0 L 100.8 34.7 L 99.2 39.9 L 98.0 137.5 L 97.3 142.3 L 95.8 143.9 L 93.8 144.7 L 90.1 143.4 L 88.7 140.0 L 80.0 55.2 L 76.9 50.7 L 72.0 48.7 L 66.7 49.7 L 63.1 52.9 L 61.6 58.1 L 63.8 121.2 L 67.2 177.8 L 66.3 180.3 L 64.0 182.0 L 62.6 190.5 L 60.9 193.0 L 58.5 193.9 L 55.6 193.0 L 49.2 183.6 L 32.6 141.5 L 29.4 137.2 L 26.3 135.3 L 22.1 134.5 L 18.6 135.0 L 14.8 137.0 L 12.4 139.7 L 10.7 143.6 Z"/>
+          <ellipse class="emin" cx="90" cy="252" rx="26" ry="33"
+                   transform="rotate(-20 90 252)"/>
+          <g id="pads">
+            <circle class="pp" data-w="1"   cx="90"  cy="252" r="0" fill="url(#pg)"/>
+            <circle class="pp" data-w=".62" cx="26"  cy="153" r="0" fill="url(#pg)"/>
+            <circle class="pp" data-w=".52" cx="72"  cy="64"  r="0" fill="url(#pg)"/>
+            <circle class="pp" data-w=".52" cx="109" cy="47"  r="0" fill="url(#pg)"/>
+            <circle class="pp" data-w=".44" cx="148" cy="58"  r="0" fill="url(#pg)"/>
+            <circle class="pp" data-w=".34" cx="182" cy="96"  r="0" fill="url(#pg)"/>
+          </g>
+          <text class="lbl" x="100" y="316" text-anchor="middle">THENAR EMINENCE</text>
+        </svg>
+
+        <div>
+          <canvas id="trace" aria-label="Grip force and video derived pose over one grasp"></canvas>
+          <div class="readout">
+            <div>Peak correction <b>14.2 N</b></div>
+            <div>Pose movement at slip <b>0.9 mm</b></div>
+            <div>Reflex latency <b>70 ms</b></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="foot">
+        <p>The glass begins to slide at the marked instant. Grip force collapses,
+          then the corrective squeeze lands about seventy milliseconds later. The
+          pose track moves under a millimetre, which is inside the noise floor of
+          every hand tracker there is. A camera can watch this happen and record
+          nothing about it.</p>
+        <div class="ctrl">
+          <button class="btn sm" id="play" aria-pressed="true">Pause</button>
+          <button class="btn sm ghost" id="replay">Replay</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="fwrap" id="gap">
+    <p class="feyebrow">The bottleneck</p>
+    <p class="big tagline" id="bigline">Everyone is recording video. <span class="dim">Nobody records force.</span></p>
+    <div class="grid g3" style="margin-top:var(--s-600)">
+      <article class="card">
+        <h3>Simulation is weakest exactly where manipulation happens</h3>
+        <p>Contact is the least accurate part of every physics engine. Friction,
+          deformation and slip are approximated, so teleoperating a simulated
+          arm yields a clean trajectory through an interaction that never had to
+          obey a real surface. That is the sim to real gap, and it is a contact
+          gap.</p>
+      </article>
+      <article class="card">
+        <h3>Video cannot recover force</h3>
+        <p>You can estimate a hand's pose from footage to within a few
+          millimetres. You cannot estimate the newtons it applied, or the
+          correction it made forty milliseconds after the object shifted in its
+          grip. That correction is the entire skill, and it is invisible.</p>
+      </article>
+      <article class="card">
+        <h3>Instrumented capture does not leave the lab</h3>
+        <p>Force sensing gloves exist, bolted to a bench in a handful of
+          research groups, producing hours. A model needs years. Nobody has put
+          contact sensing on a hand that walks out of the building and into a
+          kitchen.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="fwrap" id="capture">
+    <p class="feyebrow">What we run today</p>
+    <h2 class="fh2">We are already<br>collecting</h2>
+    <p class="flede" style="margin-top:var(--s-300)">
+      Teleoperation on a Quest 3S, today, on hardware anybody can buy. It is
+      how we get task structure and intent at volume while the Band is still
+      in design, and it is the honest half of the answer to what we have
+      before our own instrument ships.</p>
+
+    <div class="stage3d" id="stage3" style="aspect-ratio:16/8">
+      <canvas id="questc"></canvas>
+      <span class="hint3d">DRAG TO ROTATE</span>
+      <span class="state" id="state3d3">QUEST 3S · TOUCH PLUS</span>
+    </div>
+
+    <div class="bento" style="margin-top:16px">
+      <article class="tile">
+        <h3>What the headset gives us</h3>
+        <p>Six degrees of freedom on both hands at 90 Hz, head pose, and the
+          operator's own segmentation of the task, because a person doing
+          teleoperation naturally breaks work into attempts. Cheap, scalable,
+          and it works in any room.</p>
+        <div class="spec">
+          <div>TRACKING<b>6DoF, both hands</b></div>
+          <div>CONTROLLERS<b>Touch Plus, ringless</b></div>
+          <div>COST<b>Off the shelf</b></div>
+        </div>
+      </article>
+      <article class="tile" style="border-color:var(--blue)">
+        <h3>What it cannot give us</h3>
+        <p>Force. A Touch Plus reports a trigger axis and a capacitive touch
+          flag, not newtons at a fingertip. Squeeze a real glass hard enough to
+          break it and the controller sends exactly the same number as holding
+          it gently. That missing channel is the entire reason the Band
+          exists.</p>
+        <div class="spec">
+          <div>GRIP FORCE<b>None</b></div>
+          <div>SLIP EVENTS<b>Invisible</b></div>
+          <div>CONTACT AREA<b>None</b></div>
+        </div>
+      </article>
+    </div>
+
+    <p class="flede" style="margin-top:var(--s-500);color:var(--fg-mute);font-size:14px">
+      Our own likeness of hardware we use, modelled for this page. No Meta
+      marks, dimensions approximate. Thenar is not affiliated with Meta.</p>
+  </section>
+
+  <section class="fwrap" id="band">
+    <p class="feyebrow">The instrument</p>
+    <h2 class="fh2">The Thenar Band</h2>
+    <p class="flede" style="margin-top:var(--s-300)">
+      A wrist unit worn while you do ordinary work. Four printed parts, a
+      removable bay cap, and a camera that comes off with a quarter turn.</p>
+
+    <div class="bandgrid">
+      <div class="bandstick">
+        <div class="stage3d tall" id="stage2">
+          <canvas id="bandc3d2"></canvas>
+          <span class="hint3d">DRAG TO ROTATE</span>
+          <span class="state" id="state3d2">EXPLODED</span>
+        </div>
+      </div>
+      <div class="bandlist" id="bandlist">
+        <article class="tile" data-part="band-cuff">
+          <h3><span class="dot" style="background:#2B2B31;outline:1px solid var(--line-2)"></span>Wrist chassis</h3>
+          <p>An open C that springs over the wrist, so there is no buckle to
+            thread one handed. The bore is an ellipse because a wrist is: model
+            it round and it rocks, digs in at the styloid, and reads its sensors
+            through a moving air gap.</p>
+          <div class="spec">
+            <div>BORE<b>58 &times; 46 mm</b></div>
+            <div>WALL<b>3.4 mm</b></div>
+            <div>VOLUME<b>25.9 cm&sup3;</b></div>
+          </div>
+        </article>
+
+        <article class="tile" data-part="band-cap">
+          <h3><span class="dot" style="background:#4D17F5"></span>Removable bay cap</h3>
+          <p>A lip drops into the bay mouth on a 0.25 mm printed snap fit, and a
+            thumb notch on the proximal edge gives you somewhere to lever it off
+            without taking a glove off first. Vented, because the bay holds a
+            radio and a battery.</p>
+          <div class="spec">
+            <div>FIT<b>0.25 mm/side</b></div>
+            <div>PLATE<b>4.6 mm</b></div>
+            <div>VENTS<b>3</b></div>
+          </div>
+        </article>
+
+        <article class="tile" data-part="band-cam">
+          <h3><span class="dot" style="background:#3A3A42;outline:1px solid var(--line-2)"></span>Detachable camera</h3>
+          <p>Three lugs, drop in and twist 60 degrees to a hard stop. A bayonet
+            rather than a thread because it is one handed, tool free, and cannot
+            back itself out under vibration, which matters when the entire point
+            is that somebody wears it while actually working. It looks down the
+            hand, tilted 20 degrees palmar, so the fingers and whatever they
+            hold are in frame.</p>
+          <div class="spec">
+            <div>LUGS<b>3 &times; 34&deg;</b></div>
+            <div>TWIST<b>60&deg;</b></div>
+            <div>TILT<b>20&deg; palmar</b></div>
+          </div>
+        </article>
+
+        <article class="tile" data-part="band-pad">
+          <h3><span class="dot" style="background:#FA9DCD"></span>Thenar pressure pad</h3>
+          <p>Reaches round to the mound at the base of the thumb on a
+            deliberately thin arm. The arm has to flex, because the mound
+            changes shape as the thumb opposes, and a rigid one would lift the
+            pad off at exactly the moment the grip it is measuring begins.</p>
+          <div class="spec">
+            <div>PAD<b>32 &times; 24 mm</b></div>
+            <div>ARM<b>3.0 mm</b></div>
+            <div>CHANNELS<b>6</b></div>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <div class="clockbox">
+      <div>
+        <h3>Three sensors, one clock</h3>
+        <p>Vision, inertial and contact are sampled against a shared timebase
+          in the device, not aligned in software afterwards. A correction that
+          lands seventy milliseconds after a slip is only legible if the two
+          streams agree on when now was.</p>
+      </div>
+      <div class="viz band" style="margin:0"><canvas id="bandc"></canvas></div>
+    </div>
+
+    <p class="flede" style="margin-top:var(--s-600);color:var(--fg-mute);font-size:14px">
+      Geometry is watertight and audited: every bayonet check is proven to fail
+      on a build that is not twisted home, or it does not count as a check.
+      The Band is in design and not yet a product you can buy.</p>
+  </section>
+
+  <section class="fwrap" id="proof">
+    <p class="feyebrow">The proof</p>
+    <h2 class="fh2">We ship hardware</h2>
+    <p class="flede" style="margin-top:var(--s-300)">
+      A wearable sensor is a hardware problem long before it is a data problem.
+      Hotaru is the evidence we take a device from parameters to a shipped
+      object, in public.</p>
+    <div class="bento" style="margin-top:var(--s-600)">
+      <article class="tile" style="padding:0;overflow:hidden">
+        <div class="viz" style="margin:0;border-radius:0;aspect-ratio:16/10">
+          <canvas id="hot"></canvas>
+        </div>
+      </article>
+      <article class="tile">
+        <h3>Hotaru</h3>
+        <p>A desk robot with four servos, a microphone and a speaker. It leans
+          toward whoever is talking and folds down when the room goes quiet.
+          Twenty two printed parts, every one on a 180 mm bed, CAD open in pure
+          Python with public interface audits.</p>
+        <div class="spec">
+          <div>PARTS<b>22</b></div>
+          <div>SERVOS<b>4</b></div>
+          <div>STATUS<b>Shipping</b></div>
+        </div>
+        <p style="margin-top:var(--s-300)">
+          <a class="btn sm" href="https://aibo.loompad.tech">Meet Hotaru</a></p>
+      </article>
+    </div>
+  </section>
+
+  <section class="fwrap" id="engine">
+    <p class="feyebrow">The engine</p>
+    <h2 class="fh2">Capture, settle,<br>license, repeat</h2>
+    <p class="flede" style="margin-top:var(--s-300)">
+      Every failure a buyer reports becomes a capture target we pay for. The
+      network gets more valuable the more it is used, which is the only kind of
+      data business worth building.</p>
+    <div class="grid g4 loop" style="margin-top:var(--s-600)">
+      <article class="card"><h3>Instrument</h3>
+        <p>Our own device, so we control what is sensed and how it is
+          synchronised. Vision, inertial and contact on one clock.</p></article>
+      <article class="card"><h3>Capture</h3>
+        <p>Contributors record real tasks in real kitchens and workshops.
+          Consent is captured with the data, not asserted about it later.</p></article>
+      <article class="card"><h3>Settle</h3>
+        <p>Each accepted contribution is written on chain with its terms and its
+          author. Provenance and payment are the same record.</p></article>
+      <article class="card"><h3>License</h3>
+        <p>Buyers take slices by task, object and material. Their failures come
+          back to us as the next thing we pay to record.</p></article>
+    </div>
+
+    <div class="tscroll">
+      <table>
+        <caption class="sr-only">How contact data compares across collection approaches</caption>
+        <thead><tr>
+          <th scope="col">Approach</th><th scope="col">What it captures</th>
+          <th scope="col">What it misses</th><th scope="col">Scale</th>
+        </tr></thead>
+        <tbody>
+          <tr><td>Browser teleoperation of simulated arms</td>
+              <td class="what">Trajectories, object poses, task metadata</td>
+              <td class="what">Real friction, deformation, slip</td>
+              <td class="what">Very high</td></tr>
+          <tr><td>Scraped and egocentric video</td>
+              <td class="what">Hand pose, scene, intent</td>
+              <td class="what">All force, all correction</td>
+              <td class="what">Very high</td></tr>
+          <tr><td>Lab force rigs</td>
+              <td class="what">Contact, richly</td>
+              <td class="what">Everyday tasks, variety, volume</td>
+              <td class="what">Hours</td></tr>
+          <tr class="us"><td><b>Thenar</b></td>
+              <td>Vision, inertial and contact force, one clock</td>
+              <td>Whole body motion, for now</td>
+              <td>Network</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="namebox" style="margin-left:auto;margin-right:auto">
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="7" fill="#4D17F5"/>
+        <path d="M8 25 C8 13, 14 7, 24 7" fill="none" stroke="#fff"
+              stroke-width="3.2" stroke-linecap="round"/>
+        <circle cx="8" cy="25" r="3.4" fill="#FA9DCD"/>
+      </svg>
+      <p><b>Why the name.</b> The thenar eminence is the mound of muscle at the
+        base of your thumb. Its job is opposition, swinging the thumb across to
+        meet each fingertip, and modulating how hard it presses once it arrives.
+        It is the anatomy that separates a hand from a claw, and it is the exact
+        capability robots have not learned. The mark is that arc.</p>
+    </div>
+  </section>
+
+  <section class="fwrap" id="chain">
+    <p class="feyebrow">Physical AI and settlement</p>
+    <h2 class="fh2">Provenance you can check<br>without trusting us</h2>
+    <p class="flede" style="margin-top:var(--s-300)">
+      Contact data is only worth licensing if a buyer's legal team can trace
+      where it came from and on what terms. This is the mechanism, including
+      the part a ledger does not solve.</p>
+
+    <div class="stage3d" id="chainbox" style="aspect-ratio:auto;height:236px">
+      <canvas id="chainc"></canvas>
+    </div>
+
+    <div class="bento" style="margin-top:16px">
+      <article class="tile">
+        <h3>Only hashes go on chain</h3>
+        <p>The recording and the contributor's identity never touch it. What
+          gets written is a hash of the payload and the licence terms agreed at
+          capture. That is what keeps erasure possible: delete the payload and
+          the record still proves what the terms were, while holding nothing
+          personal. An immutable public log of who recorded what in their own
+          kitchen would be the opposite of handling consent well.</p>
+      </article>
+      <article class="tile">
+        <h3>Payment and provenance, one entry</h3>
+        <p>Each accepted clip settles against the same record that carries its
+          terms. Not because paying people needs a chain, because it does not:
+          Wise and Stripe Connect pay large populations small amounts every day
+          and would not ask a contributor to hold a wallet. The reason is that
+          it collapses the receipt and the provenance into a single auditable
+          thing instead of two systems somebody has to reconcile.</p>
+      </article>
+      <article class="tile" style="border-color:var(--blue)">
+        <h3>What a ledger does not do</h3>
+        <p>It attests record integrity after submission, not authenticity at
+          capture. Nothing written on chain proves a stream came off a real
+          hand rather than a replay, and a device key can be extracted. Solving
+          that needs attestation in the hardware, which is a secure element and
+          a remote attestation path we have not built. We would rather say so
+          here than be asked in diligence.</p>
+      </article>
+      <article class="tile">
+        <h3>If a plainer rail does it, we use it</h3>
+        <p>Signed capture manifests in a public append only log give an auditor
+          the same tamper evidence, with tooling they already know from
+          certificate transparency. We are not attached to the word. We are
+          attached to a buyer being able to verify a slice without taking our
+          internal records on faith, and to a contributor being able to check
+          their own terms without asking us.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="fwrap" id="faq">
+    <p class="feyebrow">Objections</p>
+    <h2 class="fh2">The questions<br>we get asked</h2>
+    <p class="flede" style="margin-top:var(--s-300)">
+      Including the hostile ones. If an answer here is weaker than you expected,
+      that is deliberate.</p>
+    <div class="qalist">
+        <details class="qa">
+          <summary>What do you actually have today?</summary>
+          <p>Three things, and no more than three. Hotaru is shipping open source hardware: a desk robot of 22 printed parts with public CAD in Python and interface audits anyone can run. Teleoperation capture on a Quest 3S is running now, which gives 6DoF on both hands at 90 Hz and no force at all. The Thenar Band exists as watertight CAD and printable STLs; nobody has worn one, and no user data has been recorded with it.</p>
+        </details>
+        <details class="qa">
+          <summary>Why not just use simulation? It scales and costs almost nothing.</summary>
+          <p>We do use simulation, and it is the right way to get trajectories and task structure at volume. But contact is the least accurate part of every physics engine, so friction, deformation and slip are approximated, and a policy trained only in simulation learns to correct against numbers the solver invented. The sim to real gap in manipulation is a contact gap. Real recordings are how you find out which of your simulated grasps were fiction.</p>
+        </details>
+        <details class="qa">
+          <summary>Why can a better model not estimate force from video?</summary>
+          <p>Because at the instant that matters the picture barely changes. The grip literature reports that a slip is answered by a corrective squeeze within roughly a tenth of a second, while the hand itself moves about a millimetre, which is at or under the resolution hand trackers report. We have not measured those numbers ourselves and we do not present them as ours. A vision model can learn a useful prior over what a grasp normally needs, but a prior is not a measurement, and it degrades on exactly the unfamiliar object you wanted the robot to handle.</p>
+        </details>
+        <details class="qa">
+          <summary>Why would force recorded on a human hand transfer to a robot gripper?</summary>
+          <p>This is the question that decides whether the company works, so we will not dress it up. Contact force does not transfer as a joint command, it transfers as a target: how much normal force a given material needs before it stops slipping, and how fast a correction has to arrive. That is a property of the object and the task rather than of the hand holding it, which is why we record material and contact area alongside the force. Instrumenting the robot instead is cheaper and in domain, and teams should do it. It only tells you about grasps the robot already attempts, which is why it does not replace watching a person succeed at something the robot currently fails.</p>
+        </details>
+        <details class="qa">
+          <summary>The Band is not built. What stops it staying CAD forever?</summary>
+          <p>Nothing but us building it, which is why we publish what state it is in instead of a launch date. The geometry is watertight, every part fits a 180 mm bed, and the snap fit and bayonet are toleranced with audits that must be proven to fail on a bad build before they count as checks. The next milestone is a printed unit recording contact, vision and inertial against one clock. Until that exists we keep calling it in design.</p>
+        </details>
+        <details class="qa">
+          <summary>Why blockchain at all? This sounds like a database.</summary>
+          <p>For our own bookkeeping a database is fine and we use one. Paying people is not the reason either: Wise and Stripe Connect move small amounts to large populations every day, and asking a contributor to hold a wallet is a barrier, not a feature. The reason is narrower. A buyer wants to verify a slice without trusting our internal records, and a contributor wants to check their own terms without asking us. Writing only a payload hash and the agreed terms makes the receipt and the provenance one entry. A signed manifest in a public append only log gives most of the same property, and if that suits a buyer better we will use it.</p>
+        </details>
+        <details class="qa">
+          <summary>Why would any buyer trust your provenance?</summary>
+          <p>They should not trust it, they should be able to check it. Terms and consent are recorded with the contribution at capture rather than asserted about it later. Be clear about the limit: that proves what was submitted and under what terms, not that the stream came off a real hand. Hardware attestation is what closes that gap and we have not built it. The honest offer is that you audit the first paid slice rather than take our word about a network that does not exist yet.</p>
+        </details>
+        <details class="qa">
+          <summary>What stops Meta, or a funded competitor, from doing this?</summary>
+          <p>Nothing stops them, and if measured contact matters as much as we think, somebody with more money will build a version. We expect it to be closed and pointed at their own models, which is what a platform does with hand data. That is not a moat, it is a bet on being early and open in a business with hardware and operations attached, which is genuinely less attractive than software and is a real reason large teams have stayed on cameras.</p>
+        </details>
+        <details class="qa">
+          <summary>Why believe a small team can ship a wearable sensor?</summary>
+          <p>Partly, and only partly. Hotaru is evidence we take a device from parameters to a shipped object in public: 22 printed parts, CAD in pure Python, published STLs and audits anyone can rerun. That is evidence about geometry, tolerancing and release discipline. It is not evidence about transduction, drift, calibration across different hands, or yield, which is the part that actually kills force sensing wearables. Those are ahead of us and we have not solved them.</p>
+        </details>
+        <details class="qa">
+          <summary>Who buys contact data, and has anyone paid you?</summary>
+          <p>Nobody has paid us and no licences are signed. The buyer we build for is a team training manipulation policies that already knows which of its tasks fail, because we would rather record twenty named failures than a generic corpus nobody asked for. If that is you, telling us the failing tasks costs nothing and changes what we instrument first.</p>
+        </details>
+        <details class="qa">
+          <summary>What would prove you wrong?</summary>
+          <p>The weak version is a manipulation benchmark where adding measured contact force to pose and video does not improve success on unfamiliar objects. That is a soft test, because an extra informative channel rarely hurts. The real one has a denominator: whether a dollar spent on measured force beats the same dollar spent on more simulation, more demonstrations, or tactile sensors mounted on the robot. We can run the weak version on our own tasks as soon as a Band records, and we should, before asking anybody to fund the strong one.</p>
+        </details>
+    </div>
+  </section>
+
+  <section class="fwrap" id="stands">
+    <p class="feyebrow">Honest status</p>
+    <h2 class="fh2">Where this<br>actually stands</h2>
+    <div class="rail" style="margin-top:var(--s-600);margin-left:auto;margin-right:auto">
+      <div>
+        <h3>Shipped</h3>
+        <p>Hotaru is real hardware with open CAD, printable STLs, and interface
+          audits anyone can run.</p>
+      </div>
+      <div>
+        <h3>In design</h3>
+        <p>The Thenar Band is a specification and a sensor selection, not a
+          product you can buy. We are building it around the first dataset we
+          sell rather than guessing at a spec first.</p>
+      </div>
+      <div>
+        <h3>Not yet</h3>
+        <p>The contributor network is the model we are building toward, not
+          something you can join this week. We would rather say that here than
+          have you find it out after signing something.</p>
+      </div>
+    </div>
+
+    <div class="note" style="margin-left:auto;margin-right:auto">
+      <b>What we are looking for.</b> Robotics teams training manipulation
+      policies who will tell us which twenty tasks are failing, and hardware
+      people who have shipped a sensor at volume. If either is you, the fastest
+      route is a direct email.
+    </div>
+
+
+  </section>
+
+  <section class="fwrap" id="contact">
+    <p class="feyebrow">Talk to us</p>
+    <h2 class="fh2">Tell us which<br>tasks are failing</h2>
+    <p class="flede" style="margin-top:var(--s-300)">
+      If you train manipulation policies, the twenty tasks your robot fails at
+      are worth more to us than any pitch we could make. Sending them costs you
+      nothing and changes what we instrument first.</p>
+
+    <form class="join" id="join" novalidate>
+      <div class="row">
+        <label class="fld">
+          <span>Name</span>
+          <input id="f-name" name="name" type="text" autocomplete="name"
+                 required maxlength="120" placeholder="Your name">
+          <em class="fe" id="e-name" aria-live="polite"></em>
+        </label>
+        <label class="fld">
+          <span>Email</span>
+          <input id="f-email" name="email" type="email" autocomplete="email"
+                 required maxlength="200" placeholder="you@lab.org">
+          <em class="fe" id="e-email" aria-live="polite"></em>
+        </label>
+      </div>
+      <label class="fld">
+        <span>What you do</span>
+        <select id="f-role" name="role">
+          <option value="">Choose one</option>
+          <option>Training manipulation policies</option>
+          <option>Robotics hardware</option>
+          <option>Research lab</option>
+          <option>Investor</option>
+          <option>Would wear a Band</option>
+          <option>Something else</option>
+        </select>
+      </label>
+      <label class="fld">
+        <span>Which tasks fail, and on what hardware</span>
+        <textarea id="f-note" name="note" rows="4" maxlength="2000"
+                  placeholder="Opening jars. Anything deformable. A parallel gripper on a Franka."></textarea>
+      </label>
+      <div class="submit">
+        <button class="btn primary" id="f-go" type="submit">Send it</button>
+        <p class="fstatus" id="f-status" role="status" aria-live="polite"></p>
+      </div>
+      <p class="fnote">We reply from a person, not a sequence. No list, no
+        newsletter. Or write to
+        <a href="mailto:hello@thenar.io">hello@thenar.io</a> directly.</p>
+    </form>
+  </section>
+</main>
+
+<!-- FOOT:START -->
+<footer><div class="fwrap">
+  <div class="fcols">
+    <div><h4>Products</h4>
+      <a href="./products.html">Overview</a>
+      <a href="./index.html#band">Thenar Band</a>
+      <a href="./index.html#capture">Quest capture</a>
+      <a href="https://aibo.loompad.tech">Hotaru</a>
+    </div>
+    <div><h4>Protocol</h4>
+      <a href="./protocol.html">Architecture</a>
+      <a href="./index.html#chain">What goes on chain</a>
+      <a href="./faq.html">FAQ</a>
+    </div>
+    <div><h4>Company</h4>
+      <a href="./company.html">Status</a>
+      <a href="./market.html">Go to market</a>
+      <a href="https://github.com/nickthelegend/aibo-pet">Source</a>
+    </div>
+    <div><h4>Legal</h4>
+      <a href="./privacy.html">Privacy</a>
+      <a href="./terms.html">Terms</a>
+    </div>
+  </div>
+  <div class="fbase">
+    <span>THENAR — contact data for physical AI.</span>
+    <span>Built in the open. Quest and Meta are trade marks of Meta Platforms, Inc. Thenar is not affiliated with Meta.</span>
+  </div>
+</div></footer>
+<!-- FOOT:END -->
+
+<script type="module">
+import { makeGrasp } from "./grasp.js";
+import { mountHotaru } from "./hotaru.js";
+import { mountBand } from "./band.js";
+import { mountChain } from "./grasp-chain.js";
+import { mountBandView } from "./bandview.js";
+
+/* Reveal is added by script, never in the markup, so a JS failure leaves the
+   page fully readable instead of blank. */
+if ("IntersectionObserver" in window) {
+  const els = document.querySelectorAll(
+    ".card, .rail > div, .stats > div, .namebox, .tscroll, .demo");
+  els.forEach(el => el.classList.add("reveal"));
+  const io = new IntersectionObserver(es => {
+    es.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+    });
+  }, { rootMargin: "0px 0px -10% 0px" });
+  els.forEach(el => io.observe(el));
+}
+
+/* The headline statement lights word by word as it crosses the viewport. Words
+   are wrapped here rather than in the markup so the sentence stays one
+   selectable, translatable string in the HTML. */
+(function () {
+  const root = document.querySelector("#bigline");
+  if (!root) return;
+  const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const texts = []; let n;
+  while ((n = walk.nextNode())) texts.push(n);
+  for (const t of texts) {
+    const frag = document.createDocumentFragment();
+    for (const tok of t.textContent.split(/(\s+)/)) {
+      if (!tok) continue;
+      if (/^\s+$/.test(tok)) { frag.appendChild(document.createTextNode(tok)); continue; }
+      const w = document.createElement("w");
+      w.textContent = tok;
+      frag.appendChild(w);
+    }
+    t.parentNode.replaceChild(frag, t);
+  }
+  const words = [...root.querySelectorAll("w")];
+  let queued = false;
+  function lite() {
+    queued = false;
+    const r = root.getBoundingClientRect();
+    const p = (innerHeight * 0.82 - r.top) / (r.height + innerHeight * 0.30);
+    const k = Math.round(Math.max(0, Math.min(1, p)) * words.length);
+    words.forEach((w, i) => w.classList.toggle("lit", i < k));
+  }
+  addEventListener("scroll", () => {
+    if (!queued) { queued = true; requestAnimationFrame(lite); }
+  }, { passive: true });
+  addEventListener("resize", lite, { passive: true });
+  lite();
+})();
+
+/* The grasp demo drives both the trace and the pressure on the hand from one
+   clock, so the mound lights at exactly the frame the force spikes. */
+(function () {
+  const cv = document.querySelector("#trace");
+  if (!cv) return;
+  const pads = [...document.querySelectorAll(".pp")];
+  const g = makeGrasp(cv, (t, f) => {
+    const p = Math.min(f / 16, 1);
+    for (const el of pads) {
+      const w = parseFloat(el.dataset.w);
+      el.setAttribute("r", (5 + p * 27 * w).toFixed(1));
+      el.style.opacity = (0.12 + p * 0.88).toFixed(2);
+    }
+  });
+  const play = document.querySelector("#play");
+  play.addEventListener("click", () => {
+    const on = g.toggle();
+    play.textContent = on ? "Pause" : "Play";
+    play.setAttribute("aria-pressed", String(on));
+  });
+  document.querySelector("#replay").addEventListener("click", () => {
+    g.replay();
+    play.textContent = "Pause";
+    play.setAttribute("aria-pressed", "true");
+  });
+  if (!g.playing) { play.textContent = "Play"; play.setAttribute("aria-pressed", "false"); }
+})();
+
+mountHotaru(document.querySelector("#hot"));
+mountBand(document.querySelector("#bandc"));
+mountChain(document.querySelector("#chainc"));
+
+/* The one conversion on the page. Validation runs here as a courtesy and
+   again on the server, because the browser copy is not a control. Every
+   failure says what went wrong and what to do instead; a form that fails
+   silently loses the person it was built for. */
+(function () {
+  const f = document.querySelector("#join");
+  if (!f) return;
+  const $ = id => document.querySelector(id);
+  const go = $("#f-go"), status = $("#f-status");
+  const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+  function fieldError(input, slot, msg) {
+    slot.textContent = msg || "";
+    input.setAttribute("aria-invalid", msg ? "true" : "false");
+    return !msg;
+  }
+
+  f.addEventListener("submit", async e => {
+    e.preventDefault();
+    const name = $("#f-name").value.trim();
+    const email = $("#f-email").value.trim();
+    const okName = fieldError($("#f-name"), $("#e-name"),
+      name ? "" : "We need a name to reply to.");
+    const okMail = fieldError($("#f-email"), $("#e-email"),
+      !email ? "We need an email to reply to."
+             : EMAIL.test(email) ? "" : "That does not look like an email address.");
+    if (!okName || !okMail) {
+      (okName ? $("#f-email") : $("#f-name")).focus();
+      return;
+    }
+
+    go.disabled = true;
+    const label = go.textContent;
+    go.textContent = "Sending";
+    status.textContent = "";
+    status.className = "fstatus";
+
+    try {
+      const r = await fetch("/api/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name, email,
+          role: $("#f-role").value,
+          note: $("#f-note").value.trim(),
+        }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || "That did not go through.");
+      f.querySelector(".row").remove();
+      f.querySelectorAll(".fld, .submit .btn").forEach(el => el.remove());
+      status.className = "fstatus ok";
+      status.textContent = "Sent. We read everything and reply ourselves, "
+        + "usually within a couple of days.";
+    } catch (err) {
+      status.className = "fstatus bad";
+      status.textContent = err.message;
+      go.disabled = false;
+      go.textContent = label;
+    }
+  });
+})();
+
+/* Two views of the same 100 kB file. The hero is the product shot and comes
+   apart as you scroll past it; the band section pins an exploded copy that
+   the parts list drives. The browser fetches band.glb once. */
+(async function () {
+  const stage = document.querySelector("#stage");
+  const badge = document.querySelector("#state3d");
+  try {
+    const hero = await mountBandView(document.querySelector("#bandc3d"));
+    let queued = false;
+    const onScroll = () => {
+      queued = false;
+      const r = stage.getBoundingClientRect();
+      const p = Math.max(0, Math.min(1,
+        (innerHeight * 0.62 - r.top) / Math.max(r.height * 0.85, 1)));
+      hero.explode(p);
+      badge.textContent = p > 0.55 ? "EXPLODED" : p > 0.08 ? "OPENING" : "ASSEMBLED";
+    };
+    addEventListener("scroll", () => {
+      if (!queued) { queued = true; requestAnimationFrame(onScroll); }
+    }, { passive: true });
+    onScroll();
+  } catch (e) {
+    // A dead canvas looks broken; drop the block and let the copy carry it.
+    console.error("band hero:", e);
+    stage?.remove();
+  }
+
+  try {
+    const q = await mountBandView(document.querySelector("#questc"),
+      { glb: "./quest.glb", json: "./quest.json", az: -0.55 });
+    const st3 = document.querySelector("#stage3");
+    let qq = false;
+    const onQ = () => {
+      qq = false;
+      const r = st3.getBoundingClientRect();
+      q.explode(Math.max(0, Math.min(1,
+        (innerHeight * 0.55 - r.top) / Math.max(r.height * 0.9, 1))));
+    };
+    addEventListener("scroll", () => {
+      if (!qq) { qq = true; requestAnimationFrame(onQ); }
+    }, { passive: true });
+    onQ();
+  } catch (e) {
+    console.error("quest:", e);
+    document.querySelector("#stage3")?.remove();
+  }
+
+  const list = document.querySelector("#bandlist");
+  const badge2 = document.querySelector("#state3d2");
+  try {
+    const bv = await mountBandView(document.querySelector("#bandc3d2"));
+    bv.explode(1);
+    const tiles = [...list.querySelectorAll(".tile")];
+    const pick = t => {
+      tiles.forEach(x => x.classList.toggle("on", x === t));
+      bv.highlight(t.dataset.part);
+      badge2.textContent = t.dataset.part.replace("band-", "").toUpperCase();
+    };
+    const clear = () => {
+      tiles.forEach(x => x.classList.remove("on"));
+      bv.highlight(null);
+      badge2.textContent = "EXPLODED";
+    };
+    tiles.forEach(t => {
+      t.addEventListener("pointerenter", () => pick(t));
+      t.addEventListener("focusin", () => pick(t));
+      t.tabIndex = 0;
+    });
+    list.addEventListener("pointerleave", clear);
+  } catch (e) {
+    console.error("band list:", e);
+    document.querySelector("#stage2")?.remove();
+  }
+})();
+</script>
+</body>
+</html>

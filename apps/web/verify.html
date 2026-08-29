@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Verify — THENAR</title>
+<meta name="description" content="Check a capture against the anchored log yourself. Inclusion, append-only history and live consent, read straight from the contract on Monad.">
+<link rel="canonical" href="https://thenar.io/verify">
+<link rel="icon" href="./mark.svg" type="image/svg+xml">
+<meta property="og:title" content="Verify — THENAR">
+<meta property="og:description" content="Check a capture against the anchored log yourself, without trusting our records.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://thenar.io/verify">
+<meta property="og:site_name" content="THENAR">
+<meta property="og:image" content="https://thenar.io/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://thenar.io/og.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./site.css">
+<style>
+  .vtable{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+  .vtable th{text-align:left;font-weight:600;color:var(--mute,#6E6E6E);
+    font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:0 12px 10px 0;
+    border-bottom:1px solid var(--line,#272727)}
+  .vtable td{padding:12px 12px 12px 0;border-bottom:1px solid var(--line,#272727);
+    font-variant-numeric:tabular-nums}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+  .verdict{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;
+    font-size:12px;font-weight:600;letter-spacing:.02em}
+  .verdict.yes{background:rgba(77,23,245,.14);color:#8E6BFF;border:1px solid rgba(77,23,245,.45)}
+  .verdict.no{background:rgba(250,157,205,.12);color:#FA9DCD;border:1px solid rgba(250,157,205,.4)}
+  .verdict.wait{background:rgba(255,255,255,.05);color:#9B9B9B;border:1px solid #272727}
+  .vgrid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin:22px 0}
+  .vcard{border:1px solid var(--line,#272727);border-radius:12px;padding:16px 18px}
+  .vcard h3{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute,#6E6E6E);margin:0 0 10px}
+  .vcard p{margin:0;font-size:13.5px;line-height:1.5}
+  .scroller{overflow-x:auto}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<!-- NAV:START -->
+<header class="top solid">
+  <a class="brand" href="./index.html" aria-label="Thenar home"><svg viewBox="0 0 340 92" aria-hidden="true" style="height:24px"><text x="0" y="70" font-family="Manrope,sans-serif" font-size="72" font-weight="700" letter-spacing="-2" fill="currentColor">THENAR</text></svg></a>
+  <nav class="topnav" aria-label="Primary">
+    <a href="./products.html">Products</a>
+    <a href="./protocol.html">Protocol</a>
+    <a href="./market.html">Market</a>
+    <a href="./faq.html">FAQ</a>
+    <a href="./company.html">Company</a>
+    <a href="./verify.html" aria-current="page">Verify</a>
+  </nav>
+  <a class="btn primary" href="./index.html#contact">Talk to us</a>
+</header>
+<!-- NAV:END -->
+<main id="main">
+<section class="wrap" style="padding-top:96px;padding-bottom:24px">
+  <p class="eyebrow" style="color:#6E6E6E;font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 12px">GRASP on Monad Testnet</p>
+  <h1 style="margin:0 0 18px">Check it yourself.</h1>
+  <p style="max-width:62ch;font-size:17px;line-height:1.55;color:#C9C9C9">
+    A buyer needs to verify a slice of capture data without trusting our internal
+    records, and a contributor needs to withdraw without us being able to pretend
+    they did not. Everything below is read straight from the contract. Nothing on
+    this page passes through our servers.
+  </p>
+
+  <div class="vgrid">
+    <div class="vcard">
+      <h3>Log</h3>
+      <p class="mono"><a id="logaddr" href="#" style="color:#8E6BFF"></a></p>
+    </div>
+    <div class="vcard">
+      <h3>Market</h3>
+      <p class="mono"><a id="mktaddr" href="#" style="color:#8E6BFF"></a></p>
+    </div>
+    <div class="vcard">
+      <h3>Head</h3>
+      <p id="headline">reading…</p>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" style="padding-top:8px;padding-bottom:32px">
+  <h2 style="font-size:22px;margin:0 0 6px">Every anchor, as the chain holds it</h2>
+  <p style="color:#9B9B9B;font-size:14px;margin:0 0 8px">
+    The log is append-only. Each row names the batch root, how many captures it
+    covers, and the block it landed in. A root that carries a withdrawal is marked.
+  </p>
+  <div class="scroller">
+    <table class="vtable" id="anchors">
+      <thead><tr><th>#</th><th>Root</th><th>Captures</th><th>Block</th><th>Withdrawals</th></tr></thead>
+      <tbody><tr><td colspan="5" style="color:#6E6E6E">reading the log…</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="wrap" style="padding-bottom:40px">
+  <h2 style="font-size:22px;margin:0 0 6px">Prove one capture</h2>
+  <p style="color:#9B9B9B;font-size:14px;margin:0 0 16px;max-width:62ch">
+    Paste the 154-byte preimage a capture was committed under, its position in the
+    batch, and the sibling path. The contract does the checking; this page only
+    shows you what it said.
+  </p>
+  <form id="vform" style="display:grid;gap:12px;max-width:760px">
+    <label style="display:grid;gap:6px">
+      <span style="font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:.06em">Anchor index</span>
+      <input id="vindex" inputmode="numeric" placeholder="1" class="mono"
+             style="background:#0E0E0E;border:1px solid #272727;border-radius:8px;padding:10px 12px;color:#fff">
+    </label>
+    <label style="display:grid;gap:6px">
+      <span style="font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:.06em">Capture preimage (154 bytes, hex)</span>
+      <textarea id="vpre" rows="3" placeholder="0x01…" class="mono"
+                style="background:#0E0E0E;border:1px solid #272727;border-radius:8px;padding:10px 12px;color:#fff"></textarea>
+    </label>
+    <div style="display:grid;gap:12px;grid-template-columns:1fr 2fr">
+      <label style="display:grid;gap:6px">
+        <span style="font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:.06em">Leaf index</span>
+        <input id="vleaf" inputmode="numeric" placeholder="3" class="mono"
+               style="background:#0E0E0E;border:1px solid #272727;border-radius:8px;padding:10px 12px;color:#fff">
+      </label>
+      <label style="display:grid;gap:6px">
+        <span style="font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:.06em">Sibling path (comma-separated hashes)</span>
+        <input id="vproof" placeholder="0x…, 0x…" class="mono"
+               style="background:#0E0E0E;border:1px solid #272727;border-radius:8px;padding:10px 12px;color:#fff">
+      </label>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <button class="btn primary" type="submit">Ask the contract</button>
+      <span id="vout" class="verdict wait">nothing checked yet</span>
+    </div>
+  </form>
+  <p style="color:#6E6E6E;font-size:13px;margin-top:14px;max-width:62ch">
+    A failed check here is the system working. If a preimage is altered by one
+    byte the proof stops matching, which is the whole reason the commitment is a
+    hash and not a record in our database.
+  </p>
+</section>
+</main>
+<!-- FOOT:START -->
+<footer><div class="fwrap">
+  <div class="fcols">
+    <div><h4>Products</h4>
+      <a href="./products.html">Overview</a>
+      <a href="./index.html#band">Thenar Band</a>
+      <a href="./index.html#capture">Quest capture</a>
+      <a href="https://aibo.loompad.tech">Hotaru</a>
+    </div>
+    <div><h4>Protocol</h4>
+      <a href="./protocol.html">Architecture</a>
+      <a href="./index.html#chain">What goes on chain</a>
+      <a href="./faq.html">FAQ</a>
+    </div>
+    <div><h4>Company</h4>
+      <a href="./company.html">Status</a>
+      <a href="./market.html">Go to market</a>
+      <a href="https://github.com/nickthelegend/aibo-pet">Source</a>
+    </div>
+    <div><h4>Legal</h4>
+      <a href="./privacy.html">Privacy</a>
+      <a href="./terms.html">Terms</a>
+    </div>
+  </div>
+  <div class="fbase">
+    <span>THENAR — contact data for physical AI.</span>
+    <span>Built in the open. Quest and Meta are trade marks of Meta Platforms, Inc. Thenar is not affiliated with Meta.</span>
+  </div>
+</div></footer>
+<!-- FOOT:END -->
+<script type="module">
+import { MONAD, readAnchors } from "./grasp-chain.js";
+
+const $ = (s) => document.querySelector(s);
+const short = (h) => h.slice(0, 10) + "…" + h.slice(-6);
+const ZERO = "0x" + "0".repeat(64);
+
+$("#logaddr").textContent = short(MONAD.log);
+$("#logaddr").href = `${MONAD.explorer}/address/${MONAD.log}`;
+$("#mktaddr").textContent = short(MONAD.market);
+$("#mktaddr").href = `${MONAD.explorer}/address/${MONAD.market}`;
+
+(async () => {
+  try {
+    const { count, anchors } = await readAnchors(25);
+    const head = anchors[anchors.length - 1];
+    $("#headline").textContent = count === 0
+      ? "nothing anchored yet"
+      : `${head.size} captures across ${count} anchors`;
+
+    const rows = anchors.slice().reverse().map((a) => `
+      <tr>
+        <td>${a.index}</td>
+        <td class="mono"><a href="${MONAD.explorer}/block/${a.blockNumber}" style="color:#8E6BFF">${short(a.root)}</a></td>
+        <td>${a.size}</td>
+        <td class="mono">${a.blockNumber}</td>
+        <td>${a.revocationRoot === ZERO ? '<span style="color:#6E6E6E">none</span>' : '<span style="color:#FA9DCD">carries a withdrawal</span>'}</td>
+      </tr>`).join("");
+    $("#anchors tbody").innerHTML = rows || `<tr><td colspan="5" style="color:#6E6E6E">the log is empty</td></tr>`;
+  } catch (e) {
+    $("#headline").textContent = "could not reach Monad";
+    $("#anchors tbody").innerHTML =
+      `<tr><td colspan="5" style="color:#FA9DCD">Could not reach Monad, so nothing is shown. Refresh to retry.</td></tr>`;
+  }
+})();
+
+/* verifyClip(uint256,bytes,bytes32[],uint64) — encoded by hand so this page
+   ships without a web3 bundle. Head: index, offset(bytes), offset(bytes32[]),
+   leafIndex; then the two dynamic tails. */
+const SELECTOR = "0xe51f9888"; // cast sig verifyClip(uint256,bytes,bytes32[],uint64)
+const pad = (n) => BigInt(n).toString(16).padStart(64, "0");
+
+function encodeVerify(index, preimage, proof, leafIndex) {
+  const raw = preimage.replace(/^0x/, "");
+  if (raw.length % 2) throw new Error("preimage must be whole bytes");
+  const bytesLen = raw.length / 2;
+  const padded = raw.padEnd(Math.ceil(bytesLen / 32) * 64, "0");
+  const headWords = 4;
+  const bytesOffset = headWords * 32;
+  const bytesWords = 1 + Math.ceil(bytesLen / 32);
+  const proofOffset = bytesOffset + bytesWords * 32;
+  return SELECTOR
+    + pad(index)
+    + pad(bytesOffset)
+    + pad(proofOffset)
+    + pad(leafIndex)
+    + pad(bytesLen) + padded
+    + pad(proof.length) + proof.map((h) => h.replace(/^0x/, "").padStart(64, "0")).join("");
+}
+
+$("#vform").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const out = $("#vout");
+  out.className = "verdict wait";
+  out.textContent = "asking the contract…";
+  try {
+    const index = $("#vindex").value.trim();
+    const pre = $("#vpre").value.trim();
+    const leaf = $("#vleaf").value.trim();
+    const proof = $("#vproof").value.split(",").map((s) => s.trim()).filter(Boolean);
+
+    const bytes = pre.replace(/^0x/, "").length / 2;
+    if (bytes !== 154) throw new Error(`a capture preimage is 154 bytes; that is ${bytes}`);
+
+    const data = encodeVerify(index || 0, pre, proof, leaf || 0);
+    const res = await fetch(MONAD.rpc, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call",
+        params: [{ to: MONAD.log, data }, "latest"] }),
+    }).then((r) => r.json());
+
+    if (res.error) throw new Error(res.error.message);
+    const yes = BigInt(res.result) === 1n;
+    out.className = `verdict ${yes ? "yes" : "no"}`;
+    out.textContent = yes
+      ? "in the log — the contract confirms this capture"
+      : "not in the log under that proof";
+  } catch (err) {
+    out.className = "verdict no";
+    out.textContent = err.message;
+  }
+});
+</script>
+
+</body>
+</html>

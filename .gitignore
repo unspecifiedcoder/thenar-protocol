@@ -1,0 +1,8 @@
+node_modules/
+packages/contracts/out/
+packages/contracts/cache/
+packages/contracts/lib/
+packages/contracts/broadcast/
+.env*
+!.env.example
+.vercel/

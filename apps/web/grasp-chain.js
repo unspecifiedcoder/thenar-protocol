@@ -1,0 +1,174 @@
+/* grasp-chain.js — the settlement ledger, actually running.
+ *
+ * The previous version of this drew a plausible ledger and said so in the
+ * corner. This one reads GraspLog on Monad Testnet over JSON-RPC and draws
+ * what is actually anchored: every batch, its root, how many clips it carries,
+ * and the block it landed in.
+ *
+ * Reads need no wallet. If the RPC cannot be reached the strip says so rather
+ * than falling back to invented blocks — a ledger that lies when the network
+ * is down is worse than one that admits it.
+ */
+export const CHAIN = {
+  chainId: 43113,
+  name: "Avalanche Fuji",
+  rpc: "https://api.avax-test.network/ext/bc/C/rpc",
+  explorer: "https://testnet.snowtrace.io",
+  // Not yet deployed on Fuji. Left as the zero address on purpose: the reader
+  // reports that it cannot reach a log rather than drawing an invented one.
+  log: "0x0000000000000000000000000000000000000000",
+  market: "0x0000000000000000000000000000000000000000",
+};
+export const MONAD = CHAIN; // named export kept stable for the pages
+
+/* Selectors are taken from `cast sig`, not eyeballed — a wrong one returns
+   empty data that decodes to zero, which looks like an empty log. */
+const SEL = {
+  anchorCount: "0x34f96c8c",  // anchorCount()
+  anchorAt: "0x16994960",     // anchorAt(uint256)
+  receiptCount: "0x7f038f3c", // receiptCount()
+};
+
+async function rpc(method, params) {
+  const r = await fetch(MONAD.rpc, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
+  });
+  const j = await r.json();
+  if (j.error) throw new Error(j.error.message);
+  return j.result;
+}
+
+const call = (to, data) => rpc("eth_call", [{ to, data }, "latest"]);
+const word = (hex, i) => "0x" + hex.slice(2 + i * 64, 2 + (i + 1) * 64);
+const num = (hex, i) => BigInt(word(hex, i));
+const pad = (n) => n.toString(16).padStart(64, "0");
+
+/** Read the anchors the chain actually holds, newest last. */
+export async function readAnchors(limit = 12) {
+  const countHex = await call(MONAD.log, SEL.anchorCount);
+  const count = Number(BigInt(countHex));
+  const first = Math.max(0, count - limit);
+  const out = [];
+  for (let i = first; i < count; i++) {
+    const raw = await call(MONAD.log, SEL.anchorAt + pad(i));
+    out.push({
+      index: i,
+      root: word(raw, 0),
+      prevRoot: word(raw, 1),
+      revocationRoot: word(raw, 2),
+      size: Number(num(raw, 3)),
+      at: Number(num(raw, 4)),
+      blockNumber: Number(num(raw, 5)),
+    });
+  }
+  return { count, anchors: out };
+}
+
+const BLUE = "#4D17F5", PINK = "#FA9DCD", MUTE = "#6E6E6E";
+const FG = "#FFFFFF", DIM = "#9B9B9B", LINE = "#272727";
+const BW = 132, GAP = 14;
+
+function round(c, x, y, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+
+export function mountChain(cv) {
+  const ctx = cv.getContext("2d");
+  let state = { status: "loading", anchors: [], count: 0, clips: 0 };
+
+  function paint() {
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    const w = cv.clientWidth | 0, h = cv.clientHeight | 0;
+    if (!w || !h) return;
+    if (cv.width !== w * dpr || cv.height !== h * dpr) {
+      cv.width = w * dpr; cv.height = h * dpr;
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    ctx.font = "700 10px Manrope, system-ui, sans-serif";
+    ctx.fillStyle = MUTE;
+    ctx.fillText("ANCHORED BATCHES, MONAD TESTNET", 2, 16);
+
+    if (state.status !== "ready") {
+      ctx.font = "600 12px Manrope, system-ui, sans-serif";
+      ctx.fillStyle = state.status === "error" ? PINK : DIM;
+      ctx.fillText(
+        state.status === "error"
+          ? "Could not reach Monad. Nothing is drawn rather than guessed."
+          : "Reading the log…",
+        2, h / 2,
+      );
+      return;
+    }
+
+    const label = `${state.clips} CLIPS IN ${state.count} ANCHORS`;
+    ctx.fillStyle = BLUE;
+    ctx.fillText(label, w - ctx.measureText(label).width - 2, 16);
+
+    const top = 52, bh = h - top - 46;
+    ctx.strokeStyle = LINE; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, top + bh + 12.5); ctx.lineTo(w, top + bh + 12.5);
+    ctx.stroke();
+
+    const shown = state.anchors.slice(-Math.max(1, Math.floor(w / (BW + GAP))));
+    shown.forEach((a, k) => {
+      const bx = w - 8 - (shown.length - k) * (BW + GAP) + GAP;
+      if (bx + BW < -20) return;
+      const newest = k === shown.length - 1;
+
+      ctx.fillStyle = newest ? "rgba(77,23,245,0.22)" : "rgba(31,31,31,0.9)";
+      ctx.strokeStyle = newest ? BLUE : LINE;
+      round(ctx, bx, top, BW, bh, 10);
+      ctx.fill(); ctx.stroke();
+
+      ctx.font = "600 11px Manrope, system-ui, sans-serif";
+      ctx.fillStyle = newest ? FG : DIM;
+      ctx.fillText(a.root.slice(0, 6) + "…" + a.root.slice(-4), bx + 12, top + 22);
+
+      ctx.font = "600 10px Manrope, system-ui, sans-serif";
+      ctx.fillStyle = MUTE;
+      ctx.fillText(`BLOCK ${a.blockNumber}`, bx + 12, top + 38);
+      if (a.revocationRoot !== "0x" + "0".repeat(64)) {
+        ctx.fillStyle = PINK;
+        ctx.fillText("CARRIES A WITHDRAWAL", bx + 12, top + 52);
+      }
+
+      ctx.font = "700 15px Manrope, system-ui, sans-serif";
+      ctx.fillStyle = newest ? FG : DIM;
+      ctx.fillText(`${a.size} clips`, bx + 12, top + bh - 12);
+    });
+
+    ctx.font = "600 10px Manrope, system-ui, sans-serif";
+    ctx.fillStyle = MUTE;
+    ctx.fillText("READ LIVE FROM THE CONTRACT — NOT A SIMULATION", 2, h - 8);
+  }
+
+  async function load() {
+    try {
+      const { count, anchors } = await readAnchors();
+      state = {
+        status: count === 0 ? "error" : "ready",
+        anchors, count,
+        clips: anchors.length ? anchors[anchors.length - 1].size : 0,
+      };
+    } catch {
+      state = { ...state, status: "error" };
+    }
+    paint();
+  }
+
+  addEventListener("resize", paint, { passive: true });
+  paint();
+  load();
+  setInterval(load, 30000);
+}

@@ -1,0 +1,155 @@
+{
+ "parts": [
+  {
+   "name": "quest-shell",
+   "colour": "#E9E9EE",
+   "explode": [
+    0,
+    0,
+    0
+   ],
+   "size_mm": [
+    167.0,
+    128.0,
+    101.0
+   ],
+   "triangles": 1068
+  },
+  {
+   "name": "quest-front",
+   "colour": "#26262B",
+   "explode": [
+    0,
+    -70,
+    0
+   ],
+   "size_mm": [
+    144.0,
+    8.5,
+    80.0
+   ],
+   "triangles": 236
+  },
+  {
+   "name": "quest-pod",
+   "colour": "#1A1A1F",
+   "explode": [
+    0,
+    -105,
+    0
+   ],
+   "size_mm": [
+    144.0,
+    6.0,
+    40.0
+   ],
+   "triangles": 504
+  },
+  {
+   "name": "quest-lens",
+   "colour": "#0E0E12",
+   "explode": [
+    0,
+    -140,
+    0
+   ],
+   "size_mm": [
+    118.0,
+    3.0,
+    47.2
+   ],
+   "triangles": 1512
+  },
+  {
+   "name": "quest-face",
+   "colour": "#1E1E23",
+   "explode": [
+    0,
+    78,
+    0
+   ],
+   "size_mm": [
+    124.0,
+    22.2,
+    92.0
+   ],
+   "triangles": 236
+  },
+  {
+   "name": "quest-strap",
+   "colour": "#33333A",
+   "explode": [
+    0,
+    40,
+    30
+   ],
+   "size_mm": [
+    136.0,
+    8.0,
+    18.0
+   ],
+   "triangles": 236
+  },
+  {
+   "name": "ctrl-l-shell",
+   "colour": "#E9E9EE",
+   "explode": [
+    -70,
+    0,
+    -30
+   ],
+   "size_mm": [
+    48.8,
+    79.7,
+    115.8
+   ],
+   "triangles": 1236
+  },
+  {
+   "name": "ctrl-l-dark",
+   "colour": "#26262B",
+   "explode": [
+    -105,
+    0,
+    -30
+   ],
+   "size_mm": [
+    40.2,
+    37.6,
+    47.1
+   ],
+   "triangles": 928
+  },
+  {
+   "name": "ctrl-r-shell",
+   "colour": "#E9E9EE",
+   "explode": [
+    70,
+    0,
+    -30
+   ],
+   "size_mm": [
+    48.8,
+    79.7,
+    115.8
+   ],
+   "triangles": 1236
+  },
+  {
+   "name": "ctrl-r-dark",
+   "colour": "#26262B",
+   "explode": [
+    105,
+    0,
+    -30
+   ],
+   "size_mm": [
+    40.2,
+    37.6,
+    47.1
+   ],
+   "triangles": 928
+  }
+ ],
+ "note": "Our own likeness of hardware we capture on. No Meta marks; dimensions approximate."
+}

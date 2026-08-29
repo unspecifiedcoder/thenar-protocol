@@ -1,0 +1,124 @@
+{
+ "static": [
+  "base",
+  "shoulder",
+  "lid",
+  "base-joint",
+  "cap-base",
+  "mx-upper",
+  "mx-body",
+  "mx-stem",
+  "mx-pins",
+  "mx-pins",
+  "keycap",
+  "esp32-pcb",
+  "esp32-module",
+  "esp32-usb",
+  "esp32-buttons",
+  "esp32-led",
+  "esp32-headers",
+  "esp32-pins",
+  "amp-pcb",
+  "amp-terminal",
+  "amp-pads",
+  "amp-headers",
+  "amp-pins",
+  "mic-pcb",
+  "mic-ring",
+  "mic-pkg",
+  "mic-pins",
+  "spk-frame",
+  "spk-back",
+  "spk-cone",
+  "spk-dome",
+  "spk-wires"
+ ],
+ "loose": [
+  "horn-mg996r",
+  "horn-sg90",
+  "horn-adapter",
+  "spline-test",
+  "spk-clamp",
+  "mic-tab",
+  "esp-tab",
+  "amp-tab",
+  "yoke-screw",
+  "keycap"
+ ],
+ "segments": [
+  {
+   "parts": [
+    "arm-lower",
+    "cap-shoulder"
+   ],
+   "servo": [
+    "mg996r-body-shoulder",
+    "mg996r-tabs-shoulder",
+    "mg996r-label-shoulder",
+    "mg996r-boss-shoulder",
+    "mg996r-spline-shoulder",
+    "mg996r-wire-shoulder"
+   ],
+   "length": 120.0
+  },
+  {
+   "parts": [
+    "arm-upper",
+    "cap-elbow"
+   ],
+   "servo": [
+    "mg996r-body-elbow",
+    "mg996r-tabs-elbow",
+    "mg996r-label-elbow",
+    "mg996r-boss-elbow",
+    "mg996r-spline-elbow",
+    "mg996r-wire-elbow"
+   ],
+   "length": 120.0
+  },
+  {
+   "parts": [
+    "arm-fore",
+    "cap-head"
+   ],
+   "servo": [
+    "sg90-body-head",
+    "sg90-tabs-head",
+    "sg90-boss-head",
+    "sg90-spline-head",
+    "sg90-wire-head"
+   ],
+   "length": 105.0
+  }
+ ],
+ "shade": "shade",
+ "pivot": [
+  0.0,
+  18.0,
+  82.65
+ ],
+ "neutral": {
+  "base": -22.0,
+  "shoulder": 58.0,
+  "elbow": 52.0,
+  "head": 26.0
+ },
+ "range": {
+  "base": [
+   -38.0,
+   26.0
+  ],
+  "shoulder": [
+   -30.0,
+   34.0
+  ],
+  "elbow": [
+   -34.0,
+   30.0
+  ],
+  "head": [
+   -46.0,
+   42.0
+  ]
+ }
+}

@@ -1,0 +1,81 @@
+{
+ "parts": [
+  {
+   "name": "band-cuff",
+   "colour": "#9AA1B0",
+   "role": "Wrist chassis. Springs over the wrist; the strap takes up the rest of the range.",
+   "explode": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "size_mm": [
+    64.8,
+    74.2,
+    45.5
+   ],
+   "volume_mm3": 25923.8,
+   "triangles": 4040
+  },
+  {
+   "name": "band-cap",
+   "colour": "#4D17F5",
+   "role": "Removable bay lid. Lip drops into the mouth, thumb notch levers it off with a glove on.",
+   "explode": [
+    0.0,
+    42.0,
+    0.0
+   ],
+   "size_mm": [
+    48.0,
+    6.4,
+    34.0
+   ],
+   "volume_mm3": 8703.0,
+   "triangles": 1672
+  },
+  {
+   "name": "band-cam",
+   "colour": "#5C6273",
+   "role": "Detachable camera. Three lugs, drop in and twist 25 degrees to a hard stop.",
+   "explode": [
+    0.0,
+    26.0,
+    62.0
+   ],
+   "size_mm": [
+    39.0,
+    38.8,
+    35.9
+   ],
+   "volume_mm3": 20904.7,
+   "triangles": 1656
+  },
+  {
+   "name": "band-pad",
+   "colour": "#FA9DCD",
+   "role": "Thenar pressure pad on a compliant arm, so it stays loaded as the thumb opposes.",
+   "explode": [
+    0.0,
+    -46.0,
+    0.0
+   ],
+   "size_mm": [
+    32.0,
+    6.6,
+    56.0
+   ],
+   "volume_mm3": 4911.3,
+   "triangles": 892
+  }
+ ],
+ "mount": {
+  "tilt_deg": 20.0,
+  "twist_deg": 60.0,
+  "lugs": 3
+ },
+ "wrist_bore_mm": [
+  58.0,
+  46.0
+ ]
+}

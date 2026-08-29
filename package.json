@@ -1,0 +1,16 @@
+{
+  "name": "thenar-avax",
+  "private": true,
+  "packageManager": "pnpm@10.29.2",
+  "scripts": {
+    "test:protocol": "tsx packages/protocol/test/run.ts",
+    "vectors": "tsx packages/protocol/test/vectors.ts",
+    "test:contracts": "cd packages/contracts && forge test -vv",
+    "deploy:fuji": "cd packages/contracts && forge script script/Deploy.s.sol:Deploy --rpc-url fuji --broadcast --slow"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3",
+    "viem": "^2.55.19"
+  }
+}
