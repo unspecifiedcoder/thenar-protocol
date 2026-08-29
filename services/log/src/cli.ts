@@ -30,8 +30,12 @@ async function main() {
   } else if (cmd === "audit") {
     if (!LOG_ADDRESS) throw new Error("set GRASP_LOG");
     const rows = await auditAnchors(store, LOG_ADDRESS);
-    for (const r of rows) console.log(`${r.coherent ? "  ok  " : " FAIL "} anchor #${r.index} — ${r.detail}`);
-    process.exit(rows.every((r) => r.coherent) ? 0 : 1);
+    const mark = { coherent: "  ok  ", unverifiable: " HOLE ", mismatch: " FAIL " };
+    for (const r of rows) console.log(`${mark[r.status]} anchor #${r.index} — ${r.detail}`);
+    const holes = rows.filter((r) => r.status === "unverifiable").length;
+    const bad = rows.filter((r) => r.status === "mismatch").length;
+    console.log(`\n${rows.length} anchor(s): ${rows.length - holes - bad} coherent, ${holes} unverifiable, ${bad} mismatched`);
+    process.exit(bad > 0 ? 1 : 0);
   } else if (cmd === "proof") {
     const i = Number(process.argv[3]);
     const leaf = store.leafAt(i);

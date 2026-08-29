@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "embodiment": "franka_panda",
+  "actionSpace": "ee_pose_gripper",
+  "instruction": "Place the mug upright on the shelf",
+  "world": {
+    "base": "kitchen_counter_v2",
+    "objects": [
+      { "category": "mug", "instances": ["mug_a", "mug_b", "mug_c"],
+        "x": [0.28, 0.42], "y": [-0.15, 0.15], "yaw": [0, 6.283] },
+      { "category": "distractor", "instances": ["can", "box"],
+        "x": [0.1, 0.5], "y": [-0.3, 0.3], "count": [0, 3] }
+    ],
+    "lightingIntensity": [0.6, 1.4],
+    "lightingTemperatureK": [3000, 6500]
+  },
+  "success": { "predicate": "upright_on(mug, shelf) && settled(2.0)", "toleranceMm": 25, "settleS": 2 },
+  "acceptance": { "minScoreBps": 5500, "maxDurationS": 120, "targetEpisodes": 500 }
+}

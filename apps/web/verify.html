@@ -21,6 +21,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./site.css">
+<link rel="stylesheet" href="./chainui.css">
 <style>
   .vtable{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
   .vtable th{text-align:left;font-weight:600;color:var(--mute,#6E6E6E);
@@ -52,6 +53,7 @@
     <a href="./market.html">Market</a>
     <a href="./faq.html">FAQ</a>
     <a href="./company.html">Company</a>
+    <a href="./corpus.html">Corpora</a>
     <a href="./verify.html" aria-current="page">Verify</a>
   </nav>
   <a class="btn primary" href="./index.html#contact">Talk to us</a>
@@ -101,7 +103,7 @@
 <section class="wrap" style="padding-bottom:40px">
   <h2 style="font-size:22px;margin:0 0 6px">Prove one capture</h2>
   <p style="color:#9B9B9B;font-size:14px;margin:0 0 16px;max-width:62ch">
-    Paste the 154-byte preimage a capture was committed under, its position in the
+    Paste the preimage a record was committed under — 154 bytes for a capture, 197 for an episode — its position in the
     batch, and the sibling path. The contract does the checking; this page only
     shows you what it said.
   </p>
@@ -112,7 +114,7 @@
              style="background:#0E0E0E;border:1px solid #272727;border-radius:8px;padding:10px 12px;color:#fff">
     </label>
     <label style="display:grid;gap:6px">
-      <span style="font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:.06em">Capture preimage (154 bytes, hex)</span>
+      <span style="font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:.06em">Preimage (154 or 197 bytes, hex)</span>
       <textarea id="vpre" rows="3" placeholder="0x01…" class="mono"
                 style="background:#0E0E0E;border:1px solid #272727;border-radius:8px;padding:10px 12px;color:#fff"></textarea>
     </label>
@@ -131,9 +133,22 @@
     <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
       <button class="btn primary" type="submit">Ask the contract</button>
       <button class="btn" type="button" id="vsample">Load a real capture</button>
+      <button class="btn" type="button" id="vepisode">Load a real episode</button>
       <span id="vout" class="verdict wait">nothing checked yet</span>
     </div>
   </form>
+  <div id="vdecoded" hidden style="margin-top:26px">
+    <h3 style="font-size:15px;margin:0 0 4px">What this episode committed to</h3>
+    <p style="color:#9B9B9B;font-size:13px;margin:0 0 12px;max-width:62ch">
+      Decoded from the preimage itself, not from an index we keep. The world
+      below is rebuilt from the task and the seed — the same arrangement the
+      demonstration was recorded in.
+    </p>
+    <div class="figs" id="vfacts"></div>
+    <canvas class="scene" id="vscene" aria-label="The sampled world this episode was recorded in"></canvas>
+    <p style="color:#6E6E6E;font-size:12px;margin-top:8px" id="vscenecap"></p>
+  </div>
+
   <p style="color:#6E6E6E;font-size:13px;margin-top:14px;max-width:62ch">
     A failed check here is the system working. If a preimage is altered by one
     byte the proof stops matching, which is the whole reason the commitment is a
@@ -173,6 +188,7 @@
 <!-- FOOT:END -->
 <script type="module">
 import { MONAD, readAnchors } from "./grasp-chain.js";
+import { sampleScene, drawScene } from "./scene.js";
 
 const $ = (s) => document.querySelector(s);
 const short = (h) => h.slice(0, 10) + "…" + h.slice(-6);
@@ -183,9 +199,11 @@ $("#logaddr").href = `${MONAD.explorer}/address/${MONAD.log}`;
 $("#mktaddr").textContent = short(MONAD.market);
 $("#mktaddr").href = `${MONAD.explorer}/address/${MONAD.market}`;
 
+let anchorCount = null;
 (async () => {
   try {
     const { count, anchors } = await readAnchors(25);
+    anchorCount = count;
     const head = anchors[anchors.length - 1];
     $("#headline").textContent = count === 0
       ? "nothing anchored yet"
@@ -210,7 +228,7 @@ $("#mktaddr").href = `${MONAD.explorer}/address/${MONAD.market}`;
 /* verifyClip(uint256,bytes,bytes32[],uint64) — encoded by hand so this page
    ships without a web3 bundle. Head: index, offset(bytes), offset(bytes32[]),
    leafIndex; then the two dynamic tails. */
-const SELECTOR = "0xe51f9888"; // cast sig verifyClip(uint256,bytes,bytes32[],uint64)
+const SELECTOR = "0x6253dafc"; // cast sig verifyLeaf(uint256,bytes,bytes32[],uint64)
 const pad = (n) => BigInt(n).toString(16).padStart(64, "0");
 
 function encodeVerify(index, preimage, proof, leafIndex) {
@@ -233,6 +251,20 @@ function encodeVerify(index, preimage, proof, leafIndex) {
 
 /* A worked example nobody can reproduce is not evidence. This loads a capture
    that is genuinely in the anchored log, written by the end-to-end run. */
+if (applyDeepLink()) setTimeout(() => $("#vform button[type=submit]").click(), 400);
+
+/* Keyboard, for anyone checking more than one thing. */
+addEventListener("keydown", (e) => {
+  // e.target is not always an Element — a synthetic event can target window,
+  // and calling .matches on that throws and kills the handler silently.
+  const t = e.target instanceof Element ? e.target : null;
+  const typing = !!t && (t.matches("input, textarea") || t.isContentEditable);
+  if (typing && !(e.metaKey || e.ctrlKey)) return;
+  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); $("#vform button[type=submit]").click(); }
+  else if (e.key === "s" && !e.metaKey && !e.ctrlKey) { e.preventDefault(); $("#vsample").click(); }
+  else if (e.key === "e" && !e.metaKey && !e.ctrlKey) { e.preventDefault(); $("#vepisode").click(); }
+});
+
 $("#vsample").addEventListener("click", async () => {
   const out = $("#vout");
   try {
@@ -243,11 +275,122 @@ $("#vsample").addEventListener("click", async () => {
     $("#vproof").value = s.proof.join(", ");
     out.className = "verdict wait";
     out.textContent = "loaded — now ask the contract";
+    showDecoded(s.preimage);
   } catch {
     out.className = "verdict no";
     out.textContent = "no sample published yet";
   }
 });
+
+$("#vepisode").addEventListener("click", async () => {
+  const out = $("#vout");
+  try {
+    const s = await fetch("./sample-episode.json").then((r) => r.json());
+    $("#vindex").value = s.anchorIndex;
+    $("#vpre").value = s.preimage;
+    $("#vleaf").value = s.leafIndex;
+    $("#vproof").value = s.proof.join(", ");
+    out.className = "verdict wait";
+    out.textContent = `loaded episode — task ${s.taskId.slice(0, 10)}…, world seed ${s.worldSeed}`;
+    showDecoded(s.preimage);
+  } catch {
+    out.className = "verdict no";
+    out.textContent = "no episode sample published yet";
+  }
+});
+
+/* Decode the 197-byte episode leaf and rebuild the world it names. The layout
+   is EpisodeLeaf.sol's, and packages/protocol/test/episode.ts holds both to it. */
+function decodeEpisode(preimage) {
+  const raw = preimage.replace(/^0x/, "");
+  if (raw.length / 2 !== 197) return null;
+  const at = (off, len) => "0x" + raw.slice(off * 2, (off + len) * 2);
+  return {
+    taskId: at(129, 32),
+    capturedAt: Number(BigInt(at(161, 8))),
+    durationMs: Number(BigInt(at(177, 4))),
+    channels: Number(BigInt(at(185, 1))),
+    worldSeed: BigInt(at(186, 8)),
+    success: Number(BigInt(at(194, 1))) === 1,
+    qualityScore: Number(BigInt(at(195, 2))),
+  };
+}
+
+let taskSpec = null;
+const specReady = fetch("./sample-task.json")
+  .then((r) => r.json())
+  .then((d) => { taskSpec = d.spec; return d.spec; })
+  .catch(() => null);
+
+async function showDecoded(preimage) {
+  const panel = $("#vdecoded");
+  const cap = $("#vscenecap");
+  const f = decodeEpisode(preimage);
+  // Captures are 154 bytes and carry no task or seed, so there is nothing to
+  // rebuild — that is not an error, it is the other leaf version.
+  if (!f) {
+    panel.hidden = true;
+    return;
+  }
+  panel.hidden = false;
+  try {
+    await renderDecoded(f, cap);
+  } catch (e) {
+    cap.textContent = `Could not rebuild the world: ${e.message}`;
+  }
+}
+
+async function renderDecoded(f, cap) {
+  const panel = $("#vdecoded");
+  const fig = (k, v) => `<div class="fig"><div class="k">${k}</div><div class="v small">${v}</div></div>`;
+  $("#vfacts").innerHTML =
+    fig("Verdict", f.success ? '<span style="color:#7CE0A5">succeeded</span>' : '<span style="color:#FA9DCD">failed</span>') +
+    fig("Quality", `${(f.qualityScore / 100).toFixed(2)}%`) +
+    fig("World seed", String(f.worldSeed)) +
+    fig("Duration", `${(f.durationMs / 1000).toFixed(1)} s`) +
+    fig("Channels", String(f.channels)) +
+    fig("Captured", new Date(f.capturedAt * 1000).toISOString().slice(0, 16).replace("T", " "));
+
+  const cv = $("#vscene");
+  // The spec may still be in flight on a fast click; wait for it rather than
+  // reporting that it does not exist.
+  if (!taskSpec) taskSpec = await specReady;
+  if (!taskSpec) {
+    cap.textContent = "The task spec is not published here, so the world cannot be rebuilt.";
+    return;
+  }
+  const scene = sampleScene(taskSpec, f.taskId, f.worldSeed);
+  drawScene(cv, scene, taskSpec);
+  cap.textContent =
+    `Rebuilt from task ${f.taskId.slice(0, 10)}… and seed ${f.worldSeed}. ` +
+    `Dashed outlines are the ranges the curator authored; the shapes are where this seed placed them.`;
+  addEventListener("resize", () => drawScene(cv, scene, taskSpec), { passive: true });
+}
+
+/* A verification anyone can be sent. */
+function applyDeepLink() {
+  const q = new URLSearchParams(location.search);
+  let used = false;
+  for (const [key, sel] of [["anchor", "#vindex"], ["leaf", "#vleaf"], ["preimage", "#vpre"]]) {
+    const v = q.get(key);
+    if (v) { $(sel).value = v; used = true; }
+  }
+  const proof = q.get("proof");
+  if (proof) { $("#vproof").value = proof.split(",").join(", "); used = true; }
+  if (used && q.get("preimage")) showDecoded(q.get("preimage").trim());
+  return used && q.get("go") === "1";
+}
+
+/** Put the current form in the address bar, so the result is shareable. */
+function shareLink() {
+  const q = new URLSearchParams({
+    anchor: $("#vindex").value.trim(), leaf: $("#vleaf").value.trim(),
+    preimage: $("#vpre").value.trim(),
+    proof: $("#vproof").value.split(",").map((s) => s.trim()).filter(Boolean).join(","),
+    go: "1",
+  });
+  return `${location.origin}${location.pathname}?${q}`;
+}
 
 $("#vform").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -256,25 +399,48 @@ $("#vform").addEventListener("submit", async (e) => {
   out.textContent = "asking the contract…";
   try {
     const index = $("#vindex").value.trim();
+    if (index !== "" && anchorCount !== null && Number(index) >= anchorCount) {
+      throw new Error(`There is no anchor #${index}. The log has ${anchorCount}, numbered 0 to ${anchorCount - 1}.`);
+    }
     const pre = $("#vpre").value.trim();
     const leaf = $("#vleaf").value.trim();
     const proof = $("#vproof").value.split(",").map((s) => s.trim()).filter(Boolean);
 
-    const bytes = pre.replace(/^0x/, "").length / 2;
-    if (bytes !== 154) throw new Error(`a capture preimage is 154 bytes; that is ${bytes}`);
+    const body = pre.replace(/^0x/, "");
+    if (!/^[0-9a-fA-F]*$/.test(body)) {
+      throw new Error("That preimage is not hexadecimal. It should be 0x followed by hex digits.");
+    }
+    if (body.length % 2) throw new Error("That preimage has an odd number of hex digits, so it is not whole bytes.");
+    const bytes = body.length / 2;
+    // A capture is 154 bytes and an episode 197. Anything else is neither, and
+    // saying which is expected is more use than "invalid input".
+    if (bytes !== 154 && bytes !== 197) {
+      throw new Error(`a preimage is 154 bytes (capture) or 197 (episode); that is ${bytes}`);
+    }
+    const version = parseInt(pre.replace(/^0x/, "").slice(0, 2), 16);
+    if ((version === 1 && bytes !== 154) || (version === 2 && bytes !== 197)) {
+      throw new Error(`version ${version} does not match a ${bytes}-byte preimage`);
+    }
 
+    // LeafVerifier handles both versions; the log itself only knows captures.
     const data = encodeVerify(index || 0, pre, proof, leaf || 0);
     const res = await fetch(MONAD.rpc, {
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call",
-        params: [{ to: MONAD.log, data }, "latest"] }),
+        params: [{ to: MONAD.verifier, data }, "latest"] }),
     }).then((r) => r.json());
 
-    if (res.error) throw new Error(res.error.message);
+    if (res.error) {
+      const raw = res.error.message || "";
+      throw new Error(/revert/i.test(raw)
+        ? "The contract refused that. Check the anchor index, the leaf index and the sibling path belong together."
+        : raw);
+    }
     const yes = BigInt(res.result) === 1n;
+    if (yes) { history.replaceState(null, "", shareLink()); showDecoded(pre); }
     out.className = `verdict ${yes ? "yes" : "no"}`;
     out.textContent = yes
-      ? "in the log — the contract confirms this capture"
+      ? `in the log — the contract confirms this ${bytes === 197 ? "episode" : "capture"}`
       : "not in the log under that proof";
   } catch (err) {
     out.className = "verdict no";

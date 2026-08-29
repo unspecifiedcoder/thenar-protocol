@@ -5,6 +5,7 @@ without further context. Every task carries a status; every gap names the task
 it blocks.
 
 **Audited:** 2026-08-29, against the working tree, not the README.
+**Execution pass:** 2026-08-29 — statuses below are post-execution and verified, not aspirational.
 
 ---
 
@@ -64,20 +65,32 @@ on Sourcify:**
 
 | Contract | Address |
 | --- | --- |
-| `GraspLog` | `0x10325941C86397a4355b4801dC28EDf6c41F3c6f` |
-| `GraspMarket` | `0x0f87309F410BDBB13B3E0d5c206e7aAC1397fBFa` |
-| `TaskRegistry` | `0x70244c42300f427a721a86416331d2a8d6ce2a51` |
-| `FoundryMarket` | `0x754845ff489f16a4a216562f0029aea29c678bad` |
+| `GraspLog` | `0xe9950e8377787d6d6c4c6bda9e4188925a18da6a` |
+| `LeafVerifier` | `0x0d789ee35382e1ea06ed0d82f55dcbf4c6130356` |
+| `TaskRegistry` | `0xf99bdc3512b074d7b6d21cb609ff05e54f465d24` |
+| `FoundryMarket` | `0x735057412d1ef884a28bc409731a6f91679265f3` |
 
-Live chain state: 4 anchors, 1 task, 1 corpus, 1 licence receipt.
-Test suites: 60 Solidity tests, 26 TypeScript checks, all passing.
-Live site: https://thenar.io with `/verify` reading the contract directly.
+All four `full`-verified on Sourcify. Recorded in `.env.contracts`, which the
+scripts and the selector test read rather than hardcoding an address that drifts.
 
-**The honest summary:** the *settlement and provenance layer is real and
-proven*. The *product that produces data does not exist yet* — there is no
-builder, no simulator, no capture loop, and no real trajectory has ever been
-recorded. The foundry end-to-end proves the economics and the plumbing using
-synthetic leaf hashes, not demonstrations.
+Superseded (kept readable, no longer referenced): the earlier `GraspLog`
+`0x10325941…` carried anchors whose declared size did not match the tree its
+root came from, so nothing could ever verify against them. `GraspMarket`
+`0x0f87309F…` is superseded by `FoundryMarket`.
+
+Live chain state: 6 anchors over one coherent log (sizes 7 → 30), 1 task,
+1 corpus, 1 licence receipt.
+Test suites: **72 Solidity tests, 5 TypeScript suites**, all passing.
+Live site: https://thenar.io — `/verify` reads the contract directly and now
+verifies **both** captures and episodes.
+
+**The honest summary, after this pass:** the settlement and provenance layer
+is real, proven, and now *coherent* — there is one persisted log, its anchors
+re-derive from stored leaves, and episodes verify on chain. What still does not
+exist is the product that produces data: no builder, no simulator, no capture
+loop, and **no real trajectory has ever been recorded**. Episodes in the
+end-to-end runs are real leaves with real provenance over synthetic payload
+hashes and assigned quality scores. That is the honest boundary.
 
 ---
 
@@ -109,9 +122,9 @@ Status tags: **DONE** · **IN PROGRESS** · **NOT STARTED** · **BLOCKED**
 | 1.5 | `TaskRegistry` — curator publishing, 30% share cap | **DONE** |
 | 1.6 | `FoundryMarket` — corpus sealing, quality split, credit-on-refusal | **DONE** |
 | 1.7 | Foundry end-to-end on chain (`scripts/foundry-e2e.mjs`) | **DONE** |
-| **1.8** | **Wire `EpisodeLeaf` into `GraspLog` so episodes can be verified** | **BLOCKED — see G1** |
-| 1.9 | Redeploy `GraspLog` (or add `GraspLogV2`) accepting both leaf versions | **NOT STARTED** |
-| 1.10 | Decide and document which market is canonical; retire the other | **NOT STARTED** |
+| **1.8** | **Episodes verify on chain via `LeafVerifier`** | **DONE** |
+| 1.9 | Version-agnostic verification deployed and proven on chain | **DONE** |
+| 1.10 | `FoundryMarket` is canonical; `GraspMarket` superseded and documented | **DONE** |
 
 **Task 1.8 detail.** `GraspLog.verifyClip` (line 141) calls
 `ClipLeaf.hashPreimage`, which reverts `UnsupportedVersion` on anything whose
@@ -159,13 +172,13 @@ Nothing downstream works until a curator can author a task without JSON.
 
 | # | Task | Status |
 | --- | --- | --- |
-| 4.1 | Off-chain log service maintaining the CT tree (append, root, proofs) | **NOT STARTED** |
-| 4.2 | Persistent store for leaves and episode payloads | **NOT STARTED** |
-| 4.3 | Hourly anchor job → `GraspLog.anchor` | **NOT STARTED** |
-| 4.4 | Inclusion / consistency proof API | **NOT STARTED** |
+| 4.1 | Off-chain log service maintaining the CT tree (append, root, proofs) | **DONE** |
+| 4.2 | Persistent store (`node:sqlite`), survives restart, 26 checks | **DONE** |
+| 4.3 | `anchorHead` anchors the real head; scheduling it is not wired | **IN PROGRESS** — anchoring works and is proven; no cron/daemon yet |
+| 4.4 | Inclusion / consistency proofs served by the store and CLI | **DONE** — no HTTP surface yet, CLI only |
 | 4.5 | Acceptance pipeline: score, threshold on `minScoreBps`, accept or reject | **NOT STARTED** |
 | 4.6 | Duplicate and replay detection (jittered resubmission must be caught) | **NOT STARTED** |
-| 4.7 | Consent withdrawal endpoint → sparse tree → anchored | **NOT STARTED** |
+| 4.7 | Withdrawal → sparse tree → anchored, proven on chain | **DONE** — no HTTP endpoint yet, store API only |
 | 4.8 | Corpus sealing job → `FoundryMarket.sealCorpus` with real weights | **NOT STARTED** |
 
 ### Phase 5 — Export and buyer surface
@@ -196,11 +209,11 @@ Nothing downstream works until a curator can author a task without JSON.
 | --- | --- | --- |
 | 7.1 | `/verify` reads anchors live from the contract | **DONE** |
 | 7.2 | One-click sample that genuinely verifies | **DONE** |
-| 7.3 | Extend `/verify` to 197-byte episode leaves | **BLOCKED by 1.8 — see G2** |
+| 7.3 | `/verify` accepts 154- and 197-byte preimages, both verified live | **DONE** |
 | 7.4 | Consent-status check in `/verify` (`verifyConsentLive`) | **NOT STARTED** |
 | 7.5 | Append-only check in `/verify` (`verifyAppendOnly`) | **NOT STARTED** |
 | 7.6 | Scene rebuild in `/verify` — show the world from spec + seed | **NOT STARTED** |
-| 7.7 | Deploy `sample-task.json` to the live site | **NOT STARTED — see G3** |
+| 7.7 | `sample-task.json`, `sample-episode.json` and a fresh capture all live | **DONE** |
 
 ### Phase 8 — Trust and diligence
 
@@ -213,7 +226,7 @@ Nothing downstream works until a curator can author a task without JSON.
 | 8.5 | Data-protection position: consent, erasure, salted commitments | **NOT STARTED** |
 | 8.6 | Terms of use for contributors and buyers | **NOT STARTED** |
 | 8.7 | Reproducibility harness: rebuild any episode's scene from its leaf | **NOT STARTED** |
-| 8.8 | CI running all suites on push | **NOT STARTED — see G8** |
+| 8.8 | CI running contracts, protocol, log store and sample checks | **DONE** |
 
 ### Phase 9 — Real hardware
 
@@ -229,7 +242,7 @@ Nothing downstream works until a curator can author a task without JSON.
 
 | # | Task | Status |
 | --- | --- | --- |
-| 10.1 | Sync `thenar-avax` with the foundry layer | **NOT STARTED — see G6** |
+| 10.1 | `thenar-avax` synced — same sources, same 72 tests passing | **DONE** |
 | 10.2 | Deploy to Avalanche Fuji, or amend `protocol.html` | **NOT STARTED — see G7** |
 | 10.3 | Publish 3–5 reference tasks to standard | **NOT STARTED** |
 | 10.4 | Seed 500+ episodes on one task to prove the loop at size | **NOT STARTED** |
@@ -238,116 +251,86 @@ Nothing downstream works until a curator can author a task without JSON.
 
 ---
 
-## 4. Gap audit
+## 4. Gap audit — after the execution pass
 
-Greps for `mock`, `stub`, `TODO`, `FIXME`, `fake`, `dummy`, `placeholder`,
-`not implemented`, `hardcoded` across all shipped `.ts`, `.sol`, `.mjs`, `.js`,
-`.html`, `.json` returned **no gaps in shipped code**. Every hit was a
-legitimate test double (`MockUSD` in `GraspMarket.t.sol`), a negative-test
-variable named `fake`, an HTML `placeholder=` attribute, or marketing copy.
+### Closed
 
-The real gaps are architectural, and greps do not find them.
+- **G1 — episodes could not be verified on chain.** `GraspLog.verifyClip`
+  hardcoded the 154-byte capture leaf. Closed by `LeafVerifier`, a stateless
+  contract that reads the log's anchors and dispatches on the leaf's own
+  version byte. Deployed, verified, and proven: `/verify` answers *"in the log
+  — the contract confirms this episode"* for a real 197-byte leaf.
+- **G2 — `/verify` hardcoded 154 bytes.** Now accepts both lengths, checks the
+  version byte agrees with the length, and names the actual length when it does
+  not.
+- **G3 — `sample-task.json` 404'd.** Site redeployed; that file, a fresh
+  capture sample and an episode sample are all live and all verify.
+- **G6 — `thenar-avax` six files behind.** Synced: contracts, protocol, log
+  service, docs, CI. 72 tests pass there too.
+- **G8 — no CI.** `.github/workflows/ci.yml` runs contracts, protocol, log
+  store, and checks the published samples against the live chain.
+- **G9 — scripts skipped suites.** `pnpm test` now runs everything; addresses
+  come from `.env.contracts`, and a new `selectors.ts` test asserts the
+  hand-written selectors and addresses in the web pages match the deployment.
+- **G10 — two markets.** `FoundryMarket` is canonical and documented as such.
+- **G13 — no log service.** Built: `services/log`, persisted with
+  `node:sqlite`, owning one append-only tree. This was the root cause of the
+  incoherent anchors, and the store's API makes that incoherence inexpressible —
+  the anchored size is always the log's true size.
+- **G14 — dead files.** `gl.js` and `vtest.mjs` removed.
 
-### G1 — `EpisodeLeaf` is orphaned; no episode can be verified on chain
-**Severity: critical. Blocks 1.8, 7.3, and the core auditability claim.**
-`GraspLog.verifyClip` hardcodes `ClipLeaf.hashPreimage`, which requires version
-`0x01` and exactly 154 bytes. `EpisodeLeaf` is version `0x02` and 197 bytes, so
-verification reverts `UnsupportedVersion`. `EpisodeLeaf` is referenced by no
-deployed contract — only by its own file and its tests. The claim that an
-episode is auditable via its `worldSeed` has **no on-chain verification path
-today**. Requires a redeploy.
+### Still open
 
-### G2 — `/verify` cannot accept an episode leaf
-**Severity: high. Blocks 7.3.** `verify.html` hardcodes `if (bytes !== 154)`
-at line 264 and says "154-byte preimage" in the copy. Downstream of G1.
+- **G4 — no real trajectory has ever been recorded.** Unchanged and the most
+  important one. Episodes carry real leaves, real seeds and real provenance,
+  but their payload hashes are synthetic and quality scores are assigned rather
+  than measured. Blocked on Phase 2 and 3: there is no simulator to record from.
+- **G5 — the web app does not surface the foundry.** `/verify` reads the log
+  and the verifier; there is still no task browser, corpus catalogue, curator
+  dashboard or capture loop. Blocks Phases 2, 3, 5, 6.
+- **G7 — `protocol.html` argues Avalanche; the deployment is Monad.** Not
+  fixed: deploying to Fuji needs AVAX this wallet does not hold, and rewriting
+  the page is a product decision rather than a bug fix.
+- **G11 — the anchorer is a single hot EOA.** One key still controls the head,
+  and is also deployer, curator and treasury in every script. Needs a multisig
+  before production.
+- **G12 — the 58 licences are from research, not from reading files.**
+  Menagerie is still not vendored, so there is nothing local to audit.
+- **G15 — no LeRobot v3 or RLDS export.** Blocks any sale.
 
-### G3 — `sample-task.json` is in the repo but 404s on the live site
-**Severity: medium. Blocks 7.7.** The site was deployed before the foundry
-end-to-end wrote the file. `/sample-proof.json` returns 200; `/sample-task.json`
-returns 404. Fix by redeploying `apps/web`.
+### Found during execution, and fixed
 
-### G4 — No real trajectory has ever been recorded
-**Severity: critical (honesty). Blocks Phases 3–5.** In
-`scripts/foundry-e2e.mjs` the "episodes" are `keccak256("episode:…")` hashes and
-the quality scores are hand-chosen constants (9100 / 7400 / 6200). The run
-proves the economics, provenance and settlement plumbing. It does **not** prove
-any demonstration data exists. No trajectory recorder, no scorer, no simulator.
-
-### G5 — The web app does not surface the foundry at all
-**Severity: high. Blocks Phases 2, 3, 5, 6.** `grasp-chain.js` points at
-`GraspLog` and the **old** `GraspMarket`, not `TaskRegistry` or `FoundryMarket`.
-`TaskSpec`, the sampler and the embodiment registry are used by no page. The
-addresses appear only inside `sample-task.json`.
-
-### G6 — `thenar-avax` is six files behind
-**Severity: medium. Blocks 10.1.** Missing `TaskRegistry.sol`,
-`FoundryMarket.sol`, `EpisodeLeaf.sol`, `taskspec.ts`, `embodiments.ts` and
-`docs/ROADMAP.md`. It carries only the Phase 0 protocol layer.
-
-### G7 — `protocol.html` argues Avalanche; the deployment is Monad
-**Severity: medium. Blocks 10.2.** The public protocol page makes a specific
-C-Chain argument on USDC depth. Nothing is deployed on Fuji. A reviewer reading
-the page and then the README finds the mismatch immediately.
-
-### G8 — No CI
-**Severity: medium. Blocks 8.8.** 86 tests exist and nothing runs them on push.
-No `.github` directory.
-
-### G9 — `package.json` scripts do not cover the current suites
-**Severity: low.** `test:protocol` runs only `run.ts`, never `foundry.ts`.
-There is no script for `foundry-e2e.mjs`, and `deploy:monad` runs only
-`Deploy.s.sol`, never `DeployFoundry.s.sol`. A contributor running
-`pnpm test:protocol` silently skips 13 checks.
-
-### G10 — Two markets coexist with overlapping purpose
-**Severity: medium. Blocks 1.10.** `GraspMarket` (corpus-root purchase) and
-`FoundryMarket` (task-bound corpus with curator split) are both deployed and
-both referenced in the README. Nothing states which is canonical.
-
-### G11 — The anchorer is a single hot EOA
-**Severity: high for production. Blocks 8.4.** One key
-(`0xDf93bdA9…`) controls the head of the log. Its compromise means forged
-anchors. It is also the deployer, the curator and the treasury in every script.
-
-### G12 — The 58 licences are from research, not from reading files
-**Severity: high for commercial ship. Blocks 8.1.** `embodiments.ts` records a
-licence per model, sourced from the Menagerie repository listing rather than
-from reading each model directory's LICENSE. Correct so far as observed, but
-not audited. Menagerie is not vendored, so there is nothing local to check.
-
-### G13 — No off-chain log service exists
-**Severity: high. Blocks Phase 4.** The CT tree is rebuilt in memory inside
-scripts. There is no service that appends leaves, persists the tree, serves
-proofs, or anchors on a schedule. Anchors have only ever been made by hand.
-
-### G14 — Dead and scratch files
-**Severity: low.** `apps/web/gl.js` is referenced by no page.
-`scripts/vtest.mjs` is a debugging script written to probe the verify-page
-encoder and has no ongoing purpose.
-
-### G15 — No LeRobot v3 or RLDS export
-**Severity: high. Blocks 5.1, 5.2, and any sale.** The format buyers expect
-does not exist in the codebase in any form.
-
----
+- **`anchorHead` trusted its own record.** A store restored from an older copy
+  would submit a size the contract refuses. It now reads the chain's head and
+  fails loudly if the store is behind.
+- **The verify page's selector was wrong** — the third hand-written selector I
+  got wrong in this project. `packages/protocol/test/selectors.ts` now derives
+  every selector and address and fails the build on drift.
+- **`auditAnchors` read `a.index` where the store returns `a.idx`**, so the
+  audit crashed rather than reporting.
 
 ## 5. The five that gate everything
 
 1. **2.3 MuJoCo WASM + VFS** — no browser physics, no builder, no capture.
 2. **2.5 Range authoring by dragging** — without it curators publish fixed
    scenes and the corpus is worthless.
-3. **1.8 / G1 Episode verification on chain** — the auditability claim is
-   currently unbacked.
-4. **5.1 LeRobot v3 export** — otherwise the buyer writes an adapter and most
+3. **5.1 LeRobot v3 export** — otherwise the buyer writes an adapter and most
    will not.
-5. **9.1 Real-hardware capture** — until this exists there is no product anyone
+4. **9.1 Real-hardware capture** — until this exists there is no product anyone
    pays the real number for.
+5. **G12 per-model licence audit** — cheap, and it gates commercial ship.
+
+*(Episode verification on chain was third on this list and is now closed.)*
 
 ## 6. Suggested order for the next working session
 
-1. **1.8 + 1.9** — fix G1. Small, and it un-blocks the verification story.
-2. **G3, G9, G14** — redeploy the site, fix the scripts, delete the scratch. An
-   hour, and it removes three embarrassments.
-3. **8.8 CI** — cheap, and stops the suites rotting.
-4. **2.1 → 2.3** — vendor Menagerie and get MuJoCo WASM stepping a scene in a
-   tab. This is the real work and everything waits on it.
+Everything from the previous list is done. What is left, in order:
+
+1. **2.1 → 2.3** — vendor Menagerie, build the asset pipeline, get MuJoCo WASM
+   stepping a scene in a browser tab. Everything in Phases 2, 3 and 9 waits on
+   this, and it is the only way to close G4.
+2. **G12** — read all 58 LICENSE files while vendoring, and record the result.
+   It falls out of 2.1 almost for free.
+3. **2.4 → 2.11** — the builder itself.
+4. **5.1** — LeRobot v3 export, which can be written against the log store
+   before the simulator exists.

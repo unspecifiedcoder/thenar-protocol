@@ -76,8 +76,9 @@ export function makeGrasp(cv, onTick) {
     // the curve, drawn only as far as the playhead so it reads as a recording
     ctx.beginPath();
     const n = 260;
+    const head = Math.min(t, T_END);
     for (let i = 0; i <= n; i++) {
-      const tt = (i / n) * t;
+      const tt = (i / n) * head;
       const px = x + (tt / T_END) * w;
       const py = y + h - (fn(tt) / max) * h;
       i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
@@ -88,13 +89,14 @@ export function makeGrasp(cv, onTick) {
     ctx.stroke();
 
     // head dot
-    const hx = x + (t / T_END) * w, hy = y + h - (fn(t) / max) * h;
+    const tc = Math.min(t, T_END);
+    const hx = x + (tc / T_END) * w, hy = y + h - (fn(tc) / max) * h;
     ctx.beginPath(); ctx.arc(hx, hy, faint ? 3 : 4.5, 0, 7);
     ctx.fillStyle = colour; ctx.fill();
 
     ctx.font = "700 20px Manrope, system-ui, sans-serif";
     ctx.fillStyle = faint ? DIM : FG;
-    const v = fn(t).toFixed(1) + unit;
+    const v = fn(Math.min(t, T_END)).toFixed(1) + unit;
     ctx.fillText(v, x + w - ctx.measureText(v).width, y - 6);
   }
 
@@ -125,7 +127,7 @@ export function makeGrasp(cv, onTick) {
     lane(poseBox,  "POSE FROM VIDEO", " mm", pose,  P_MAX, MUTE, true);
     lane(forceBox, "GRIP FORCE",      " N",  force, F_MAX, PINK, false);
 
-    if (onTick) onTick(t, force(t));
+    if (onTick) { const tc = Math.min(t, T_END); onTick(tc, force(tc)); }
   }
 
   function frame(now) {
@@ -134,10 +136,11 @@ export function makeGrasp(cv, onTick) {
     last = now;
     if (playing && scrub === null) {
       t += dt;
-      // hold on the settled grip for a beat before looping, so the correction
-      // is legible rather than flashing past
+      // Hold on the settled grip for a beat before looping, so the correction
+      // is legible rather than flashing past. `t` is allowed past T_END to
+      // time that hold; everything drawn clamps to T_END instead, because
+      // clamping here made this reset unreachable and the trace stuck.
       if (t > T_END + 0.9) t = 0;
-      if (t > T_END) t = T_END;
     }
     draw();
     raf = requestAnimationFrame(frame);

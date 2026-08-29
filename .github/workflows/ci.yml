@@ -22,6 +22,8 @@ jobs:
       - name: Contracts
         working-directory: packages/contracts
         run: forge test -vv
+        # Mirrors `pnpm test:contracts`; run here so it fails before the Node
+        # toolchain is even installed.
 
       - uses: pnpm/action-setup@v4
         with:
@@ -40,3 +42,20 @@ jobs:
 
       - name: Log store
         run: pnpm test:log
+
+      - name: LeRobot export
+        run: pnpm test:export
+
+      # Import integrity, the grasp timeline, and the two cross-implementation
+      # checks: browser keccak against viem, and the browser sampler against
+      # the exporter. If either drifts, the site shows a world that is not the
+      # one an episode was recorded in.
+      - name: Web modules
+        run: pnpm test:web
+
+      # The published samples are checked against the live deployment, so a
+      # broken sample cannot sit on the site unnoticed. Network-dependent, so
+      # it does not fail the build when Monad is unreachable.
+      - name: Published samples verify on chain
+        run: pnpm test:samples
+        continue-on-error: true

@@ -144,6 +144,7 @@ td.what{color:var(--fg-dim)}
     <a href="./market.html">Market</a>
     <a href="./faq.html">FAQ</a>
     <a href="./company.html">Company</a>
+    <a href="./corpus.html">Corpora</a>
     <a href="./verify.html">Verify</a>
   </nav>
   <a class="btn primary" href="./index.html#contact">Talk to us</a>
@@ -644,7 +645,11 @@ td.what{color:var(--fg-dim)}
       are worth more to us than any pitch we could make. Sending them costs you
       nothing and changes what we instrument first.</p>
 
-    <form class="join" id="join" novalidate>
+    <!-- method and action matter even though JS handles the submit: without
+         them the default is a GET to this URL, which puts a name and an
+         email address into the query string, the history and the referrer.
+         With them, a submit that outruns the script still posts safely. -->
+    <form class="join" id="join" method="post" action="/api/join" novalidate>
       <div class="row">
         <label class="fld">
           <span>Name</span>
@@ -818,6 +823,12 @@ mountChain(document.querySelector("#chainc"));
   const go = $("#f-go"), status = $("#f-status");
   const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+  // Disabling the button is not enough: Enter pressed twice, or a submit
+  // dispatched before the click lands, both re-enter the handler and send a
+  // second request. The second one also captures "Sending" as the label to
+  // restore, which is how the button ended up stuck reading Sending.
+  let inFlight = false;
+
   function fieldError(input, slot, msg) {
     slot.textContent = msg || "";
     input.setAttribute("aria-invalid", msg ? "true" : "false");
@@ -826,6 +837,7 @@ mountChain(document.querySelector("#chainc"));
 
   f.addEventListener("submit", async e => {
     e.preventDefault();
+    if (inFlight) return;
     const name = $("#f-name").value.trim();
     const email = $("#f-email").value.trim();
     const okName = fieldError($("#f-name"), $("#e-name"),
@@ -838,8 +850,9 @@ mountChain(document.querySelector("#chainc"));
       return;
     }
 
+    inFlight = true;
     go.disabled = true;
-    const label = go.textContent;
+    const label = "Send it";
     go.textContent = "Sending";
     status.textContent = "";
     status.className = "fstatus";
@@ -864,8 +877,12 @@ mountChain(document.querySelector("#chainc"));
     } catch (err) {
       status.className = "fstatus bad";
       status.textContent = err.message;
+      // On success the button is removed with the rest of the form, so only
+      // the failure path has anything left to restore.
       go.disabled = false;
       go.textContent = label;
+    } finally {
+      inFlight = false;
     }
   });
 })();

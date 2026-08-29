@@ -1,0 +1,69 @@
+/* Shared chrome for the chain-reading pages. Kept out of site.css because it
+   only loads where it is used. */
+.cstack { display: grid; gap: 22px; }
+
+.cempty {
+  border: 1px solid var(--line, #272727);
+  border-radius: 14px;
+  padding: 28px 24px;
+  color: var(--fg-dim, #9B9B9B);
+  font-size: 14px;
+  display: flex; align-items: center; gap: 12px;
+}
+.cempty[data-state="error"] { border-color: rgba(250,157,205,.4); color: #FA9DCD; }
+
+.spin {
+  width: 13px; height: 13px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.16); border-top-color: #4D17F5;
+  animation: cspin .8s linear infinite; flex: none;
+}
+@keyframes cspin { to { transform: rotate(360deg) } }
+
+.card {
+  border: 1px solid var(--line, #272727);
+  border-radius: 16px;
+  padding: 22px 24px;
+  /* A card lifts a hair on hover. Anything more and a list of them jitters. */
+  transition: border-color .18s ease, transform .18s ease;
+}
+.card:hover { border-color: #3a3a3a; }
+
+.chead { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.ctitle { font-size: 19px; font-weight: 700; margin: 0; }
+.cmeta { color: var(--fg-dim, #9B9B9B); font-size: 12.5px; }
+
+.figs { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); margin: 18px 0 6px; }
+.fig .k { font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase; color: #6E6E6E; }
+.fig .v { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 3px; }
+.fig .v.small { font-size: 14px; font-weight: 600; }
+
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.copy { cursor: pointer; background: none; border: 0; color: inherit; font: inherit; padding: 0;
+        border-bottom: 1px dotted rgba(255,255,255,.25); }
+.copy:hover { border-bottom-color: #4D17F5; }
+.copy.ok { color: #7CE0A5; border-bottom-color: #7CE0A5; }
+
+.bar { height: 8px; border-radius: 999px; background: rgba(255,255,255,.06); overflow: hidden; display: flex; }
+.bar > span { display: block; height: 100%; }
+
+.captable { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13.5px; }
+.captable th { text-align: left; font-size: 10.5px; letter-spacing: .07em; text-transform: uppercase;
+               color: #6E6E6E; font-weight: 600; padding: 0 10px 8px 0; }
+.captable td { padding: 9px 10px 9px 0; border-top: 1px solid var(--line, #272727); font-variant-numeric: tabular-nums; }
+
+.hist { display: flex; align-items: flex-end; gap: 3px; height: 56px; margin-top: 8px; }
+.hist i { flex: 1; background: rgba(77,23,245,.55); border-radius: 2px 2px 0 0; display: block;
+          transform-origin: bottom; animation: grow .5s cubic-bezier(.2,.8,.2,1) both; }
+.hist i.hot { background: #4D17F5; }
+@keyframes grow { from { transform: scaleY(0) } to { transform: scaleY(1) } }
+
+.actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+
+.scene { width: 100%; height: 200px; border: 1px solid var(--line, #272727); border-radius: 12px;
+         display: block; background: #0d0d0d; margin-top: 10px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .spin { animation: none; }
+  .hist i { animation: none; }
+  .card { transition: none; }
+}
