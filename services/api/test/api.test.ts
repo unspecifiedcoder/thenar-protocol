@@ -463,18 +463,25 @@ function validManifest() {
 
 // =========================================================================
 // Every §12 route exists and is a real 501 (except /healthz), auth-gated
-// as the table says. `/corpora/{id}` and `/anchors` are T-016's — they are
-// wired to a real store/reader now, so they are asserted separately below.
+// as the table says. `/corpora/{id}` and `/anchors` are T-016's, and
+// `GET /corpora/{id}/report` is T-025's — all wired to a real store/reader
+// now, so they are asserted separately below/elsewhere (`report.test.ts`).
 // =========================================================================
 {
   const app = createApp(makeDeps());
   const authed = { Authorization: `Bearer ${SUPPLIER_KEY}` };
-  const routes: [string, string, HeadersInit?][] = [
-    ["GET", "/v1/corpora/corpus_1/report"],
-  ];
+  const routes: [string, string, HeadersInit?][] = [];
   for (const [method, path, headers] of routes) {
     const res = await req(app, path, { method, headers });
     ok(res.status === 501, `${method} ${path} -> 501 not_implemented`, String(res.status));
+  }
+
+  // T-025 — `GET /corpora/{id}/report` is real now: an unconfigured store
+  // (this `app`'s `makeDeps()` carries no `logStore`) answers 500
+  // `internal` naming the missing dependency, never a fabricated report.
+  {
+    const res = await req(app, "/v1/corpora/corpus_1/report");
+    ok(res.status === 500, "GET /v1/corpora/corpus_1/report with no log store -> 500", String(res.status));
   }
 
   // T-012 — These routes are now implemented (T-012) and should return appropriate status codes

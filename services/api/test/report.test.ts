@@ -163,13 +163,28 @@ async function run() {
   const claimSig = await signObject("ed25519", "claim", claimObjectHash, verifier.privateKey);
   await appendClaim(store, { ...claimUnsigned, signature: { alg: "ed25519", key_id: verifier.keyId, sig: claimSig } } as any);
 
+  // `config/checks.json` marks timing.v1/kinematics.v1 `blocking: true` —
+  // L3 needs every blocking check to have a passing claim (`badges.ts`),
+  // so ep1 needs those two as well as dedup.v1 to actually earn L3.
+  for (const check of ["timing.v1", "kinematics.v1"] as const) {
+    const unsigned = {
+      v: 1 as const, kind: "verification_claim" as const, subject_leaf: ep1.leafHash, verifier_key_id: verifier.keyId,
+      check, result: "pass" as const, level_asserted: 3,
+      detail: { check_version: `${check}-report-test`, thresholds: {} }, issued_at: NOW + 21,
+    };
+    const objHash = hashObjectExcluding(unsigned as unknown as JsonObject, ["signature"]);
+    const sig = await signObject("ed25519", "claim", objHash, verifier.privateKey);
+    await appendClaim(store, { ...unsigned, signature: { alg: "ed25519", key_id: verifier.keyId, sig } } as any);
+  }
+
   // ---- revoke ep2 *after* the corpus was sealed (§6.1) ---------------------
   const revokeSig = await signObject("ed25519", "revoke", ep2.consentKeyHex, ep2.holderPriv);
   const revokeVerifies = await verifySignature("ed25519", "revoke", ep2.consentKeyHex, revokeSig, ep2.record.pubkey);
   ok(revokeVerifies, "sanity: revoke signature verifies before being submitted");
   await store.revoke(ep2.record, revokeSig);
 
-  anchorNow(store); // A2: size 4 (covers the claim leaf too), revocationRoot now includes ep2 — the report anchor
+  const finalSize = store.size();
+  anchorNow(store); // A2: covers every claim leaf too, revocationRoot now includes ep2 — the report anchor
 
   // ---- build the real (logged, sealed) report ------------------------------
   const report = buildReport({ logStore: store, operator: { name: "THENAR", verifierKeyId: verifier.keyId } }, corpusId);
@@ -186,12 +201,12 @@ async function run() {
   ok(report.corpus.contains_revoked === true, "report: contains_revoked is true (ep2 revoked after sealing)");
   ok(report.corpus.on_chain === null, "report: on_chain is null (no on-chain sealing recorded)");
   ok(report.corpus.draft === false, "report: corpus.draft is false once logged");
-  ok(!!report.anchor && report.anchor.size === 4, "report: anchor is the head anchor (size 4)");
+  ok(!!report.anchor && report.anchor.size === finalSize, "report: anchor is the head anchor", `${report.anchor?.size} vs ${finalSize}`);
   ok(!!report.sealing_anchor && report.sealing_anchor.size === 3, "report: sealing_anchor is the anchor that first covered the corpus leaf (size 3)");
-  ok(report.consistency_proof.length > 0, "report: non-empty consistency_proof (sealing size 3 -> report size 4)");
+  ok(report.consistency_proof.length > 0, "report: non-empty consistency_proof (sealing size 3 -> report anchor)");
   ok(report.episodes.length === 2, "report: two episodes");
   ok(Array.isArray(report.receipts) && report.receipts.length === 0, "report: receipts empty (nothing sealed on chain)");
-  ok(report.checks_run.length === 1 && report.checks_run[0].check === "dedup.v1", "report: checks_run lists dedup.v1");
+  ok(report.checks_run.length === 3 && report.checks_run.some((r) => r.check === "dedup.v1"), "report: checks_run lists every check run");
   ok(JSON.stringify(report.limitations) === JSON.stringify(LIMITATIONS), "report: limitations is exactly LIMITATIONS");
 
   const [rep1, rep2] = report.episodes;
@@ -201,7 +216,7 @@ async function run() {
   ok(rep2.consent.status === "revoked", "report: ep2 consent revoked");
   ok(!!rep2.consent.onset && typeof rep2.consent.onset.block === "number", "report: ep2 consent carries an onset block");
   ok((rep2.consent as any).value !== undefined, "report: ep2 consent carries the revocation value");
-  ok(rep1.claims.length === 1 && rep1.claims[0].check === "dedup.v1" && rep1.claims[0].result === "pass", "report: ep1 carries the dedup.v1 claim");
+  ok(rep1.claims.length === 3 && rep1.claims.some((c) => c.check === "dedup.v1" && c.result === "pass"), "report: ep1 carries the dedup.v1 claim");
   ok(rep1.source === "sim" && rep2.source === "teleop_real", "report: per-episode declared source");
   ok(rep1.wording.some((w) => w.startsWith("Source — declared")), "report: ep1 wording includes the source line");
   ok(rep1.files.length === 2 && rep1.files[0].path.includes("ep1"), "report: ep1 files carried through");

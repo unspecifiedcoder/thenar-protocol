@@ -16,8 +16,20 @@
  * as a supplier/buyer would run them.
  *
  * Usage:
- *   npx tsx scripts/golden.mjs --local
+ *   npx tsx scripts/golden.mjs --local [--reset-local]
  *   npx tsx scripts/golden.mjs --live
+ *
+ * `--local` runs against a fresh scratch SQLite DB + bundle store + two
+ * brand-new Anvils every time (deleted on exit); `--reset-local` is
+ * accepted for CLI symmetry with `--live` but has no extra effect, since
+ * `--local` is unconditionally scratch already. `--live` anchors against
+ * Fuji's real, persistent `GraspLog` (D-9's primary) plus a fresh local
+ * Anvil mirror, and therefore uses a persistent log DB / bundle store too
+ * (`THENAR_LOG_DB`/`BUNDLE_STORE_ROOT`, default `.data/log.db` /
+ * `.data/bundles/` under the repo root) — every `--live` run appends to
+ * and extends the one real log, the same way the production log service
+ * would, rather than anchoring a fresh scratch log over a head nobody
+ * (including a re-run of this script) could ever re-derive.
  */
 import { spawn, execFileSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
@@ -36,7 +48,7 @@ import { createApp, defaultDeps } from "../services/api/src/app.ts";
 import { sha256Hex } from "../services/api/src/auth.ts";
 import { isUnreachable } from "../services/api/src/chain.ts";
 import { loadChains, parseEnvFile } from "../services/log/src/chains.ts";
-import { anchorAll } from "../services/log/src/anchorer.ts";
+import { anchorAll, LOG_ABI } from "../services/log/src/anchorer.ts";
 import { buildFileEntries, payloadHash } from "../packages/protocol/src/payload.ts";
 import { manifestHash as computeManifestHash, corpusManifestHash as computeCorpusManifestHash, corpusRootOf } from "../packages/protocol/src/mapping.ts";
 import { encodeCorpus, corpusLeafHash } from "../packages/protocol/src/corpus.ts";
@@ -309,11 +321,49 @@ async function main() {
   const API_BASE = `http://127.0.0.1:${apiPort}`;
   console.log(`API: ${API_BASE}  db: ${dbPath}`);
 
+  // =====================================================================
+  // Step 0 — chain head check (T-033 follow-up; `--live` only)
+  // =====================================================================
+  // Fuji's `GraspLog` is the production head — an `anchor()` call can only
+  // ever extend it (`SizeMustNotShrink`) or match it exactly at the same
+  // size (`RootMustMatchAtSameSize`/`NothingToAnchor`, D-17). If this run's
+  // persistent store is somehow *behind* the chain (a stale `.data/log.db`,
+  // pointed at the wrong file, restored from an old copy), step 3's anchor
+  // would either revert outright or — worse — silently produce nothing
+  // (`NothingToAnchor`) while this script pressed on as if it had. Checked
+  // once, loudly, before touching anything else.
+  if (mode === "live") {
+    const pub = createPublicClient({ transport: http(primaryChain.rpc) });
+    const count = Number(await pub.readContract({ address: primaryChain.log, abi: LOG_ABI, functionName: "anchorCount" }));
+    let chainRoot = `0x${"00".repeat(32)}`, chainSize = 0;
+    if (count > 0) {
+      const head = await pub.readContract({ address: primaryChain.log, abi: LOG_ABI, functionName: "anchorAt", args: [BigInt(count - 1)] });
+      chainRoot = head.root;
+      chainSize = Number(head.size);
+    }
+    const storeSize = store.size();
+    console.log(`step 0/8 — chain head check: Fuji ${primaryChain.log} anchorCount=${count}, head=(root ${chainRoot.slice(0, 10)}…, size ${chainSize}); local store (${dbPath}) size=${storeSize}`);
+    if (storeSize < chainSize) {
+      throw new Error(
+        `step 0/8 FAILED — chain head check: local store at ${dbPath} holds ${storeSize} leaves but Fuji's ` +
+        `GraspLog (${primaryChain.log}) has already anchored ${chainSize}. Refusing to proceed: anchoring from ` +
+        `behind the real head would either revert or (at equal size) silently no-op. Point THENAR_LOG_DB at the ` +
+        `store that produced the existing head, or run --local instead.`,
+      );
+    }
+    console.log(`step 0/8 — chain head check ... ok (store is at or ahead of the chain head)`);
+  }
+
   // ---------------------------------------------------- seed supplier org
   const SUPPLIER_ORG = "org_golden_supplier";
   const SUPPLIER_API_KEY = `golden-supplier-${randomBytes(8).toString("hex")}`;
   const now = Math.floor(Date.now() / 1000);
-  store.createOrg({ orgId: SUPPLIER_ORG, name: "THENAR golden demo supplier", kind: "supplier", status: "active", createdAt: now });
+  // In `--live` mode this store is persistent — a second run must not
+  // re-`INSERT` the same org row (the `org` table has no update path,
+  // T-024: "insert-only").
+  if (!store.org(SUPPLIER_ORG)) {
+    store.createOrg({ orgId: SUPPLIER_ORG, name: "THENAR golden demo supplier", kind: "supplier", status: "active", createdAt: now });
+  }
   store.insertApiKey({ keyId: `key_${randomBytes(8).toString("hex")}`, orgId: SUPPLIER_ORG, keyHash: sha256Hex(SUPPLIER_API_KEY), role: "supplier", createdAt: now, revokedAt: null });
 
   const orgSk = ed.utils.randomSecretKey();
@@ -702,7 +752,30 @@ async function main() {
     console.log(`  GET /v1/consent/${ee.consentKey} -> revoked${consentAfter.onset ? `, onset block ${consentAfter.onset.block}` : ""}`);
 
     const corpusAfter = await req(API_BASE, `/v1/corpora/${corpusId}`);
-    if (!corpusAfter.contains_revoked) throw new Error(`GET /v1/corpora/${corpusId} does not show contains_revoked after revocation`);
+    if (!corpusAfter.contains_revoked) {
+      // BLOCKED — not this script's bug (see C-2, TASKS/CONFLICTS.md).
+      // `computeContainsRevoked` (services/api/src/routes/corpora.ts) checks
+      // `logStore.episodeMeta(leafHash).consentKey` against the revocation
+      // table — but `POST /episodes` (services/api/src/routes/episodes.ts,
+      // the SDK path episode 4 above went through, precisely because the
+      // ingest-job path never returns a `ConsentRecord` to revoke, C-1)
+      // hard-codes `null` as `commitEpisode`'s `consentKeyHex` argument, so
+      // this episode's leaf row was written with no `consentKey` at all —
+      // there is no request field in `CreateEpisodeBody`
+      // (services/api/src/schemas/requests.ts) for a caller to supply the
+      // consentKey it already derived. The `leaf` table's own triggers
+      // (`BEFORE UPDATE OR DELETE ... RAISE(ABORT)`, PLAN §14) make this
+      // unfixable after the fact from any store escape hatch. Both files
+      // are outside T-033's file scope; stopping here rather than faking
+      // `contains_revoked`.
+      throw new Error(
+        `step 7 BLOCKED: GET /v1/corpora/${corpusId} does not show contains_revoked, even though the ` +
+        `revocation itself is genuinely recorded (GET /v1/consent/${ee.consentKey} above showed "revoked"). ` +
+        `POST /episodes (services/api/src/routes/episodes.ts) always commits with consentKeyHex=null, so ` +
+        `computeContainsRevoked (services/api/src/routes/corpora.ts) has no consentKey on this episode's leaf ` +
+        `row to match against the revocation table. Outside T-033's file scope to fix — see C-2 in TASKS/CONFLICTS.md.`,
+      );
+    }
     console.log(`  GET /v1/corpora/${corpusId} -> contains_revoked: true`);
 
     // The buyer's already-issued receipt/report still verifies against the *sealing* anchor (§6.1) — unchanged, so re-run is redundant but explicit here:

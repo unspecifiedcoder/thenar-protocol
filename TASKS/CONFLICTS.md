@@ -112,3 +112,37 @@ the tokens "physical-AI" and "physical AI" — must also contain "declared" or
 **C-1 — RESOLVED (2026-09-03):** `routes/consent.ts` now validates the signature
 envelope (`alg`, `key_id == keyId(record.pubkey)`) and passes `signature.sig`
 to `LogStore.revoke`. T-012 green; adversarial attack 9 un-skipped.
+
+- **C-2: T-033 — `POST /episodes` never records a `consentKey` on the leaf
+  row, so `GET /v1/corpora/{id}.contains_revoked` cannot ever become true
+  for an SDK-path episode — golden demo step 7 blocked (found after C-1
+  was fixed).** `services/api/src/routes/episodes.ts`'s `.post("/episodes",
+  ...)` handler calls `commitEpisode(..., manifest.dataset_id ?? null,
+  null)` — the final argument is `commitEpisode`'s `consentKeyHex`
+  (`services/api/src/ingest/commit.ts`), hard-coded `null`. `CreateEpisodeBody`
+  (`services/api/src/schemas/requests.ts`) has no field a caller could use to
+  supply the consentKey it already derived from its own `ConsentRecord`
+  either. `services/api/src/routes/corpora.ts`'s `computeContainsRevoked`
+  matches `logStore.episodeMeta(leafHash).consentKey` against the
+  revocation table — with that column always `null` for an SDK-path
+  episode, it can never match, no matter how genuinely that episode's
+  consent was revoked. Reproduced live: `scripts/golden.mjs --local`
+  (T-033) submits an episode via `POST /episodes` (the only path that lets
+  the caller retain its own `ConsentRecord` — see C-1's write-up for why
+  the dataset-ingest path can't be used for this), includes it in a sold
+  corpus, gets a real, correctly-signed revocation accepted (`GET
+  /v1/consent/{key}` correctly reports `"revoked"` afterward — C-1's fix
+  works), yet `GET /v1/corpora/{id}` still reports `contains_revoked:
+  false`. The `leaf` table's own triggers (`BEFORE UPDATE OR DELETE ...
+  RAISE(ABORT)`, PLAN §14) rule out fixing this after the fact from any
+  store escape hatch — the consentKey has to be written at insert time.
+  `services/api/src/routes/episodes.ts` and (if a request field is the
+  fix) `services/api/src/schemas/requests.ts` are both outside T-033's file
+  scope, so this task stopped at this exact assertion rather than
+  fabricating `contains_revoked`. Fix is plausibly small — thread a
+  caller-supplied `consent_key` (or derive it, if the manifest's
+  `consent_commitment` alone were ever made sufficient) through to
+  `commitEpisode`'s `consentKeyHex` — but touches the request schema and
+  the SDK-path contract, so flagged rather than guessed at. Status: OPEN,
+  blocks the `contains_revoked` half of PLAN §21 step 7 and therefore PLAN
+  §24's release gate.

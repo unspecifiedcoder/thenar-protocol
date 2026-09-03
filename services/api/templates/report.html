@@ -1,12 +1,13 @@
 <!-- T-025 — Provenance Report HTML template (PLAN §9.6, §13).
-     Placeholders (`{{NAME}}`) are replaced by `services/api/src/report/render.ts`
-     with values already computed by `report/build.ts` — nothing here computes
-     or re-derives a proof; the template only displays what the report object
-     already carries (I-11: a render step must not invent a value). Every
-     placeholder is escaped as HTML text except `{{EPISODES_ROWS}}` and
-     `{{LIMITATIONS_ITEMS}}`, which `render.ts` builds itself from escaped
-     pieces. Kept dependency-free (no external stylesheet/script) so it can
-     be rendered to PDF by a headless browser with nothing else to fetch. -->
+     Double-brace placeholders below are replaced by `services/api/src/
+     report/render.ts` with values already computed by `report/build.ts` —
+     nothing here computes or re-derives a proof; the template only
+     displays what the report object already carries (I-11: a render step
+     must not invent a value). Every placeholder is escaped as HTML text
+     except the episode rows and limitations list, which `render.ts` builds
+     itself from already-escaped pieces. Kept dependency-free (no external
+     stylesheet/script) so it can be rendered to PDF by a headless browser
+     with nothing else to fetch. -->
 <!doctype html>
 <html lang="en">
 <head>
