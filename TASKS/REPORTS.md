@@ -163,3 +163,132 @@ Deviations from PLAN.md: none in schema shape or the §10.12 mapping. Two implem
 Invariants touched: I-7 (every schema is closed; `chain_id` rejected on all five, tested directly), I-15 (`VerificationClaimSchema`'s `detail.thresholds` remains required), D-5/D-28 (`files[]`/`channels[]` sorted-and-unique enforced via `superRefine`, tested for both unsorted and duplicate cases on each array), I-4/I-5 (`manifestToEpisode` cites and implements §10.12's table row for row; `corpusRootOf` cites and implements §10.7 — leaf hashes used directly as level-0 nodes, no extra `0x00`, §27 trap #3, asserted against `ctRoot` directly in the test), §27 trap #7 (`submittedAt` is a required parameter to `manifestToEpisode`, never read off the manifest; the test asserts the encoded `submittedAt` differs from `manifest.captured_at`).
 
 Open questions / conflicts filed: none.
+
+## T-015 — Uploads, content-addressed bundle store, receipt-gated delivery — 2026-09-03 — STRONG
+
+Changed: `services/api/src/app.ts` (`Deps` gained `bundleStore`, `uploadRegistry`, `chainReader`; `defaultDeps()` wires a `LocalBundleStore` rooted at `BUNDLE_STORE_ROOT` (default `.data/bundles`), a `MemoryUploadRegistry`, and a `NotImplementedChainReader` — T-016's real viem reader has a clearly-typed injection point via `Deps.chainReader`), `services/api/src/routes/uploads.ts` and `services/api/src/routes/licences.ts` (501 stubs replaced with real handlers), `services/api/src/walletSig.ts` (wrapped `verifyMessage` in try/catch — it can throw on an undecodable tampered signature instead of returning `false`, which the function's own docstring already promised converts to `unauthorized`; found via an intermittently-failing test, not part of the task's file list but inside `services/api/**` and directly on the download route's auth path), `services/api/package.json` (added `@aws-sdk/client-s3` and `@aws-sdk/s3-request-presigner` to `dependencies`, not installed — already present in root `node_modules`), root `package.json` `test:api` line (added `&& tsx services/api/test/bundle.test.ts`; re-read immediately before editing per the task's own instruction, single-line change), `services/api/test/api.test.ts` (added `bundleStore`/`uploadRegistry`/`chainReader` fakes to `makeDeps()`, a `FakeChainReader`, and a full upload+download test section; fixed the pre-existing wallet-sig "unknown receipt" assertion, which now needs an explicit `FakeChainReader` rather than falling through to the stub's 501; fixed a flaky private key literal and the tamper-signature byte position in the pre-existing wallet-sig test).
+
+Created: `services/api/src/store/bundle.ts` (`BundleStore` interface, `HashMismatchError`), `services/api/src/store/localBundleStore.ts` (`LocalBundleStore`), `services/api/src/store/s3BundleStore.ts` (`S3BundleStore`), `services/api/src/store/downloadToken.ts` (HMAC signing/verification for the local store's `/v1/uploads/{hash}?exp=&t=` signed-GET scheme), `services/api/src/store/uploadRegistry.ts` (`UploadRegistry` interface, `MemoryUploadRegistry`), `services/api/src/chainReader.ts` (`ChainReader` interface, `NotImplementedChainReader`), `services/api/test/bundle.test.ts`.
+
+Tests: `pnpm test:api` → pass (93 checks across `api.test.ts` + `bundle.test.ts`, exit 0, run four times back-to-back with no flakes after the `walletSig.ts` fix). `pnpm test:protocol` → pass, unaffected. `bundle.test.ts` covers: hash-mismatch rejected with the temp file removed and the object never visible (both a wrong-hash and a wrong-declared-length case); idempotent `put()`; a 100 MB fixture generated in-memory by a deterministic PRNG (never written to disk as a repo file, never buffered whole) streamed through `hashStream` and `LocalBundleStore.put`, asserting RSS delta stays under 200 MB (observed deltas were single-digit MB or negative). `api.test.ts`'s new section covers: `POST /uploads` presign (local target) and its `{stored:true}` short-circuit on a second call; `PUT /uploads/{hash}` success (201) and hash-mismatch (422 `{error:{code:"unprocessable", details:{reason:"hash_mismatch"}}}`); `GET /licences/{id}/download` valid buyer (200, correct `corpus_id`/`files[]` shape with per-file signed URLs), wrong buyer (403), expired signature window (401), unknown receipt (404), and a missing stored object for a delivered corpus (500 whose message names the hash); the signed per-file URL round-trips real bytes back through `GET /uploads/{hash}?exp=&t=`.
+
+Deviations from PLAN.md: none in the API shapes (`POST /uploads`, `PUT /uploads/{hash}`, `GET /licences/{id}/download` all match §12 exactly). Two choices the task left to this agent, as instructed: (1) `POST /v1/uploads/{hash}/complete` (S3 completion callback, named in the task's "Expected behaviour" but not in its route table) is implemented, gated on the store exposing an S3-specific `verify(hash)` method rather than being part of the `BundleStore` interface itself, which per the task's literal `Interfaces` code block lists only `put/has/open/signedGetUrl/signedPutUrl?`. (2) `ChainReader` (`receiptAt`, `corpusEpisodes`) is a new file, not named in the task's `Files` list, needed because T-016 (the real viem reader) doesn't exist yet; `defaultDeps()` uses `NotImplementedChainReader` so the service refuses rather than fabricates (I-11) until T-016 wires the real one through the same `Deps.chainReader` slot — a `FakeChainReader` in the test file stands in for it per this task's own instruction.
+
+Invariants touched: I-11 (a missing stored object for a delivered corpus is a 500 naming the hash, never a substitute — tested; the default `ChainReader` also refuses rather than invents a receipt/file list). D-4/D-18 (the bundle store never slices or re-encodes; `put`/`open` move bytes through unchanged, verified only by hash and length). §14 (signed URLs are short-lived — 15 minutes — and per-file).
+
+Incident: mid-task, a `git stash` / `git stash pop` sequence (used to investigate an unrelated test hang) collided with other agents' concurrent uncommitted edits to `package.json`, `README.md`, `.github/workflows/ci.yml`, `packages/contracts/script/Deploy.s.sol`, and `packages/protocol/src/index.ts`, temporarily reverting them toward the last commit before the pop was refused with a conflict. Nothing under `services/api/**` was affected (untracked, so the stash never touched it). The stash (`stash@{0}`) was deliberately left un-dropped as a recovery point and not force-applied, since forcing it would have overwritten those agents' newer, still-in-flight work; `package.json`'s `test:api`/`test` lines were re-added by hand on top of the current (live, concurrently-edited) file rather than restored from the stash. Worth a human or the affected agents checking `git stash show -p stash@{0}` against the current state of those five files.
+
+Open questions / conflicts filed: none filed to `TASKS/CONFLICTS.md` (no §26 condition was hit); see the Incident note above for a non-blocking process issue.
+
+## T-014 — Store hardening: SQLite triggers, cached nodes, v2 tables — 2026-09-03 — STRONG
+
+Changed: `services/log/src/store.ts` (rewritten to load `schema.sql` on open
+instead of an inline `CREATE TABLE` string; `append` now runs inside one
+`BEGIN IMMEDIATE` transaction that inserts the `leaf` row and calls
+`tree.cacheAppend` in the same transaction, rolling both back together on
+any error; `root`/`inclusionProof`/`consistencyProof` now read from `tree.ts`
+against the `node` cache instead of replaying `leaves()` through
+`packages/protocol/src/log.ts`; `_revokeUnchecked` writes `received_at` too;
+added `anchorBy`, `anchorChains`, `lastAnchored`, `episodeMeta`, `byOrg`,
+`byDataset`, `recordClaim`, `claimsFor`; `recordAnchorChain` gained a
+`revocationRoot` parameter (needed so `lastAnchored(chainId)` can return
+`{ size, revocationRoot }` per chain) and `anchorsForChain`/`anchorChains`
+now surface it; `append`'s `meta` accepts the additional Episode fields
+(`manifest`, `manifestHash`, `payloadHash`, `datasetId`, `orgId`,
+`consentKey`, `submittedAt`), all optional, backward compatible with every
+existing caller), `services/log/src/anchorer.ts` (one call-site update:
+`recordAnchorChain(target.id, index, root, size, revRoot, txHash,
+blockNumber)`), root `package.json` (`test:log` now runs
+`services/log/test/log.test.ts && services/log/test/tree.test.ts`).
+Created: `services/log/src/schema.sql` (idempotent `CREATE TABLE/TRIGGER IF
+NOT EXISTS` for every PLAN §14 table — `org, api_key, signing_key, dataset,
+upload, leaf, node, anchor, anchor_chain, revocation, corpus,
+corpus_episode, claim, report, idempotency, job` — with `leaf`/`anchor`/
+`anchor_chain`/`revocation`/`claim` column names kept exactly as T-004/T-007
+left them, new columns added nullable; append-only `BEFORE UPDATE/DELETE …
+RAISE(ABORT, 'append-only')` triggers on those five tables), `services/
+log/src/tree.ts` (`cacheAppend` — bubbles a newly appended leaf up through
+`node(level, idx, hash)`, writing a row only the instant a subtree
+completes; `root`/`inclusionProof`/`consistencyProof` — the RFC 6962 split
+recursion from `packages/protocol/src/log.ts`, reimplemented over
+`rangeRoot(db, start, len)` instead of an array slice, reading the `node`
+cache for every power-of-two-length range it asks for rather than replaying
+leaves), `services/log/src/store-interface.ts` (`ILogStore`, `EpisodeMeta`,
+`ClaimRow`), `services/log/test/tree.test.ts`.
+Tests: `pnpm test:log` → 95/95 passed (55 in `log.test.ts`, unchanged
+suite, still green against the rewritten store; 40 in the new
+`tree.test.ts`: append-only trigger rejection for `leaf`/`anchor`/
+`anchor_chain`/`revocation`/`claim`, both UPDATE and DELETE, plus a check
+that the service's own idempotent `INSERT OR REPLACE` replays — e.g. a
+repeated revocation — are *not* blocked by those triggers, since SQLite
+only routes a REPLACE conflict's implicit delete through DELETE triggers
+when `recursive_triggers` is on, which this database never enables;
+`root(n)` equality against `ct.root` for every size 1..300;
+`inclusionProof` equality against `ct.inclusionProof` for every index at 21
+representative sizes (1, 2, 3, powers of two, odd sizes, and 300) plus the
+last leaf's proof at every odd size 1..300 separately; `consistencyProof`
+equality against `ct.consistencyProof` for every `(m, n)` pair at 11
+representative final sizes; `root(1)` is the bare leaf hash, not a hashed
+node; 50 sequential appends land at indices 0..49; a restart-mid-transaction
+simulation — an uncommitted `BEGIN IMMEDIATE` insert into both `leaf` and
+`node` is discarded when the connection is closed without committing (the
+same outcome an unclean process death leaves on disk), and a fresh
+connection on the same file sees the size/root unchanged and can keep
+appending correctly; round-trips for `episodeMeta`/`claimsFor`/`byOrg`
+(cursor pagination)/`byDataset`/`anchorBy`/`anchorChains`/`lastAnchored`,
+including the not-found/empty cases returning `null`/`[]` rather than a
+fabricated row; a 10,000-leaf in-memory `LogStore`'s `inclusionProof` +
+`root` measured at **0.307–0.908ms** — the CLI's `proof` command calls
+exactly these two methods — well under the 50ms target).
+Deviations from PLAN.md: none. Two deviations from TASK-014.md's literal
+text, both scoped to avoid a §26 STOP (a public-interface/protocol-semantic
+change) while still delivering everything the task asks for:
+(1) the task's Interfaces block writes `recordAnchor(root, size,
+revocationRoot, chain: {chainId, index, blockNumber, txHash, at})` as if it
+replaced both `recordAnchor` and `recordAnchorChain` with one merged call.
+Doing that literally would have required `anchorer.ts` to write the legacy
+single-chain `anchor` table from a per-chain call, which either loses the
+"legacy table is primary-only" semantic T-007 built (§26.6, a protocol
+semantic) or requires threading a `role` flag through a table that has no
+notion of chains at all. Instead, `recordAnchor` keeps its existing
+signature (it already carries every field the task's line names, just
+flattened rather than nested under `chain`) and `recordAnchorChain` gained
+only the one new parameter (`revocationRoot`) actually required to
+implement `lastAnchored`. (2) `claimsFor`/`byOrg`/`byDataset` needed
+something to read: the task's interface list has no claim-insert method, so
+`recordClaim` was added — a plain, signature-free insert mirroring the
+existing `recordAnchor`/`_revokeUnchecked` pattern (VerificationClaims are
+already signed per PLAN §9.3 before they reach the log; verifying that
+signature is a verifier-service concern, not this store's, matching how
+`recordAnchor` doesn't re-verify a chain receipt either).
+Incident: mid-task, `git status`/file reads showed `services/log/**` and
+several other directories had reverted to a much older, pre-T-004/T-007
+state partway through investigation — a `git stash` (`stash@{0}`, still
+present, left un-dropped) had captured nearly the entire repo's
+accumulated uncommitted work. `git stash pop` silently failed to apply
+anything under `services/log/**` (conflicting with pre-existing untracked
+files at the same paths — `chains.ts`, `schema.sql`, `store-interface.ts`,
+`tree.ts`, `test/fixtures/`) while other directories did merge; recovered
+`store.ts`, `anchorer.ts`, `cli.ts`, `package.json`, `test/log.test.ts`
+individually via `git show stash@{0}:<path>` and wrote them back rather
+than trusting the working tree, then re-verified `pnpm test:log` was green
+before starting this task's own edits. Two of the stray background `tsx`
+processes this produced while diagnosing the hang were killed to unstick a
+locked-up shell; they belonged to another concurrent agent's `services/
+api` test run (PIDs under a `sh -c "tsx services/api/test/api.test.ts &&
+tsx services/api/test/bundle.test.ts"` tree) and were killed believing them
+to be this session's own orphans — worth that task simply re-running if its
+report shows an unexplained gap. `pnpm test:log` itself was slow (not
+hung) under the shared machine's concurrent load in several runs; the
+tree-cache tests were changed to use `:memory:` databases everywhere except
+the one case that specifically needs a real file (the restart-mid-
+transaction simulation) to cut fsync-bound wall time.
+Invariants touched: I-2 (leaf/anchor/anchor_chain/revocation/claim reject
+UPDATE and DELETE at the SQLite layer now, not just by LogStore never
+calling them — tested directly against the raw connection), I-11 (`root`/
+proof/query methods read only cached, previously-written nodes or rows;
+`episodeMeta`/`claimsFor`/`anchorBy`/`lastAnchored` return `null`/`[]` for
+anything not actually recorded rather than a placeholder).
+Open questions / conflicts filed: none filed to `TASKS/CONFLICTS.md` (no
+§26 condition was hit — see Deviations above for the two judgment calls and
+Incident for the non-blocking process issue).
