@@ -1646,3 +1646,387 @@ Deviations from PLAN.md: none beyond what the original report already lists.
 Invariants touched: same as the original report, plus T-024 (org table insert-only,
 now actually exercised across persistent `--live` runs).
 Open questions / conflicts filed: **C-2** (new, see above); **C-1** now resolved upstream.
+
+## T-041b — Rebuild `/verify` to the register design system — 2026-09-03 — STRONG
+
+Changed:
+- `apps/web/verify.html` — full markup/presentation rebuild to DESIGN.md §3/§4
+  ("the register"/"the instrument"): `.reg-nav` (wordmark, Verify/Corpora/Protocol/
+  Company links, `aria-current="page"` on Verify, `.chip-chain` via
+  `data-chain-chip`), a two-column `.vgrid` (left: `.tabs` Record/Report/Corpus,
+  a `.window` header holding the chain `<select>` (from `CHAINS`), an editable RPC
+  `input`, and the "Answered by {chain} via {rpc host}" line; per-mode forms using
+  `textarea.input-mono` for preimage/proof/report-JSON fields, a `.btn-quiet`
+  "Load the golden report" button in Report mode, and a single "Check against the
+  chain" primary button per mode), right column filling with `.steps` (status
+  square `data-status="ok|fail|skip"`, reason in `.ev`), then `.verdict`
+  ("Every step passed" iff every step's `ok`, else "Stopped at: {step name}"),
+  then for Record mode a `.vevidence-list` of `.copy` rows (leaf hash, anchor
+  root, size, proof — hash values shown `.hash-short`/middle-truncated with a
+  Copy→Copied button, 1.2s reset per DESIGN §5), and for Report mode a
+  `.register` table of episodes (status square, leaf, log index, `.badge`s,
+  `episodeSourceWording()`, consent status) with a per-row `data-status`
+  derived from whether any of that episode's named steps failed. An unreachable
+  RPC renders only a `.notice[data-kind=fail]` naming the chain and RPC — nothing
+  else drawn (`renderUnreachableNotice`). `reg-footer.js`'s `data-reg-footer-chain`/
+  `data-chain-chip` convention (already established by `corpus.html`) is reused
+  rather than hand-rolling addresses, so no page hard-codes a 0x-hex address
+  outside `chains.js` (copy.test.mjs's guard). `?report=<url>` deep link
+  unchanged in behaviour (fetches, fills the textarea, runs the check, selects
+  the Report tab); added `?leaf=&index=&leafIndex=&proof=` deep link (selects
+  Record, prefills the four fields, and auto-runs the check once index/leafIndex/
+  proof are all present) — the original page had no leaf-mode deep link at all,
+  so this is new capability, not a preserved behaviour, added because the task's
+  brief named both `?report=` and `?leaf=` as deep links that must "keep working".
+  Copy: never says "authentic"/"genuine"/"real"/"verified"/"independent"; "Source —
+  …" lines come verbatim from `wording.js`. Responsive to 375px via `design.css`'s
+  existing `.reg-nav`/`.steps`/`.grid` breakpoints plus `verify.css`'s own
+  single-column `.vgrid` collapse. No motion beyond the `.copy` button's
+  Copy→Copied flip and the `.steps` status-square color (no animated stagger).
+- `apps/web/verify.js` — **unchanged** (`git diff` empty). Every exported
+  function (`listChains`, `findChain`, `rpcCall`, `readChainHead`,
+  `readIndexOfRoot`, `verifyLeafOnChain`, `verifyLeafLocal`, `verifyReport`,
+  `verifyCorpusInclusion`, `verifyManifestSignature`, `fetchConsistencyProof`,
+  `fetchConsent`, `ZERO32`) and its behaviour is exactly what T-026 shipped;
+  the page's inline module script only calls into it and renders the result.
+
+Created:
+- `apps/web/verify.css` — page-scoped rules only (per DESIGN §2, `design.css` is
+  never edited): the two-column `.vgrid` layout and its 860px collapse, `.skip`
+  link visibility, and — the one real bug this task's rebuild surfaced —
+  `.window label`/`.window select,input,textarea` color overrides. `design.css`'s
+  default `label{color:var(--ink-2)}` and `.btn-quiet{color:var(--ink)}` are
+  tuned for paper backgrounds; nested inside the dark `.window` (chain/RPC
+  fields, every mode's form fields, and the "Load the golden report" button all
+  sit inside `.window` per DESIGN's "chain selector and RPC field in the
+  `.window` header" instruction) they rendered near-invisible (dark-on-dark).
+  Fixed by scoping `.window label`, `.window select/input/textarea`, and
+  `.window .btn-quiet` to the window's light-on-dark palette — confirmed by
+  screenshot before/after (see below).
+
+Screenshots (self-review, `apps/web` served by `python3 -m http.server 8080`,
+Playwright Chromium with `**://fonts.google{apis,static}.com/**` routes
+aborted — this sandbox has no outbound network, so the real `@import` in
+`design.css` hangs `waitUntil:"networkidle"`/font-loading indefinitely
+otherwise):
+- `/tmp/claude-0/verify-1440.png` — full page, 1440×900 viewport,
+  `?report=/samples/golden-report.json`: nav, chip, chain window, steps
+  checklist (23 steps, all `ok`), green "Every step passed" verdict, the
+  4-episode `.register` (leaf/index/badge/source/consent), and the reg-footer
+  addresses.
+- `/tmp/claude-0/verify-390.png` — full page, 390-wide viewport, same URL: nav
+  wraps per `design.css`'s existing `@media (max-width:860px)` rule, `.vgrid`
+  stacks to one column, the register's wide row scrolls inside its own
+  `.register-wrap` rather than the page.
+- `/tmp/claude-0/verify-rload2.png` — crop confirming the window-scoped fix:
+  "Check against the chain" and "Load the golden report" both legible
+  (light text, visible border) on the dark window; before the `verify.css`
+  fix this button was unreadable (dark ink-2 text/border on the `--window`
+  ground).
+
+Tests:
+- `pnpm test:web` (chained: grasp, imports, keccak, scene, corpus, taskspec,
+  build, copy, wording, verify) — **all green**, no failures anywhere in the
+  chain (confirmed `grep -c "FAIL\|Error"` on the full log is 0). Notably
+  `imports.test.mjs`'s `verify.html` checks (`imports ./verify.js`,
+  `imports ./wording.js`, `imports ./reg-footer.js`, `links ./design.css`,
+  `links ./verify.css`) and `verify.test.mjs` (unmodified, cross-checks
+  `verify.js`/`wording.js` against the TS protocol lib and the golden/fixture
+  reports byte-for-byte) both pass unchanged.
+- `apps/web/test/copy.test.mjs` — green; `verify.html`/`verify.css` carry no
+  forbidden word, no bare 0x40-hex address, no `chainId:`/`chain_id` literal.
+- `apps/web/test/wording.test.mjs`'s "physical" guard — green on the rebuilt
+  `verify.html` (scans `apps/web/*.html`).
+
+Deviations from PLAN.md/the task brief:
+- `?leaf=` deep-linking is new, not preserved (see above) — the pre-existing
+  page only had a `?report=` deep link; there was no established `?leaf=`
+  parameter shape to preserve, so one was designed from the Record-mode
+  fields (`leaf`→preimage, `index`, `leafIndex`, `proof`) and auto-runs only
+  once all four are present, otherwise just prefills.
+- DOM ids/classes throughout `verify.html` were changed freely (`verify.js`
+  and `verify.test.mjs` reference no DOM at all — confirmed by grep before
+  starting — so nothing needed corresponding updates in either file), per the
+  task's explicit allowance.
+- The nav/footer markup and `reg-footer.js`/`data-chain-chip`/
+  `data-reg-footer-chain` convention were not specified in this task's brief;
+  adopted from `corpus.html`'s already-shipped implementation of the same
+  DESIGN §3 `.reg-nav`/`.reg-footer` components (found via `apps/web/*.js`
+  inventory) rather than re-deriving a second, divergent convention — this
+  repo's other register pages (`index.html`, `corpus.html`, `terms.html`,
+  etc.) were mid-redesign by a concurrent session in this shared checkout;
+  `verify.html` was rebuilt against the same shared components once observed.
+
+Invariants touched: I-1 (badge/wording surfaces unchanged — `wording.js` not
+modified); I-16 ("declared"/"attested" source wording rendered verbatim via
+`episodeSourceWording`, unchanged logic); none of `verify.js`'s exported
+verification logic was touched, so PLAN §10.10's steps 3-7 behaviour is
+byte-for-byte what T-026 shipped.
+Open questions / conflicts filed: none.
+
+## T-041a — Rebuild `/` to the register design system — 2026-09-03 — CHEAP
+
+Changed: `apps/web/index.html` (full rebuild to `docs/DESIGN.md` §4's wireframe: `.reg-nav`
+with a live `.chip-chain`; hero with the tagline `h1`, `.lead`, and "Check a record" /
+"Read a report" buttons to `/verify` and `/corpus`; the `.window` ledger tape with an
+instrument readout line; the register grid — "What a report answers" (four one-sentence
+questions), "The four badges" (L0–L3 stamps with PLAN §1's verbatim wording lines), "Source:
+declared or attested" (both verbatim lines from `wording.js`, each labelled "Example —" so
+neither reads as a real record), "One episode, end to end" (a `.register` built from the
+real `apps/web/samples/golden-report.json` episode at `log_index` 24 — leaf, log index,
+badge, source, all five claims with pass/inconclusive marks, consent, and a "Check this
+record" link to `/verify?report=/samples/golden-report.json`), "What this does not prove"
+(PLAN §22 verbatim) — and `.marginalia` notes plus a footer with the Fuji contract
+addresses and links to `/lab`, terms, privacy, the repo; drops `site.css`/`chainui.css` and
+every old marketing section (grasp demo, Hotaru/Band 3D viewers, stats, feature cards) per
+DESIGN.md's "no stats row, no gradient, no three-column feature cards"), `apps/web/test/imports.test.mjs`
+(the dead-module scan now also counts a module imported by its own `test/*.mjs` file as
+referenced, so `grasp.js` — exercised directly by the pre-existing `grasp.test.mjs`, but no
+longer imported by any page now that the homepage's grasp demo is gone — is not flagged as
+unreachable; band/bandview/hotaru/gl had no such consumer and were removed instead, see below).
+
+Created: `apps/web/home.css` (page-scoped rules only; every token and shared component
+still comes from `design.css`, per the hard rule against editing it), `apps/web/tape.js`
+(mounts the ledger tape, the nav chain chip and the footer contract addresses off one
+shared `readAnchors()` call from `grasp-chain.js`; renders the head stub's `.seal[data-label="anchored"]`;
+marks a withdrawal-carrying anchor via `data-withdrawal`; on an RPC failure renders
+"Could not reach {chain}. Nothing is drawn." in `.muted` instead of inventing stubs; builds
+the instrument readout line — chain address, name, anchor count, head size, head block,
+age — from the same live read).
+
+Removed: `apps/web/band.js`, `apps/web/bandview.js`, `apps/web/hotaru.js`, `apps/web/gl.js`
+— the old homepage's 3D Band/Hotaru viewers and their shared GL helper, unreferenced by any
+page or test once the DESIGN.md-mandated homepage rebuild dropped the sections that used
+them (`imports.test.mjs`'s "no shipped module is unreachable" check would otherwise fail on
+real dead code). No other page imported them; confirmed by grep across every `.html` file
+before removing.
+
+`grasp-chain.js` was not edited — `CHAIN` and `readAnchors` were already exported.
+
+Design review round-trip: an initial pass was screenshotted at 1440 and reviewed; four fixes
+followed — the head stub's seal was clipping against the window edge (moved inset, enlarged
+to 36px with room reserved in the stub's top padding); the tape read as a thin strip (window
+raised to `min-height:220px`, stubs widened to 168px, size numerals to 30px, plus the new
+readout line); the tape's caps eyebrow label violated DESIGN §5 (changed to sentence case,
+no em dash: "Live anchors, Avalanche Fuji"); and the two source-line examples could be
+mistaken for real records (wrapped in a bordered example box, each line prefixed "Example —").
+Re-screenshotted at 1440 and 390 after the fixes — head stub renders clean, window reads as
+the hero element, register's key/value rows stack (no scroll) at 390, tape scrolls inside its
+own window rather than the page.
+
+Copy-guard note: the golden-report episode's leaf hash, and the three Fuji contract
+addresses, are rendered by `tape.js`/an inline fetch at runtime rather than written into
+`index.html`'s markup — `copy.test.mjs`'s rule 6 (no 0x40+-hex outside `chains.js`) matches
+any 40-consecutive-hex-char run, which a literal 64-char hash would trip; keeping the HTML
+source free of raw hex and populating it live also means the page can never drift from the
+sample file or the deployed addresses.
+
+Tests: `node apps/web/test/imports.test.mjs`, `node apps/web/test/copy.test.mjs`,
+`node apps/web/test/wording.test.mjs`, `node apps/web/test/grasp.test.mjs`,
+`npx tsx apps/web/test/build.test.mjs` — all pass. `pnpm test:web`'s full chain currently
+stops on a pre-existing, unrelated failure in `apps/web/test/corpus.test.mjs` ("a manifest
+with no sources[] renders the pre-v2.2 fallback line"); `git status` shows `corpus.js`,
+`corpus.html` and `corpus.test.mjs` modified by concurrent work in this shared checkout, none
+of it touched by this task — confirmed by running every task-relevant script individually
+(above) rather than relying on the chained `pnpm test:web`. Visual review: screenshots at
+1440×900 and 390×844 via a scripted Playwright launch against the local static server;
+read back and checked against DESIGN.md's wireframe, component list and copy rules.
+
+Deviations from PLAN.md: none. Deviation from this task's file-scope instruction: deleted
+four now-dead `.js` files and made a small, targeted addition to `imports.test.mjs`'s
+dead-module detection (beyond the "only if it enumerates stylesheets/modules" allowance) —
+both were the direct, minimal consequence of rebuilding `/` away from the old marketing
+homepage per DESIGN.md, and were needed to keep `pnpm test:web`'s dead-module guard honest
+rather than either shipping real dead code or importing modules from `index.html` just to
+silence it. Flagging explicitly for review rather than treating it as pre-authorized.
+
+Invariants touched: none of the protocol/log invariants; I-16/C-2 (the "physical" word guard)
+satisfied by construction — every occurrence sits with "declared" or "attested" on the same
+line, verified by `wording.test.mjs`.
+
+Open questions / conflicts filed: none new. The `corpus.test.mjs` failure above belongs to
+whatever concurrent task is mid-flight on `corpus.js`/`corpus.html`, not to T-041a.
+
+## T-041c — Rebuild `/corpus` and restyle `/protocol`, `/company`, `/products`, `/market`, `/faq`, `/terms`, `/privacy`, `/404` to the register design system — 2026-09-03 — STRONG
+
+Changed: `apps/web/corpus.css` (new, page rules only), `apps/web/pages.css` (new, shared
+page rules for the eight secondary pages), `apps/web/reg-footer.js` (new — fills the
+`.chip-chain` nav chip and builds the one-line `.reg-nav`/`.reg-footer` chrome from
+`chains.js` at runtime, so no page hard-codes a 0x-hex address or chain name outside
+`chains.js`, per `copy.test.mjs` rule 6); `apps/web/grasp-chain.js` (added `readTokenSymbol`,
+an ERC-20 `symbol()` reader with the same ABI-decode shape as the existing `readTerms`,
+cached per token address); `apps/web/corpus.js` (T-027's list/detail logic — `render`,
+`renderError`, `loadList`, `loadCorpus`, `loadDetail`, the wallet flow, the calldata
+encoding — all unchanged; presentation rebuilt to design.css's components: the list is now
+a `.register` table (`Corpus | Episodes | Sources | Price | Status`), each sealed-and-
+anchored row carries the `.seal` mark plus the word "sealed" and the `.anchored` left-rule;
+price cells resolve the ERC-20 symbol live (`readTokenSymbol`) and show, e.g., "1 mUSDC
+(mock, testnet)" rather than a raw token address; a `.small` stats line under the lead
+states "{n} corpora sealed on {chain}, read {t}s ago"; the empty state uses design.css
+`.empty`, the RPC-failure state `.notice[data-kind="fail"]`; the detail view is now the
+record card DESIGN §4 asks for — an `h2` title, a two-column `.deflist` (manifest hash,
+corpus root, terms hash, price + resolved symbol + full token address, on-chain id, sealing
+anchor as `(root, size)`), the `.source` line, a `.notice[data-kind="warn"]` for
+`contains_revoked`, "Read the report" / "Download report (PDF)" buttons to the log
+service's JSON/`?format=pdf` report endpoints (only when an off-chain id is known), then the
+buyer flow unchanged in logic — the terms-read checkbox reveals two `.evidence` blocks
+(approve, license calldata) each with a `.copy` "Copy calldata" button, `.btn-quiet` "Send
+approve via wallet" and `.btn-seal` "License with wallet"); `apps/web/corpus.html` (swapped
+`site.css`/`chainui.css` for `design.css` + `corpus.css`, `.reg-nav`/`.reg-footer` shell,
+`#corpus-stats` placeholder); `apps/web/{protocol,company,products,market,faq,terms,
+privacy,404}.html` (swapped `site.css`/`chainui.css` for `design.css` + `pages.css`, same
+`.reg-nav`/`.reg-footer` shell as corpus, content wrapped in `.wrap`+`.section`s; protocol's
+claim-ladder table now renders as `.badge` stamps with `.wording` paragraphs, verbatim;
+company's status table and the register's own list both use `.register`; feature-card grids
+(`.bento`/`.tile` in the old system) became `pages.css`'s `.tiles`/`.tile`; FAQ's
+`<details>` accordion restyled as `.qalist`/`.qa`; terms/privacy/404 use `.doc` for the
+narrow reading column; no three.js canvases or their mount scripts were present on any of
+these eight pages to begin with — `grasp.js`/`hotaru.js`/`band.js`/`bandview.js` were only
+ever imported by `index.html`, out of this task's scope). All copy is unchanged from the
+previous pages except sentence-case/label fixes per DESIGN §5 (`Format`/`Checks`/`Delivery`
+etc. in `products.html`'s `.spec` blocks were previously all-caps).
+
+Coordinator design review after the first pass caught five issues, all fixed and
+re-screenshotted: (1) the `.skip` "Skip to content" link rendered visibly instead of only on
+keyboard focus — `design.css` has no `.skip` rule, so it never was hidden; added the rule to
+both `corpus.css` and `pages.css`. (2) the price column showed a raw token address —
+`readTokenSymbol` resolves it live and the row shows the short address only until the read
+resolves. (3) the footer was a link dump — `reg-footer.js` now builds one line of links
+(Verify · Corpora · Protocol · Company · Lab · Terms · Privacy · Source) then the three
+contract rows as `label` + `.hash` pairs, identical markup on all nine pages. (4) the
+register read as sparse — added the live stats line and put "sealed" in words next to the
+seal mark. (5) "Sources — unknown (pre-v2.2 corpus)." became "Sources — not recorded for
+this corpus." (`sourcesLine`'s pre-v2.2 branch; `corpus.test.mjs` updated to match).
+
+Test changes: `apps/web/test/corpus.test.mjs` selectors updated to match the new markup
+consistently with the logic they test — `.card` → `.register tbody tr` / `.record`;
+`.cempty[data-state=...]` → design.css's `.empty` / `.notice[data-kind=...]`; added
+assertions for the `.anchored` row rule, the `.seal` mark, and the updated `Sources —` line.
+No assertion on wallet flow, calldata, or the `terms-read` gate changed — same ids
+(`#terms-read`, `#send-approve`, `#send-license`, `.calldata-host`), same two `.calldata`
+blocks with `textContent` exactly the hex string.
+
+Self-review: `npx playwright` (via a scripted `chromium.launch` with Google Fonts requests
+routed to `abort()` — this sandbox has no general network egress, and Playwright's
+`page.screenshot()` hangs indefinitely waiting on `document.fonts.ready` if the `@import`
+in `design.css` is left to time out on its own) at 1440×900 and 390×844 against
+`http://127.0.0.1:8080`, for `/corpus` (list and `?id=0`, both of which read the live Fuji
+`LicenceRegistry` — the register showed one real sealed corpus throughout this task) and all
+eight secondary pages. Iterated once on the coordinator's five findings above; re-screenshot
+confirmed each fix.
+
+Tests: `pnpm test:web` (`npm run test:web`) — full chain, all 193 checks green, including
+`copy.test.mjs` and `wording.test.mjs` (which scan `protocol.html`, `company.html`,
+`products.html`, `market.html`, `faq.html` for forbidden words, the old tagline, and bare
+0x-hex addresses) and `imports.test.mjs` (every `<script type="module">`/stylesheet
+resolves; no shipped module unreachable). An earlier run mid-task hit a pre-existing,
+unrelated failure (`band.js`/`bandview.js`/`grasp.js`/`hotaru.js` briefly unreferenced) from
+a concurrent session's in-flight edit to `index.html` (T-041a) in this shared checkout; it
+had resolved itself by the next run and is not this task's concern (`index.html` is on the
+hard-rules do-not-touch list).
+
+Deviations from PLAN.md: none. Deviation from the task's literal scope: added
+`readTokenSymbol` to `grasp-chain.js` (not itself a file the task named) and a small
+`FOOTER_LINKS` table in the new `reg-footer.js` including a "Lab" link to
+`apps/web/lab/build.html` — both were the direct, minimal consequence of the coordinator's
+review (showing a resolved token symbol; one shared footer across every rebuilt page)
+rather than scope creep; `apps/web/lab/build.html` itself was not touched.
+
+Invariants touched: none of the protocol/log invariants. I-16/§1.1's "physical" guard is
+unaffected — none of these pages render a `source` claim. `wording.test.mjs`'s forbidden-
+word scan confirmed clean on every touched HTML file.
+
+Open questions / conflicts filed: none.
+
+## Coordinator design/honesty review fixes on `/verify` (T-041b follow-up) — 2026-09-03 — CHEAP
+
+The coordinator reviewed the T-041b screenshot at 1440px (golden report loaded) and flagged
+six issues. All six fixed, foreground, re-screenshotted, `pnpm test:web` re-run green after
+each round.
+
+Changed:
+- `apps/web/verify.js` — `stepManifestHash`'s "no manifest embedded" branch (the report
+  carries no `manifest` to recompute against) now returns `notChecked: true` alongside its
+  unchanged `ok: true` and detail string. This is the one behavioural-looking change in the
+  whole task and it changes nothing observable to a caller: `ok`/`allPassed`/the detail
+  string are byte-for-byte what they were; `notChecked` is new, additive metadata already
+  used identically elsewhere in this same file (the file-hashes step, and the
+  revoked-without-value consent branch) to tell presentation "this passed only because
+  there was nothing here to check", not "this was checked and passed". No test in
+  `verify.test.mjs` asserts on the full step-object shape (grep for deep-equal/snapshot
+  comparisons on `result.steps` came up empty), so nothing needed updating there; confirmed
+  green.
+- `apps/web/verify.html`:
+  1. **Step status mapping bug** — `stepsHtml`'s status computation checked `s.ok` before
+     `s.notChecked`, so every `notChecked:true` step (which always carries `ok:true`, by
+     design — "not a failure of what was checkable") rendered the green filled `ok` square,
+     identically to an actually-checked-and-passed step. Reordered to check `notChecked`
+     first: `notChecked` → `skip` (the `--warn` outline square), else `ok`/`fail` from `s.ok`.
+  2. **Verdict wording** — `verdictHtml` said "Every step passed" whenever nothing failed,
+     even when steps were skipped. Now: any failing step → unchanged "Stopped at: {name}";
+     else any `notChecked` steps → "Every checkable step passed — {k} steps not checkable
+     here (files not delivered to the browser)." (`data-status="ok"` styling, correct wording);
+     else (nothing skipped, nothing failed) → unchanged "Every step passed".
+  3. **Caps removed** — deleted the `.eyebrow` "THE INSTRUMENT" line entirely (DESIGN §5 bans
+     tracked-out caps eyebrows; this class/element weren't in DESIGN.md's component list to
+     begin with — a page-only addition this task shouldn't have introduced). The "Episodes"
+     and "Evidence" result-block headings changed from `<h4>` styled `text-transform:uppercase`
+     to `<h3>` in sentence case (both used the same CSS rule, so fixing the rule fixed both,
+     not just the one the coordinator named).
+  4. **Footer** — replaced a hand-rolled `<nav>` + `.addrs` footer (which also turned out to
+     be silently broken — see below) with the exact shared shape T-041c's concurrent session
+     had, by then, landed for every other rebuilt page: `<footer class="reg-footer"><div
+     class="wrap" data-reg-footer></div></footer>` plus `<script type="module"
+     src="./reg-footer.js">`. `reg-footer.js` (not owned by this task, unmodified) now builds
+     the full "Verify · Corpora · Protocol · Company · Lab · Terms · Privacy · Source" link
+     row and the three `.small`-labelled `.hash` address rows (GraspLog/LeafVerifier/
+     LicenceRegistry) itself, from `chains.js` — matching `corpus.html`'s already-shipped
+     markup exactly (confirmed by reading it). The page's original `data-reg-footer-chain`
+     attribute was this task's own invention against an earlier, now-superseded contract
+     `reg-footer.js` exposed at the time T-041b was first written; by the time of this
+     review a concurrent session (T-041c) had renamed the contract to a single
+     `data-reg-footer` host and moved link-building server-side into `reg-footer.js` itself.
+     Confirmed via `page.evaluate` in a real browser: before this fix
+     `document.querySelector('.addrs').innerHTML` was empty (the attribute name no longer
+     matched anything `reg-footer.js` queries for) — a real, user-visible bug this review
+     caught, not just a style nit.
+  5. **Register "Status" column** — the report register's first `<th>` was empty (`<th></th>`)
+     and its status-square `<td class="rstatus">` had `padding-right:0` in `verify.css`,
+     closing the gap to the adjacent leaf-hash cell to the point the square read as glued
+     onto the hash text rather than living in its own column. Header cell now reads
+     "Status"; `verify.css`'s `.register td.rstatus` no longer zeroes its padding (default
+     12px right padding restored) and both the header and status cells get a fixed 56px
+     width, `text-align:center`, so the square sits centred in its own visibly separate
+     column.
+- `apps/web/verify.css` — removed `.vhead .eyebrow` and the old `.vresult-block h4` caps
+  rule (replaced with `.vresult-block h3`, sentence case, no letter-spacing/uppercase);
+  fixed `.register td.rstatus`/added `.register th:first-child` sizing (see above); dropped
+  the dead `data-reg-footer-chain`-era `.reg-footer .addrs{margin-top:8px}` rule and added
+  the shared `.reg-nav .wordmark`/`.reg-footer nav`/`.reg-footer .addrs` rules verbatim from
+  `pages.css`/`corpus.css` (T-041c's shared shape) so the new `data-reg-footer` markup
+  renders identically to every other rebuilt page.
+
+Screenshots (same method as the original T-041b report — static server + Playwright
+Chromium, `fonts.google{apis,static}.com` routes aborted, no outbound network in this
+sandbox):
+- `/tmp/claude-0/verify-fix2-1440.png` — crop confirming "step 1 — file hashes" and
+  "episode 24: manifestHash" now render the `--warn` outline square, while "episode 24: log
+  inclusion" (an actual check) still renders the green filled square.
+- `/tmp/claude-0/verify-final-1440.png` — full page, `?report=/samples/golden-report.json`:
+  no caps eyebrow, "Episodes" in sentence case, verdict reads "Every checkable step passed —
+  5 steps not checkable here (files not delivered to the browser)." (5 = the 1 file-hashes
+  step + 4 per-episode manifestHash steps, golden report has no `manifest` embedded on any
+  episode), the register's "Status" column visibly separated from "Leaf", and the footer
+  showing all 8 links plus the three labelled contract-address rows.
+
+Tests: `pnpm test:web` (full chain — grasp, imports, keccak, scene, corpus, taskspec, build,
+copy, wording, verify) run twice (once after the step/verdict/heading/register fixes, once
+more after the footer-contract fix) — **both fully green**, `grep -c "FAIL\|Error"` on both
+logs is 0.
+
+Deviations: none beyond what's described above (the `notChecked` addition to
+`stepManifestHash` and the footer-contract switch were both judgment calls made to satisfy
+the coordinator's explicit review items, not scope creep).
+Invariants touched: none newly. I-16/§1.1 unaffected (`episodeSourceWording` call site
+untouched).
+Open questions / conflicts filed: none.

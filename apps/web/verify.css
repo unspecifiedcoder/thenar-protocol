@@ -1,0 +1,55 @@
+/* verify.css — page-scoped rules for `/verify`, "the instrument" (DESIGN §4).
+ * Tokens and shared components come from design.css; nothing here redefines
+ * a token, a face or a shared class. Only the two-column instrument layout
+ * and a few page-only affordances live here. */
+
+.skip{position:absolute;left:-9999px;top:0;background:var(--ink);color:var(--paper);padding:8px 16px;z-index:100}
+.skip:focus{left:0}
+
+.vhead{padding:48px 0 32px}
+
+.vgrid{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:40px;padding-bottom:64px}
+@media (max-width:860px){.vgrid{grid-template-columns:1fr;gap:32px}}
+
+.vleft,.vright{min-width:0}
+
+/* the window header: chain selector, rpc field, answered-by line */
+.vwindow-head{display:grid;gap:12px;margin-bottom:20px}
+.vwindow-head .field{margin-bottom:0}
+.vanswered{font-size:13px;line-height:20px;color:rgba(220,227,240,.7);margin-top:4px}
+.vanswered .mono{color:var(--window-fg)}
+
+/* every form control and label inside the dark window reads on the window,
+   not on paper */
+.window label{color:rgba(220,227,240,.7)}
+.window select,.window input,.window textarea{background:#0F1A2E;border-color:var(--window-line);color:var(--window-fg)}
+.window input:focus,.window select:focus,.window textarea:focus{border-color:var(--seal)}
+
+.vpanel[hidden]{display:none}
+.window .btn-quiet{color:var(--window-fg);border-color:var(--window-line)}
+.window .btn-quiet:hover{background:rgba(220,227,240,.08)}
+.vpanel .p{color:var(--ink-2);font-size:15px;line-height:24px;max-width:60ch;margin-bottom:16px}
+.vactions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:4px}
+
+/* right column result scaffolding */
+.vempty{color:var(--ink-2);padding:24px 0;border-top:2px solid var(--ink)}
+.vresult-block{margin-top:24px}
+.vresult-block h3{font:600 17px/26px var(--sans);color:var(--ink);letter-spacing:0;margin-bottom:8px}
+.vevidence-list{display:grid;gap:8px}
+.vevidence-row{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.vevidence-row .k{font:500 13px/20px var(--sans);color:var(--ink-2);min-width:110px}
+
+.register th:first-child,.register td.rstatus{width:56px}
+.register td.rstatus{text-align:center}
+.register .st{width:16px;height:16px;border:2px solid var(--rule);display:inline-block}
+.register tr[data-status="ok"] .st{background:var(--ok);border-color:var(--ok)}
+.register tr[data-status="fail"] .st{background:var(--fail);border-color:var(--fail)}
+.register tr[data-status="skip"] .st{border-color:var(--warn)}
+
+.vhash-wrap{display:flex;flex-direction:column;gap:2px}
+
+/* ---- footer, shared shape with the other rebuilt pages (T-041c) ---- */
+.reg-nav .wordmark{text-decoration:none}
+.reg-footer nav{font-size:13px;line-height:20px;margin-bottom:16px}
+.reg-footer nav a{color:var(--ink-2)}
+.reg-footer .addrs{display:grid;gap:4px}

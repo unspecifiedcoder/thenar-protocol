@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Verify — THENAR</title>
-<meta name="description" content="Verify capture data against the anchored log. Inclusion proofs, append-only history, live consent status, and full provenance reports — checked yourself, against any chain you choose.">
+<meta name="description" content="Check a capture, a report, or a corpus against the anchored log yourself, without trusting THENAR's records. Inclusion proofs, consistency, consent status and full provenance reports — on any chain you choose.">
 <link rel="canonical" href="https://thenar.io/verify">
 <link rel="icon" href="./mark.svg" type="image/svg+xml">
 <meta property="og:title" content="Verify — THENAR">
-<meta property="og:description" content="Check a capture, a report, or a corpus against the anchored log yourself, without trusting our records.">
+<meta property="og:description" content="Check a capture, a report, or a corpus against the anchored log yourself, without trusting THENAR's records.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://thenar.io/verify">
 <meta property="og:site_name" content="THENAR">
@@ -19,219 +19,163 @@
 <meta name="twitter:image" content="https://thenar.io/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./site.css">
-<link rel="stylesheet" href="./chainui.css">
-<style>
-  .vtable{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
-  .vtable th{text-align:left;font-weight:600;color:var(--mute,#6E6E6E);
-    font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:0 12px 10px 0;
-    border-bottom:1px solid var(--line,#272727)}
-  .vtable td{padding:12px 12px 12px 0;border-bottom:1px solid var(--line,#272727);
-    font-variant-numeric:tabular-nums;vertical-align:top}
-  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
-  .verdict{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;
-    font-size:12px;font-weight:600;letter-spacing:.02em}
-  .verdict.yes{background:rgba(77,23,245,.14);color:#8E6BFF;border:1px solid rgba(77,23,245,.45)}
-  .verdict.no{background:rgba(250,157,205,.12);color:#FA9DCD;border:1px solid rgba(250,157,205,.4)}
-  .verdict.wait{background:rgba(255,255,255,.05);color:#9B9B9B;border:1px solid #272727}
-  .vgrid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin:22px 0}
-  .vcard{border:1px solid var(--line,#272727);border-radius:12px;padding:16px 18px}
-  .vcard h3{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute,#6E6E6E);margin:0 0 10px}
-  .vcard p{margin:0;font-size:13.5px;line-height:1.5}
-  .scroller{overflow-x:auto}
-  .modetabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 22px}
-  .modetabs button{background:none;border:1px solid #272727;color:#9B9B9B;border-radius:999px;
-    padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer}
-  .modetabs button[aria-selected="true"]{border-color:#4D17F5;color:#fff;background:rgba(77,23,245,.14)}
-  .modepanel[hidden]{display:none}
-  .steplist{list-style:none;margin:14px 0;padding:0;display:grid;gap:8px}
-  .steplist li{display:flex;gap:10px;align-items:flex-start;font-size:13px;padding:8px 10px;
-    border-radius:8px;border:1px solid #272727}
-  .steplist li.ok{border-color:rgba(124,224,165,.35)}
-  .steplist li.fail{border-color:rgba(250,157,205,.4)}
-  .steplist li .dot{flex:none;width:9px;height:9px;border-radius:50%;margin-top:4px}
-  .steplist li.ok .dot{background:#7CE0A5}
-  .steplist li.fail .dot{background:#FA9DCD}
-  .steplist li .name{font-weight:600}
-  .steplist li .detail{color:#9B9B9B;display:block;margin-top:2px}
-  label.field{display:grid;gap:6px}
-  label.field span{font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:.06em}
-  .field input,.field textarea,.field select{background:#0E0E0E;border:1px solid #272727;border-radius:8px;
-    padding:10px 12px;color:#fff;font-family:inherit;font-size:14px}
-</style>
+<link rel="stylesheet" href="./design.css">
+<link rel="stylesheet" href="./verify.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <!-- NAV:START -->
-<header class="top solid">
-  <a class="brand" href="./index.html" aria-label="Thenar home"><svg viewBox="0 0 340 92" aria-hidden="true" style="height:24px"><text x="0" y="70" font-family="Manrope,sans-serif" font-size="72" font-weight="700" letter-spacing="-2" fill="currentColor">THENAR</text></svg></a>
-  <nav class="topnav" aria-label="Primary">
-    <a href="./products.html">Products</a>
-    <a href="./protocol.html">Protocol</a>
-    <a href="./market.html">Market</a>
-    <a href="./faq.html">FAQ</a>
-    <a href="./company.html">Company</a>
-    <a href="./corpus.html">Corpora</a>
+<header class="reg-nav wrap">
+  <a class="wordmark" href="./index.html">THENAR</a>
+  <nav aria-label="Primary">
     <a href="./verify.html" aria-current="page">Verify</a>
+    <a href="./corpus.html">Corpora</a>
+    <a href="./protocol.html">Protocol</a>
+    <a href="./company.html">Company</a>
   </nav>
-  <a class="btn primary" href="./index.html#contact">Talk to us</a>
+  <span class="spacer"></span>
+  <span class="chip-chain" data-chain-chip data-state="loading">reading…</span>
 </header>
 <!-- NAV:END -->
+
 <main id="main">
-<section class="wrap" style="padding-top:96px;padding-bottom:24px">
-  <p class="eyebrow" style="color:#6E6E6E;font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 12px">The log on chain</p>
-  <h1 style="margin:0 0 18px">Check it yourself.</h1>
-  <p style="max-width:62ch;font-size:17px;line-height:1.55;color:#C9C9C9">
-    A buyer needs to verify a slice of capture data without trusting our internal
-    records, and a contributor needs to withdraw without us being able to pretend
-    they did not. Pick any chain THENAR is anchored on, or point this page at your
-    own RPC. Nothing here passes through our servers.
-  </p>
-
-  <div style="display:grid;gap:12px;grid-template-columns:1fr 2fr;max-width:760px;margin-top:22px">
-    <label class="field">
-      <span>Chain</span>
-      <select id="cchain"></select>
-    </label>
-    <label class="field">
-      <span>RPC endpoint</span>
-      <input id="crpc" class="mono">
-    </label>
-  </div>
-  <p id="cstate" style="color:#9B9B9B;font-size:13px;margin-top:10px">reading the chain…</p>
-</section>
-
-<section class="wrap" style="padding-top:8px;padding-bottom:8px">
-  <div class="modetabs" role="tablist" aria-label="Verification mode">
-    <button type="button" id="tabLeaf" role="tab" aria-selected="true">Leaf preimage</button>
-    <button type="button" id="tabReport" role="tab" aria-selected="false">Report</button>
-    <button type="button" id="tabCorpus" role="tab" aria-selected="false">Corpus proof</button>
-  </div>
-
-  <!-- ==================================================== Leaf mode -->
-  <div class="modepanel" id="panelLeaf">
-    <p style="color:#9B9B9B;font-size:14px;margin:0 0 16px;max-width:62ch">
-      Paste any preimage the log holds — 154 bytes (0x01 clip), 197 (0x02
-      episode), 145 (0x03 corpus manifest) or 141 (0x04 verification claim) —
-      its position, and the sibling path. This page checks it two ways: against
-      the chosen chain's <span class="mono">LeafVerifier</span>, and again
-      entirely on your own machine with no network at all.
+  <div class="wrap vhead">
+    <h1>Check it yourself.</h1>
+    <p class="lead">
+      A buyer needs to verify a slice of capture data without trusting THENAR's
+      internal records, and a contributor needs to withdraw without THENAR being
+      able to pretend they did not. Pick any chain THENAR is anchored on, or
+      point this page at your own RPC. Nothing here passes through THENAR's
+      servers.
     </p>
-    <form id="vform" style="display:grid;gap:12px;max-width:760px">
-      <label class="field">
-        <span>Anchor index</span>
-        <input id="vindex" inputmode="numeric" placeholder="1" class="mono">
-      </label>
-      <label class="field">
-        <span>Preimage (hex)</span>
-        <textarea id="vpre" rows="3" placeholder="0x01…" class="mono"></textarea>
-      </label>
-      <div style="display:grid;gap:12px;grid-template-columns:1fr 2fr">
-        <label class="field">
-          <span>Leaf index</span>
-          <input id="vleaf" inputmode="numeric" placeholder="3" class="mono">
-        </label>
-        <label class="field">
-          <span>Sibling path (comma-separated hashes)</span>
-          <input id="vproof" placeholder="0x…, 0x…" class="mono">
-        </label>
-      </div>
-      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-        <button class="btn primary" type="submit">Check this leaf</button>
-      </div>
-    </form>
-    <div id="vresult" style="margin-top:18px"></div>
   </div>
 
-  <!-- ================================================== Report mode -->
-  <div class="modepanel" id="panelReport" hidden>
-    <p style="color:#9B9B9B;font-size:14px;margin:0 0 16px;max-width:62ch">
-      Paste a report JSON, or link one with <span class="mono">?report=&lt;url&gt;</span>.
-      This runs PLAN §10.10 steps 3–7 in the browser: log inclusion, the
-      consistency proof from the corpus's sealing anchor to this report's
-      anchor, consent status, every claim, and corpus inclusion. Step 1 (file
-      hashes) cannot run here — this page never has the delivered files — and
-      says so rather than skipping silently.
-    </p>
-    <label class="field" style="max-width:760px">
-      <span>Report JSON</span>
-      <textarea id="rjson" rows="6" class="mono" placeholder="paste a report, or use ?report=&lt;url&gt;"></textarea>
-    </label>
-    <div style="display:flex;gap:12px;margin-top:12px">
-      <button class="btn primary" type="button" id="rcheck">Verify report</button>
+  <div class="wrap vgrid">
+    <!-- ============================================================ Left: form -->
+    <div class="vleft">
+      <div class="tabs" role="tablist" aria-label="Verification mode">
+        <button type="button" id="tabLeaf" role="tab" aria-selected="true">Record</button>
+        <button type="button" id="tabReport" role="tab" aria-selected="false">Report</button>
+        <button type="button" id="tabCorpus" role="tab" aria-selected="false">Corpus</button>
+      </div>
+
+      <div class="window">
+        <div class="vwindow-head">
+          <label class="field">
+            <span>Chain</span>
+            <select id="cchain"></select>
+          </label>
+          <label class="field">
+            <span>RPC endpoint</span>
+            <input id="crpc" class="mono">
+          </label>
+          <p class="vanswered" id="cstate">reading the chain…</p>
+        </div>
+
+        <!-- ==================================================== Record mode -->
+        <div class="vpanel" id="panelLeaf">
+          <p class="p muted">
+            Paste any preimage the log holds — 154 bytes (0x01 clip), 197
+            (0x02 episode), 145 (0x03 corpus manifest) or 141 (0x04
+            verification claim) — its position, and the sibling path. This
+            page checks it two ways: against the chosen chain's
+            <span class="mono">LeafVerifier</span>, and again entirely on
+            your own machine with no network at all.
+          </p>
+          <form id="vform">
+            <div class="field">
+              <label for="vindex">Anchor index</label>
+              <input id="vindex" inputmode="numeric" placeholder="1" class="mono">
+            </div>
+            <div class="field">
+              <label for="vpre">Preimage (hex)</label>
+              <textarea id="vpre" rows="3" placeholder="0x01…" class="input-mono"></textarea>
+            </div>
+            <div class="field">
+              <label for="vleaf">Leaf index</label>
+              <input id="vleaf" inputmode="numeric" placeholder="3" class="mono">
+            </div>
+            <div class="field">
+              <label for="vproof">Sibling path (comma-separated hashes)</label>
+              <textarea id="vproof" rows="2" placeholder="0x…, 0x…" class="input-mono"></textarea>
+            </div>
+            <div class="vactions">
+              <button class="btn" type="submit">Check against the chain</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- ================================================== Report mode -->
+        <div class="vpanel" id="panelReport" hidden>
+          <p class="p muted">
+            Paste a report JSON, or link one with
+            <span class="mono">?report=&lt;url&gt;</span>. This runs PLAN
+            §10.10 steps 3–7 in the browser: log inclusion, the consistency
+            proof from the corpus's sealing anchor to this report's anchor,
+            consent status, every claim, and corpus inclusion. Step 1 (file
+            hashes) cannot run here — this page never has the delivered
+            files — and says so rather than skipping silently.
+          </p>
+          <div class="field">
+            <label for="rjson">Report JSON</label>
+            <textarea id="rjson" rows="8" class="input-mono" placeholder="paste a report, or use ?report=&lt;url&gt;"></textarea>
+          </div>
+          <div class="vactions">
+            <button class="btn" type="button" id="rcheck">Check against the chain</button>
+            <button class="btn-quiet btn" type="button" id="rload">Load the golden report</button>
+          </div>
+        </div>
+
+        <!-- =================================================== Corpus mode -->
+        <div class="vpanel" id="panelCorpus" hidden>
+          <p class="p muted">
+            Prove one episode leaf belongs to a sealed corpus, against the
+            corpus's own root — the same tree <span class="mono">sealCorpus</span>
+            commits to on chain (PLAN §10.7).
+          </p>
+          <form id="cform">
+            <div class="field">
+              <label for="cleaf">Episode leaf hash</label>
+              <textarea id="cleaf" rows="1" class="input-mono" placeholder="0x…"></textarea>
+            </div>
+            <div class="field">
+              <label for="cindex">Index in corpus</label>
+              <input id="cindex" inputmode="numeric" class="mono">
+            </div>
+            <div class="field">
+              <label for="ccount">Episode count</label>
+              <input id="ccount" inputmode="numeric" class="mono">
+            </div>
+            <div class="field">
+              <label for="croot">Corpus root</label>
+              <textarea id="croot" rows="1" class="input-mono" placeholder="0x…"></textarea>
+            </div>
+            <div class="field">
+              <label for="cproof">Sibling path (comma-separated hashes)</label>
+              <textarea id="cproof" rows="2" class="input-mono" placeholder="0x…, 0x…"></textarea>
+            </div>
+            <div class="vactions">
+              <button class="btn" type="submit">Check against the chain</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
-    <div id="rresult" style="margin-top:18px"></div>
-  </div>
 
-  <!-- =================================================== Corpus mode -->
-  <div class="modepanel" id="panelCorpus" hidden>
-    <p style="color:#9B9B9B;font-size:14px;margin:0 0 16px;max-width:62ch">
-      Prove one episode leaf belongs to a sealed corpus, against the corpus's
-      own root — the same tree <span class="mono">sealCorpus</span> commits to
-      on chain (PLAN §10.7).
-    </p>
-    <form id="cform" style="display:grid;gap:12px;max-width:760px">
-      <label class="field">
-        <span>Episode leaf hash</span>
-        <input id="cleaf" class="mono" placeholder="0x…">
-      </label>
-      <div style="display:grid;gap:12px;grid-template-columns:1fr 1fr">
-        <label class="field">
-          <span>Index in corpus</span>
-          <input id="cindex" inputmode="numeric" class="mono">
-        </label>
-        <label class="field">
-          <span>Episode count</span>
-          <input id="ccount" inputmode="numeric" class="mono">
-        </label>
-      </div>
-      <label class="field">
-        <span>Corpus root</span>
-        <input id="croot" class="mono" placeholder="0x…">
-      </label>
-      <label class="field">
-        <span>Sibling path (comma-separated hashes)</span>
-        <input id="cproof" class="mono" placeholder="0x…, 0x…">
-      </label>
-      <div style="display:flex;gap:12px">
-        <button class="btn primary" type="submit">Check corpus inclusion</button>
-      </div>
-    </form>
-    <div id="cresult" style="margin-top:18px"></div>
+    <!-- ============================================================ Right: results -->
+    <div class="vright" id="vright">
+      <p class="vempty" id="vemptyState">No check run yet. Fill in the form on the
+        left and choose "Check against the chain".</p>
+    </div>
   </div>
-</section>
 </main>
+
 <!-- FOOT:START -->
-<footer><div class="fwrap">
-  <div class="fcols">
-    <div><h4>Products</h4>
-      <a href="./products.html">Overview</a>
-      <a href="./index.html#band">Thenar Band</a>
-      <a href="./index.html#capture">Quest capture</a>
-      <a href="https://aibo.loompad.tech">Hotaru</a>
-    </div>
-    <div><h4>Protocol</h4>
-      <a href="./protocol.html">Architecture</a>
-      <a href="./index.html#chain">What goes on chain</a>
-      <a href="./faq.html">FAQ</a>
-    </div>
-    <div><h4>Company</h4>
-      <a href="./company.html">Status</a>
-      <a href="./market.html">Go to market</a>
-      <a href="https://github.com/nickthelegend/aibo-pet">Source</a>
-    </div>
-    <div><h4>Legal</h4>
-      <a href="./privacy.html">Privacy</a>
-      <a href="./terms.html">Terms</a>
-    </div>
-  </div>
-  <div class="fbase">
-    <span>THENAR — Provenance and rights for physical-AI data.</span>
-    <span>Built in the open. Quest and Meta are trade marks of Meta Platforms, Inc. Thenar is not affiliated with Meta.</span>
-  </div>
-</div></footer>
+<footer class="reg-footer">
+  <div class="wrap" data-reg-footer></div>
+</footer>
 <!-- FOOT:END -->
+<script type="module" src="./reg-footer.js"></script>
 <script type="module">
 import {
   listChains, readChainHead, verifyLeafOnChain, verifyLeafLocal,
@@ -240,27 +184,37 @@ import {
 import { episodeSourceWording } from "./wording.js";
 
 const $ = (s) => document.querySelector(s);
-const short = (h) => h.slice(0, 10) + "…" + h.slice(-6);
+const short = (h) => (h && h.length > 18 ? h.slice(0, 10) + "…" + h.slice(-6) : h);
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
 
 /* ---------------------------------------------------------- Chain selector */
 const chains = listChains();
 const chainSel = $("#cchain");
-chainSel.innerHTML = chains.map((c, i) => `<option value="${i}">${c.name} (${c.role})</option>`).join("");
+chainSel.innerHTML = chains.map((c, i) => `<option value="${i}">${escapeHtml(c.name)} (${escapeHtml(c.role)})</option>`).join("");
 let currentChain = chains[0];
 $("#crpc").value = currentChain.rpc;
+
+let lastAnswer = null; // {reachable, chain, rpc, head}
+
+function rpcHost(rpc) {
+  try { return new URL(rpc).host; } catch { return rpc; }
+}
 
 async function refreshHead() {
   const state = $("#cstate");
   state.textContent = "reading the chain…";
   const rpc = $("#crpc").value.trim() || currentChain.rpc;
   const r = await readChainHead(currentChain, rpc);
+  lastAnswer = { ...r, chain: currentChain, rpc };
   if (!r.reachable) {
     state.textContent = `${currentChain.name} — unreachable (${r.error}). Nothing is drawn rather than guessed.`;
     return;
   }
-  state.textContent = r.count === 0
-    ? `${currentChain.name} via ${rpc} — reachable, but nothing anchored yet.`
-    : `${currentChain.name} via ${rpc} — head is size ${r.head.size}, root ${short(r.head.root)}, block ${r.head.blockNumber}.`;
+  state.innerHTML = r.count === 0
+    ? `Answered by <span class="mono">${escapeHtml(currentChain.name)}</span> via <span class="mono">${escapeHtml(rpcHost(rpc))}</span> — reachable, but nothing anchored yet.`
+    : `Answered by <span class="mono">${escapeHtml(currentChain.name)}</span> via <span class="mono">${escapeHtml(rpcHost(rpc))}</span> — head is size ${r.head.size}, root ${short(r.head.root)}, block ${r.head.blockNumber}.`;
 }
 
 chainSel.addEventListener("change", () => {
@@ -284,41 +238,103 @@ tabs.Leaf.addEventListener("click", () => selectTab("Leaf"));
 tabs.Report.addEventListener("click", () => selectTab("Report"));
 tabs.Corpus.addEventListener("click", () => selectTab("Corpus"));
 
-/* ---------------------------------------------------------------- Leaf mode */
-function renderStepList(host, steps) {
-  host.innerHTML = `<ul class="steplist">${steps.map((s) => `
-    <li class="${s.ok ? "ok" : "fail"}">
-      <span class="dot"></span>
-      <span><span class="name">${escapeHtml(s.name)}</span>
-      <span class="detail">${escapeHtml(s.detail || "")}</span></span>
-    </li>`).join("")}</ul>`;
-}
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+/* --------------------------------------------------------- shared render */
+const vright = $("#vright");
+
+function clearRight() {
+  vright.innerHTML = "";
 }
 
-$("#vform").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const out = $("#vresult");
-  out.innerHTML = `<span class="verdict wait">checking…</span>`;
+function renderUnreachableNotice(chain, rpc, error) {
+  clearRight();
+  vright.innerHTML = `<div class="notice" data-kind="fail">
+    ${escapeHtml(chain.name)} is unreachable via <span class="mono">${escapeHtml(rpc)}</span>
+    (${escapeHtml(error)}). Nothing is drawn rather than guessed.</div>`;
+}
+
+/* Every step outcome maps to exactly one status square: a step marked
+ * `notChecked` (skipped / not checkable from what this page has, e.g. the
+ * file-hash step, or a manifestHash/consent step with nothing embedded to
+ * recompute against) is `skip` regardless of its `ok` value — `ok:true` on a
+ * `notChecked` step means "not a failure of what was checkable", not
+ * "checked and passed", and must never render the green filled square.
+ * Everything else is `ok`/`fail` from the step's own `ok`. */
+function stepsHtml(steps) {
+  return `<ul class="steps">${steps.map((s) => {
+    const status = s.notChecked ? "skip" : (s.ok ? "ok" : "fail");
+    return `<li data-status="${status}">
+      <span class="st"></span>
+      <span class="name">${escapeHtml(s.name)}</span>
+      <span class="ev">${escapeHtml(s.detail || "")}</span>
+    </li>`;
+  }).join("")}</ul>`;
+}
+
+function verdictHtml(steps) {
+  const failing = steps.find((s) => !s.ok);
+  if (failing) {
+    return `<div class="verdict" data-status="fail">Stopped at: ${escapeHtml(failing.name)}</div>`;
+  }
+  const skipped = steps.filter((s) => s.notChecked);
+  if (skipped.length) {
+    return `<div class="verdict" data-status="ok">Every checkable step passed — ${skipped.length} step${skipped.length === 1 ? "" : "s"} not checkable here (files not delivered to the browser).</div>`;
+  }
+  return `<div class="verdict" data-status="ok">Every step passed</div>`;
+}
+
+function copyRow(label, value, truncate) {
+  const shown = truncate ? short(value) : value;
+  const id = `cp${Math.random().toString(36).slice(2, 9)}`;
+  return `<div class="vevidence-row">
+    <span class="k">${escapeHtml(label)}</span>
+    <span class="copy"><span class="hash${truncate ? " hash-short" : ""}">${escapeHtml(shown)}</span>
+    <button type="button" data-copy="${escapeHtml(value)}" data-id="${id}">Copy</button></span>
+  </div>`;
+}
+
+function wireCopyButtons(host) {
+  host.querySelectorAll("button[data-copy]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(btn.getAttribute("data-copy"));
+      } catch { /* clipboard may be unavailable (e.g. headless capture) */ }
+      btn.textContent = "Copied";
+      btn.dataset.done = "1";
+      setTimeout(() => { btn.textContent = "Copy"; delete btn.dataset.done; }, 1200);
+    });
+  });
+}
+
+/* ---------------------------------------------------------------- Record mode */
+function badgeHtml(level, earned) {
+  const n = level.replace("L", "");
+  return `<span class="badge${earned ? "" : " off"}"><span class="lvl">L${n}</span><span class="lbl">${earned ? levelName(level) : "not earned"}</span></span>`;
+}
+function levelName(level) {
+  return { L0: "Committed", L1: "Signed", L2: "Attested", L3: "Checked" }[level] || level;
+}
+
+async function runLeafCheck() {
   const anchorIndex = Number($("#vindex").value.trim() || 0);
   const preimage = $("#vpre").value.trim();
   const leafIndex = Number($("#vleaf").value.trim() || 0);
   const proof = $("#vproof").value.split(",").map((s) => s.trim()).filter(Boolean);
-
   const rpc = $("#crpc").value.trim() || currentChain.rpc;
+
   const [onChain, head] = await Promise.all([
     verifyLeafOnChain(currentChain, rpc, { anchorIndex, preimage, proof, leafIndex }),
     readChainHead(currentChain, rpc),
   ]);
 
+  if (!head.reachable) {
+    renderUnreachableNotice(currentChain, rpc, head.error);
+    return;
+  }
+
   let local;
   try {
-    // Local check needs the anchor's (root,size); prefer the head the chain
-    // just reported, since that is the anchor a freshly submitted proof is
-    // almost always checked against.
-    const size = head.reachable && head.head ? head.head.size : null;
-    const root = head.reachable && head.head ? head.head.root : null;
+    const size = head.head ? head.head.size : null;
+    const root = head.head ? head.head.root : null;
     if (size === null) throw new Error("no local anchor (root,size) available — chain unreachable");
     local = verifyLeafLocal({ preimage, proof, leafIndex, size, root });
   } catch (err) {
@@ -331,10 +347,86 @@ $("#vform").addEventListener("submit", async (e) => {
     { name: "locally — merkle.js, no network", ok: !!(local && local.ok),
       detail: local && local.ok ? `decoded as ${local.decoded.kind}; leaf ${short(local.leaf)} folds to the head root` : (local && local.error) || "did not fold to the expected root" },
   ];
-  renderStepList(out, steps);
+
+  clearRight();
+  let html = stepsHtml(steps) + verdictHtml(steps);
+
+  if (local && local.ok) {
+    html += `<div class="vresult-block">
+      <h3>Evidence</h3>
+      <div class="vevidence-list">
+        ${copyRow("Leaf hash", local.leaf, true)}
+        ${copyRow("Anchor root", head.head.root, true)}
+        ${copyRow("Anchor size", String(head.head.size), false)}
+        ${copyRow("Sibling proof", proof.join(","), true)}
+      </div>
+    </div>`;
+  }
+  vright.innerHTML = html;
+  wireCopyButtons(vright);
+}
+
+$("#vform").addEventListener("submit", (e) => {
+  e.preventDefault();
+  runLeafCheck();
 });
 
 /* -------------------------------------------------------------- Report mode */
+function renderReport(result, report) {
+  clearRight();
+  let html = stepsHtml(result.steps) + verdictHtml(result.steps);
+
+  if (report && Array.isArray(report.episodes) && report.episodes.length) {
+    html += `<div class="vresult-block"><h3>Episodes</h3>
+      <div class="register-wrap"><table class="register"><thead><tr>
+        <th>Status</th><th>Leaf</th><th>Index</th><th>Badges</th><th>Source</th><th>Consent</th>
+      </tr></thead><tbody>${report.episodes.map((ep) => {
+        const epFails = result.steps.some((s) => s.name.startsWith(`episode ${ep.log_index}:`) && !s.ok);
+        const rowStatus = epFails ? "fail" : "ok";
+        const badges = (ep.badges || []).map((b) => badgeHtml(b, true)).join(" ");
+        return `<tr data-status="${rowStatus}">
+          <td class="rstatus"><span class="st"></span></td>
+          <td class="hash">${short(ep.leaf)}</td>
+          <td class="num">${ep.log_index}</td>
+          <td><div class="badges">${badges || "—"}</div></td>
+          <td>${ep.source ? escapeHtml(episodeSourceWording(ep)) : "—"}</td>
+          <td>${escapeHtml(ep.consent ? ep.consent.status : "—")}</td>
+        </tr>`;
+      }).join("")}</tbody></table></div>
+    </div>`;
+  }
+  vright.innerHTML = html;
+  wireCopyButtons(vright);
+}
+
+function runReportCheck(report) {
+  const result = verifyReport(report);
+  renderReport(result, report);
+}
+
+$("#rcheck").addEventListener("click", () => {
+  let report;
+  try {
+    report = JSON.parse($("#rjson").value);
+  } catch (e) {
+    clearRight();
+    vright.innerHTML = `<div class="notice" data-kind="fail">Not valid JSON: ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  runReportCheck(report);
+});
+
+$("#rload").addEventListener("click", async () => {
+  try {
+    const r = await fetch("./samples/golden-report.json").then((r) => r.json());
+    $("#rjson").value = JSON.stringify(r, null, 2);
+    runReportCheck(r);
+  } catch (e) {
+    clearRight();
+    vright.innerHTML = `<div class="notice" data-kind="fail">Could not load the golden report: ${escapeHtml(e.message)}</div>`;
+  }
+});
+
 function applyReportDeepLink() {
   const q = new URLSearchParams(location.search);
   const url = q.get("report");
@@ -344,72 +436,46 @@ function applyReportDeepLink() {
       $("#rjson").value = JSON.stringify(j, null, 2);
       runReportCheck(j);
     }).catch((e) => {
-      $("#rresult").innerHTML = `<span class="verdict no">could not fetch ${escapeHtml(url)}: ${escapeHtml(e.message)}</span>`;
+      clearRight();
+      vright.innerHTML = `<div class="notice" data-kind="fail">Could not fetch ${escapeHtml(url)}: ${escapeHtml(e.message)}</div>`;
     });
   }
 }
 
-function renderReport(result, report) {
-  const out = $("#rresult");
-  const summary = result.allPassed
-    ? `<span class="verdict yes">all checkable steps passed</span>`
-    : `<span class="verdict no">at least one step failed — see below</span>`;
-  let episodeTable = "";
-  if (report && Array.isArray(report.episodes) && report.episodes.length) {
-    episodeTable = `<div class="scroller"><table class="vtable"><thead><tr>
-      <th>Episode</th><th>Badges</th><th>Consent</th><th>Source</th><th>Wording</th>
-    </tr></thead><tbody>${report.episodes.map((ep) => `<tr>
-      <td class="mono">${short(ep.leaf)}</td>
-      <td>${(ep.badges || []).join(", ") || "—"}</td>
-      <td>${escapeHtml(ep.consent ? ep.consent.status : "—")}</td>
-      <td>${ep.source ? escapeHtml(episodeSourceWording(ep)) : "—"}</td>
-      <td>${(ep.wording || []).map(escapeHtml).join("<br>")}</td>
-    </tr>`).join("")}</tbody></table></div>`;
-  }
-  out.innerHTML = summary + episodeTable;
-  const stepsHost = document.createElement("div");
-  renderStepList(stepsHost, result.steps);
-  out.appendChild(stepsHost);
-}
-
-function runReportCheck(report) {
-  const result = verifyReport(report);
-  renderReport(result, report);
-}
-
-$("#rcheck").addEventListener("click", () => {
-  const out = $("#rresult");
-  let report;
-  try {
-    report = JSON.parse($("#rjson").value);
-  } catch (e) {
-    out.innerHTML = `<span class="verdict no">not valid JSON: ${escapeHtml(e.message)}</span>`;
-    return;
-  }
-  runReportCheck(report);
-});
-
-applyReportDeepLink();
-
-/* -------------------------------------------------------------- Corpus mode */
+/* --------------------------------------------------------------- Corpus mode */
 $("#cform").addEventListener("submit", (e) => {
   e.preventDefault();
-  const out = $("#cresult");
+  clearRight();
   try {
     const leaf = $("#cleaf").value.trim();
     const index = Number($("#cindex").value.trim());
     const episodeCount = Number($("#ccount").value.trim());
     const corpusRoot = $("#croot").value.trim();
     const proof = $("#cproof").value.split(",").map((s) => s.trim()).filter(Boolean);
-    const ok = verifyCorpusInclusion({ leaf, index, episodeCount, proof, corpusRoot });
-    out.innerHTML = ok
-      ? `<span class="verdict yes">included — this leaf folds to the corpus root at index ${index}</span>`
-      : `<span class="verdict no">not included under that proof</span>`;
+    const included = verifyCorpusInclusion({ leaf, index, episodeCount, proof, corpusRoot });
+    const steps = [{ name: "corpus inclusion", ok: included,
+      detail: included ? `included — this leaf folds to the corpus root at index ${index}` : "not included under that proof" }];
+    vright.innerHTML = stepsHtml(steps) + verdictHtml(steps);
   } catch (err) {
-    out.innerHTML = `<span class="verdict no">${escapeHtml(err.message)}</span>`;
+    vright.innerHTML = `<div class="notice" data-kind="fail">${escapeHtml(err.message)}</div>`;
   }
 });
-</script>
 
+/* ---------------------------------------------------------------- Deep links */
+function applyLeafDeepLink() {
+  const q = new URLSearchParams(location.search);
+  const leaf = q.get("leaf");
+  if (!leaf) return;
+  selectTab("Leaf");
+  $("#vpre").value = leaf;
+  if (q.get("index")) $("#vindex").value = q.get("index");
+  if (q.get("leafIndex")) $("#vleaf").value = q.get("leafIndex");
+  if (q.get("proof")) $("#vproof").value = q.get("proof");
+  if (q.get("index") && q.get("leafIndex") && q.get("proof")) runLeafCheck();
+}
+
+applyReportDeepLink();
+applyLeafDeepLink();
+</script>
 </body>
 </html>

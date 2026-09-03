@@ -192,7 +192,7 @@ function stepInclusion(ep, anchor) {
 
 function stepManifestHash(ep) {
   if (!ep.manifest) {
-    return { name: "manifestHash", ok: true, detail: "no manifest embedded in the report; cannot recompute (files/manifest not delivered) — skipped, not a failure of what was checkable" };
+    return { name: "manifestHash", ok: true, notChecked: true, detail: "no manifest embedded in the report; cannot recompute (files/manifest not delivered) — skipped, not a failure of what was checkable" };
   }
   try {
     const got = hashObjectExcluding(ep.manifest, ["signature"]);
