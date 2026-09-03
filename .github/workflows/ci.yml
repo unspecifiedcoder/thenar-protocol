@@ -43,8 +43,9 @@ jobs:
       - name: Log store
         run: pnpm test:log
 
-      - name: LeRobot export
-        run: pnpm test:export
+      - name: API
+        run: pnpm test:api
+
 
       # Import integrity, the grasp timeline, and the two cross-implementation
       # checks: browser keccak against viem, and the browser sampler against

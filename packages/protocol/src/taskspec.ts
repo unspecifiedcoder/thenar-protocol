@@ -1,4 +1,5 @@
-import { keccak256, toHex, type Hex } from "viem";
+import { type Hex } from "viem";
+import { canonicalJson, hashObject, type JsonValue } from "./canonical";
 
 /**
  * A task is a distribution over scenes, not a scene.
@@ -176,18 +177,16 @@ const HIGH_DOF = new Set([
 ]);
 
 /**
- * Canonical bytes for hashing: keys sorted at every level, no whitespace, so
- * two curators who authored the same task get the same id and a reordered
- * field cannot mint a second one.
+ * @deprecated Use `canonicalJson` from `./canonical` (RFC 8785 / JCS). Kept
+ * as a thin alias — not reimplemented — so existing `taskId` vectors stay
+ * byte-identical: this used to be a bespoke sorted-keys serialiser that
+ * happened to be JCS-compatible for the value types `TaskSpec` uses, but it
+ * was never named or tested as JCS (T-001).
  */
 export function canonicalise(value: unknown): string {
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(canonicalise).join(",")}]`;
-  const o = value as Record<string, unknown>;
-  const keys = Object.keys(o).filter((k) => o[k] !== undefined).sort();
-  return `{${keys.map((k) => `${JSON.stringify(k)}:${canonicalise(o[k])}`).join(",")}}`;
+  return canonicalJson(value as JsonValue);
 }
 
 export function taskId(spec: TaskSpec): Hex {
-  return keccak256(toHex(canonicalise(spec)));
+  return hashObject(spec as unknown as JsonValue);
 }

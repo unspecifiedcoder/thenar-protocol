@@ -87,13 +87,19 @@ rewrite.
 
 ## Status
 
-**The contracts are not deployed on Fuji yet.** They are deployed and verified on
-Monad Testnet in the sibling repository
-([`thenar-monad`](https://github.com/nickthelegend/thenar-monad)), which is where
-the live end-to-end proof currently runs. The Solidity here is identical; only
-the deployment target and the explorer differ. The web reader is pointed at the
-zero address on purpose, so it reports that it cannot reach a log rather than
-drawing an invented one.
+v2 deploys on Avalanche C-Chain (Fuji testnet) with Ethereum (Sepolia) as a mirror.
+The contracts are not yet deployed. The web reader is pointed at zero addresses
+on purpose, so it reports that it cannot reach a log rather than drawing an
+invented one.
+
+## Deployment history
+
+**v1** was proven end-to-end on Monad Testnet. Addresses and the final state are
+recorded in `docs/PLAN-2026-08-status.md` for reference.
+
+**v2** targets Avalanche C-Chain (primary) with an Ethereum mirror for
+cross-chain settlement and verification. It refactors the architecture around
+an RFC 6962 log, sparse Merkle consent tree, and stateless verifier.
 
 ---
 
@@ -138,7 +144,7 @@ publishes terms and buys a licence. It writes `apps/web/sample-proof.json` so
 cd apps/web && python3 -m http.server 8080
 ```
 
-No build step and no bundler. `/verify` talks to Monad over JSON-RPC directly;
+No build step and no bundler. `/verify` talks to the contract over JSON-RPC directly;
 reads need no wallet.
 
 ---

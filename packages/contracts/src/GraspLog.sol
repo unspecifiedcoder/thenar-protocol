@@ -3,7 +3,6 @@ pragma solidity ^0.8.24;
 
 import {MerkleLog} from "./lib/MerkleLog.sol";
 import {SparseMerkle} from "./lib/SparseMerkle.sol";
-import {ClipLeaf} from "./lib/ClipLeaf.sol";
 
 /**
  * GRASP — the anchor.
@@ -43,10 +42,17 @@ contract GraspLog {
     address public pendingAnchorer;
     Anchor[] private _anchors;
 
+    /// First anchor (index + 1) at which a given root was seen. Equal-size
+    /// anchors reuse the head's root, so this is set only on first occurrence.
+    mapping(bytes32 => uint256) private _indexOfRoot;
+
     error NotAnchorer();
     error NotPending();
     error SizeMustGrow(uint64 head, uint64 next);
+    error SizeMustNotShrink(uint64 head, uint64 next);
     error RootMustChange();
+    error RootMustMatchAtSameSize();
+    error NothingToAnchor();
     error NoAnchors();
     error UnknownAnchor(uint256 index);
     error NotFirstSighting();
@@ -74,13 +80,24 @@ contract GraspLog {
     // --------------------------------------------------------------- anchoring
 
     /**
-     * Extend the head. The new size must strictly exceed the old one and the
-     * root must actually change: an anchor that says nothing happened is a
-     * transaction that should not have been sent, and silently accepting it
-     * would let the head stutter without anyone noticing.
+     * Extend the head under the D-17 rule. The size may never shrink, and a
+     * transaction that changes nothing is refused rather than silently
+     * accepted:
+     *
+     *   - first anchor:            size >= 1, else `SizeMustGrow`
+     *   - size < head.size:        `SizeMustNotShrink`
+     *   - size > head.size:        root must differ from the head's, else
+     *                              `RootMustChange`
+     *   - size == head.size:       root must equal the head's, else
+     *                              `RootMustMatchAtSameSize`; and the
+     *                              revocation root must differ, else
+     *                              `NothingToAnchor` — this is the
+     *                              revocation-only case: the log did not grow
+     *                              but a withdrawal became knowable.
      *
      * `prevRoot` is recorded rather than passed, so a caller cannot claim to
-     * extend a head that was never current.
+     * extend a head that was never current. At equal size `prevRoot` equals
+     * `root` itself, since the root did not change.
      */
     function anchor(bytes32 root, uint64 size, bytes32 revocationRoot)
         external
@@ -90,8 +107,13 @@ contract GraspLog {
         bytes32 prev;
         if (_anchors.length > 0) {
             Anchor storage h = _anchors[_anchors.length - 1];
-            if (size <= h.size) revert SizeMustGrow(h.size, size);
-            if (root == h.root) revert RootMustChange();
+            if (size < h.size) revert SizeMustNotShrink(h.size, size);
+            if (size > h.size) {
+                if (root == h.root) revert RootMustChange();
+            } else {
+                if (root != h.root) revert RootMustMatchAtSameSize();
+                if (revocationRoot == h.revocationRoot) revert NothingToAnchor();
+            }
             prev = h.root;
         } else if (size == 0) {
             revert SizeMustGrow(0, 0);
@@ -108,6 +130,11 @@ contract GraspLog {
                 blockNumber: uint64(block.number)
             })
         );
+
+        if (_indexOfRoot[root] == 0) {
+            _indexOfRoot[root] = index + 1;
+        }
+
         emit Anchored(index, root, prev, revocationRoot, size, uint64(block.timestamp));
     }
 
@@ -127,18 +154,28 @@ contract GraspLog {
         return _anchors[_anchors.length - 1];
     }
 
+    /** The first anchor at which `root` was ever the head's root, if any. */
+    function indexOfRoot(bytes32 root) external view returns (bool found, uint256 index) {
+        uint256 v = _indexOfRoot[root];
+        if (v == 0) return (false, 0);
+        return (true, v - 1);
+    }
+
     // ------------------------------------------------------------ verification
 
-    /** This clip is in the log as of the root anchored at `index`. */
-    function verifyClip(
+    /**
+     * This already-hashed leaf is in the log as of the root anchored at
+     * `index`. `LeafVerifier` hashes a preimage and calls this; `GraspLog`
+     * itself parses no leaves (D-15).
+     */
+    function verifyLeafHash(
         uint256 index,
-        bytes calldata preimage,
+        bytes32 leaf,
         bytes32[] calldata proof,
         uint64 leafIndex
     ) external view returns (bool) {
         if (index >= _anchors.length) revert UnknownAnchor(index);
         Anchor storage a = _anchors[index];
-        bytes32 leaf = ClipLeaf.hashPreimage(preimage);
         return MerkleLog.verifyInclusion(leaf, proof, leafIndex, a.size, a.root);
     }
 

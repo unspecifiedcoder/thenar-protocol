@@ -1,3 +1,5 @@
+**Shelved (D-13)**
+
 # The foundry
 
 Curators design worlds and tasks. Contributors produce demonstrations against

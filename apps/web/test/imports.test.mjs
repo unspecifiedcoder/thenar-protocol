@@ -6,35 +6,60 @@
  * reveal animations, the grasp trace, the chain reader and the contact form all
  * stopped attaching at once, and the site shipped that way. This is the guard.
  */
-import { readdirSync, readFileSync, existsSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { readdirSync, readFileSync, existsSync, statSync } from "node:fs";
+import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const web = join(dirname(fileURLToPath(import.meta.url)), "..");
 let fails = 0;
 const ok = (c, m, x = "") => { if (!c) fails++; console.log(`${c ? "  ok  " : " FAIL "} ${m}${x ? ` — ${x}` : ""}`); };
 
-const files = readdirSync(web).filter((f) => f.endsWith(".js") || f.endsWith(".html"));
+function collectFiles(dir) {
+  const files = [];
+  for (const f of readdirSync(dir)) {
+    if (f.endsWith(".js") || f.endsWith(".html")) {
+      files.push(join(dir, f));
+    }
+  }
+  // Also check subdirectories like lab/
+  for (const d of readdirSync(dir)) {
+    const p = join(dir, d);
+    const s = statSync(p);
+    if (s.isDirectory() && !d.startsWith(".") && d !== "node_modules" && d !== "test") {
+      for (const f of readdirSync(p)) {
+        if (f.endsWith(".js") || f.endsWith(".html")) {
+          files.push(join(p, f));
+        }
+      }
+    }
+  }
+  return files;
+}
+
+const files = collectFiles(web);
 const referenced = new Set();
 let checked = 0;
 
 for (const f of files) {
-  const src = readFileSync(join(web, f), "utf8");
-  const specs = [
-    ...src.matchAll(/from\s+"\.\/([a-zA-Z0-9._-]+\.js)"/g),
-    ...src.matchAll(/import\s*\(\s*"\.\/([a-zA-Z0-9._-]+\.js)"/g),
-    ...src.matchAll(/src="\.\/([a-zA-Z0-9._-]+\.js)"/g),
+  const src = readFileSync(f, "utf8");
+  const imports = [
+    ...src.matchAll(/from\s+"(\.\.?\/[a-zA-Z0-9._\-/]+\.js)"/g),
+    ...src.matchAll(/import\s*\(\s*"(\.\.?\/[a-zA-Z0-9._\-/]+\.js)"/g),
+    ...src.matchAll(/src="(\.\.?\/[a-zA-Z0-9._\-/]+\.js)"/g),
   ].map((m) => m[1]);
-  for (const spec of specs) {
+  for (const spec of imports) {
     checked++;
-    referenced.add(spec);
-    ok(existsSync(join(web, spec)), `${f} imports ${spec}`);
+    const moduleName = spec.split('/').pop();
+    referenced.add(moduleName);
+    const resolvedPath = resolve(dirname(f), spec);
+    ok(existsSync(resolvedPath), `${f} imports ${spec}`);
   }
 }
 ok(checked > 0, "found imports to check", `${checked}`);
 
 // A module nothing reaches is dead weight — but only report it, because
 // deleting on that signal alone is what caused the outage.
+// Only check top-level modules; subdirectory modules (like lab/) can be intentionally unreferenced.
 const shipped = readdirSync(web).filter((f) => f.endsWith(".js"));
 const unreferenced = shipped.filter((f) => !referenced.has(f));
 ok(unreferenced.length === 0, "no shipped module is unreachable",
@@ -42,9 +67,11 @@ ok(unreferenced.length === 0, "no shipped module is unreachable",
 
 // Every stylesheet a page links must exist too.
 for (const f of files.filter((x) => x.endsWith(".html"))) {
-  const src = readFileSync(join(web, f), "utf8");
-  for (const m of src.matchAll(/href="\.\/([a-zA-Z0-9._-]+\.css)"/g)) {
-    ok(existsSync(join(web, m[1])), `${f} links ${m[1]}`);
+  const src = readFileSync(f, "utf8");
+  for (const m of src.matchAll(/href="(\.\.?\/[a-zA-Z0-9._\-/]+\.css)"/g)) {
+    const spec = m[1];
+    const resolvedPath = resolve(dirname(f), spec);
+    ok(existsSync(resolvedPath), `${f} links ${spec}`);
   }
 }
 

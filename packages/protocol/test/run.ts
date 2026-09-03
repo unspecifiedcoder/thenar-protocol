@@ -71,6 +71,11 @@ for (let m = 1; m < leaves.length; m++) {
 }
 ok(allConsistent, "every prefix proves the log is append-only", "10/10");
 
+// D-17's equal-size anchor needs a same-size consistency proof to be trivial,
+// since a revocation-only anchor keeps m === n.
+ok(log.consistencyProof(leaves, leaves.length, leaves.length).length === 0,
+   "consistencyProof(m, n) with m === n returns an empty proof");
+
 function replayConsistency(m: number, first: Hex, n: number, second: Hex, proof: Hex[]): boolean {
   if (m === n) return proof.length === 0 && first === second;
   let node = m - 1, last = n - 1, p = 0;

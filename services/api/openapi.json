@@ -1,0 +1,2248 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "THENAR API",
+    "version": "1.0.0",
+    "description": "PLAN.md §12 — every route stubbed 501 until its task lands."
+  },
+  "servers": [
+    {
+      "url": "/v1"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "CaptureManifest": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "number",
+            "const": 1
+          },
+          "kind": {
+            "type": "string",
+            "const": "capture_manifest"
+          },
+          "org_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "dataset_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "real",
+              "sim",
+              "mixed"
+            ]
+          },
+          "layout": {
+            "type": "string",
+            "enum": [
+              "chunked",
+              "per_episode"
+            ]
+          },
+          "embodiment": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rate_hz": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "duration_ms": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "captured_at": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "dtype": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "shape": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "hz": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "unit": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "dtype",
+                "shape"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "bytes": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "hash": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{64}$"
+                }
+              },
+              "required": [
+                "path",
+                "bytes",
+                "hash"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "range": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "episode_index": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "frames": {
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "items": [
+                      {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    ]
+                  },
+                  "video": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "array",
+                      "minItems": 2,
+                      "maxItems": 2,
+                      "items": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "episode_index",
+                  "frames"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payload_hash": {
+            "$ref": "#/definitions/CaptureManifest/properties/files/items/properties/hash"
+          },
+          "consent_commitment": {
+            "$ref": "#/definitions/CaptureManifest/properties/files/items/properties/hash"
+          },
+          "terms_hash": {
+            "$ref": "#/definitions/CaptureManifest/properties/files/items/properties/hash"
+          },
+          "scope_bits": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "task": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "instruction": {
+                    "type": "string"
+                  },
+                  "task_id": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/definitions/CaptureManifest/properties/files/items/properties/hash"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "instruction",
+                  "task_id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "success": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "success"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sim": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "task_spec_hash": {
+                    "$ref": "#/definitions/CaptureManifest/properties/files/items/properties/hash"
+                  },
+                  "world_seed": {
+                    "type": "string",
+                    "pattern": "^[0-9]+$"
+                  }
+                },
+                "required": [
+                  "task_spec_hash",
+                  "world_seed"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "signature": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "alg": {
+                    "type": "string",
+                    "enum": [
+                      "ed25519",
+                      "p256",
+                      "secp256k1"
+                    ]
+                  },
+                  "key_id": {
+                    "$ref": "#/definitions/CaptureManifest/properties/files/items/properties/hash"
+                  },
+                  "sig": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-f]*$"
+                  }
+                },
+                "required": [
+                  "alg",
+                  "key_id",
+                  "sig"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "v",
+          "kind",
+          "org_id",
+          "dataset_id",
+          "source",
+          "layout",
+          "embodiment",
+          "rate_hz",
+          "duration_ms",
+          "captured_at",
+          "channels",
+          "files",
+          "range",
+          "payload_hash",
+          "consent_commitment",
+          "terms_hash",
+          "scope_bits",
+          "task",
+          "outcome",
+          "sim",
+          "signature"
+        ],
+        "additionalProperties": false
+      },
+      "CorpusManifest": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "number",
+            "const": 1
+          },
+          "kind": {
+            "type": "string",
+            "const": "corpus_manifest"
+          },
+          "org_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "episodes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}$"
+            }
+          },
+          "corpus_root": {
+            "$ref": "#/definitions/CorpusManifest/properties/episodes/items"
+          },
+          "episode_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "terms_hash": {
+            "$ref": "#/definitions/CorpusManifest/properties/episodes/items"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/CorpusManifest/properties/episodes/items"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "filters": {
+            "type": "object",
+            "properties": {
+              "min_badges": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "exclude_failed_checks": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          },
+          "sealed_at": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "v",
+          "kind",
+          "org_id",
+          "title",
+          "episodes",
+          "terms_hash",
+          "task_id",
+          "filters"
+        ],
+        "additionalProperties": false
+      },
+      "VerificationClaim": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "number",
+            "const": 1
+          },
+          "kind": {
+            "type": "string",
+            "const": "verification_claim"
+          },
+          "subject_leaf": {
+            "type": "string",
+            "pattern": "^0x[0-9a-f]{64}$"
+          },
+          "verifier_key_id": {
+            "$ref": "#/definitions/VerificationClaim/properties/subject_leaf"
+          },
+          "check": {
+            "type": "string",
+            "enum": [
+              "dedup.v1",
+              "timing.v1",
+              "kinematics.v1",
+              "sensor_consistency.v1",
+              "sim_signature.v1",
+              "attestation.v1"
+            ]
+          },
+          "result": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail",
+              "inconclusive"
+            ]
+          },
+          "level_asserted": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "detail": {
+            "type": "object",
+            "properties": {
+              "check_version": {
+                "type": "string",
+                "minLength": 1
+              },
+              "thresholds": {
+                "type": "object",
+                "additionalProperties": {}
+              },
+              "index_snapshot": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "check_version",
+              "thresholds"
+            ],
+            "additionalProperties": {}
+          },
+          "issued_at": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "signature": {
+            "type": "object",
+            "properties": {
+              "alg": {
+                "type": "string",
+                "enum": [
+                  "ed25519",
+                  "p256",
+                  "secp256k1"
+                ]
+              },
+              "key_id": {
+                "$ref": "#/definitions/VerificationClaim/properties/subject_leaf"
+              },
+              "sig": {
+                "type": "string",
+                "pattern": "^0x[0-9a-f]*$"
+              }
+            },
+            "required": [
+              "alg",
+              "key_id",
+              "sig"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "v",
+          "kind",
+          "subject_leaf",
+          "verifier_key_id",
+          "check",
+          "result",
+          "level_asserted",
+          "detail",
+          "issued_at",
+          "signature"
+        ],
+        "additionalProperties": false
+      },
+      "ConsentRecord": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "number",
+            "const": 1
+          },
+          "kind": {
+            "type": "string",
+            "const": "consent_record"
+          },
+          "holder": {
+            "type": "string",
+            "enum": [
+              "contributor",
+              "organisation"
+            ]
+          },
+          "pubkey": {
+            "type": "string",
+            "pattern": "^0x[0-9a-f]*$"
+          },
+          "alg": {
+            "type": "string",
+            "enum": [
+              "ed25519",
+              "p256",
+              "secp256k1"
+            ]
+          },
+          "scope_bits": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "terms_hash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-f]{64}$"
+          },
+          "granted_at": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "nonce": {
+            "type": "string",
+            "pattern": "^0x[0-9a-f]{32}$"
+          }
+        },
+        "required": [
+          "v",
+          "kind",
+          "holder",
+          "pubkey",
+          "alg",
+          "scope_bits",
+          "terms_hash",
+          "granted_at",
+          "nonce"
+        ],
+        "additionalProperties": false
+      },
+      "AppendReceipt": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "number",
+            "const": 1
+          },
+          "kind": {
+            "type": "string",
+            "const": "append_receipt"
+          },
+          "leaf_hash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-f]{64}$"
+          },
+          "leaf_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "log_size_after": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "received_at": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "signature": {
+            "type": "object",
+            "properties": {
+              "alg": {
+                "type": "string",
+                "enum": [
+                  "ed25519",
+                  "p256",
+                  "secp256k1"
+                ]
+              },
+              "key_id": {
+                "$ref": "#/definitions/AppendReceipt/properties/leaf_hash"
+              },
+              "sig": {
+                "type": "string",
+                "pattern": "^0x[0-9a-f]*$"
+              }
+            },
+            "required": [
+              "alg",
+              "key_id",
+              "sig"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "v",
+          "kind",
+          "leaf_hash",
+          "leaf_index",
+          "log_size_after",
+          "received_at",
+          "signature"
+        ],
+        "additionalProperties": false
+      },
+      "Report": {
+        "type": "object",
+        "properties": {
+          "v": {
+            "type": "number",
+            "const": 1
+          },
+          "kind": {
+            "type": "string",
+            "const": "provenance_report"
+          },
+          "report_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "generated_at": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "operator": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "verifier_key_id": {
+                "type": "string",
+                "pattern": "^0x[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "name",
+              "verifier_key_id"
+            ],
+            "additionalProperties": false
+          },
+          "corpus": {},
+          "anchor": {
+            "type": "object",
+            "properties": {
+              "root": {
+                "$ref": "#/definitions/Report/properties/operator/properties/verifier_key_id"
+              },
+              "size": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "revocation_root": {
+                "$ref": "#/definitions/Report/properties/operator/properties/verifier_key_id"
+              },
+              "chains": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "chain_id": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "index": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "block_number": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "at": {
+                      "$ref": "#/definitions/Report/properties/generated_at"
+                    },
+                    "tx": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "chain_id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "root",
+              "size",
+              "chains"
+            ],
+            "additionalProperties": false
+          },
+          "sealing_anchor": {
+            "$ref": "#/definitions/Report/properties/anchor"
+          },
+          "consistency_proof": {
+            "type": "array",
+            "items": {}
+          },
+          "episodes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "leaf": {
+                  "$ref": "#/definitions/Report/properties/operator/properties/verifier_key_id"
+                },
+                "log_index": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "corpus_index": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "badges": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "wording": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "manifest_hash": {
+                  "$ref": "#/definitions/Report/properties/operator/properties/verifier_key_id"
+                },
+                "payload_hash": {
+                  "$ref": "#/definitions/Report/properties/operator/properties/verifier_key_id"
+                },
+                "preimage": {
+                  "type": "string"
+                },
+                "files": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "path": {
+                        "type": "string"
+                      },
+                      "hash": {
+                        "$ref": "#/definitions/Report/properties/operator/properties/verifier_key_id"
+                      },
+                      "bytes": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "required": [
+                      "path",
+                      "hash",
+                      "bytes"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "range": {
+                  "anyOf": [
+                    {},
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "inclusion_proof_log": {
+                  "type": "array",
+                  "items": {}
+                },
+                "inclusion_proof_corpus": {
+                  "type": "array",
+                  "items": {}
+                },
+                "consent": {},
+                "claims": {
+                  "type": "array",
+                  "items": {}
+                },
+                "signature": {}
+              },
+              "required": [
+                "leaf",
+                "log_index",
+                "corpus_index",
+                "badges",
+                "wording",
+                "manifest_hash",
+                "payload_hash",
+                "preimage",
+                "files",
+                "inclusion_proof_log",
+                "inclusion_proof_corpus",
+                "claims"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "receipts": {
+            "type": "array",
+            "items": {}
+          },
+          "checks_run": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "check": {
+                  "type": "string"
+                },
+                "check_version": {
+                  "type": "string"
+                },
+                "thresholds": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              },
+              "required": [
+                "check",
+                "check_version",
+                "thresholds"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "report_hash": {
+            "$ref": "#/definitions/Report/properties/operator/properties/verifier_key_id"
+          }
+        },
+        "required": [
+          "v",
+          "kind",
+          "report_id",
+          "generated_at",
+          "operator",
+          "anchor",
+          "sealing_anchor",
+          "consistency_proof",
+          "episodes",
+          "receipts",
+          "checks_run",
+          "limitations",
+          "report_hash"
+        ],
+        "additionalProperties": false
+      },
+      "CreateKeyBody": {
+        "type": "object",
+        "properties": {
+          "alg": {
+            "type": "string",
+            "enum": [
+              "ed25519",
+              "p256",
+              "secp256k1"
+            ]
+          },
+          "pubkey": {
+            "type": "string",
+            "pattern": "^0x[0-9a-f]*$"
+          },
+          "attestation": {}
+        },
+        "required": [
+          "alg",
+          "pubkey"
+        ],
+        "additionalProperties": false
+      },
+      "CreateUploadBody": {
+        "type": "object",
+        "properties": {
+          "hash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-f]{64}$"
+          },
+          "bytes": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          }
+        },
+        "required": [
+          "hash",
+          "bytes"
+        ],
+        "additionalProperties": false
+      },
+      "CreateDatasetBody": {
+        "type": "object",
+        "properties": {
+          "source_uri": {
+            "type": "string"
+          },
+          "info_json_hash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-f]{64}$"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "bytes": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "hash": {
+                  "$ref": "#/definitions/CreateDatasetBody/properties/info_json_hash"
+                }
+              },
+              "required": [
+                "path",
+                "bytes",
+                "hash"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "info_json_hash",
+          "files"
+        ],
+        "additionalProperties": false
+      },
+      "IngestDatasetBody": {
+        "type": "object",
+        "properties": {
+          "terms_hash": {
+            "type": "string",
+            "pattern": "^0x[0-9a-f]{64}$"
+          },
+          "scope_bits": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "real",
+              "sim",
+              "mixed"
+            ]
+          },
+          "consent": {
+            "type": "object",
+            "properties": {
+              "holder": {
+                "type": "string",
+                "enum": [
+                  "contributor",
+                  "organisation"
+                ]
+              },
+              "pubkey": {
+                "type": "string",
+                "pattern": "^0x[0-9a-f]*$"
+              },
+              "alg": {
+                "type": "string",
+                "enum": [
+                  "ed25519",
+                  "p256",
+                  "secp256k1"
+                ]
+              },
+              "scope_bits": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "holder",
+              "pubkey",
+              "alg",
+              "scope_bits"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "terms_hash",
+          "scope_bits",
+          "source",
+          "consent"
+        ],
+        "additionalProperties": false
+      },
+      "CreateEpisodeBody": {
+        "type": "object",
+        "properties": {
+          "manifest": {
+            "type": "object",
+            "properties": {
+              "v": {
+                "type": "number",
+                "const": 1
+              },
+              "kind": {
+                "type": "string",
+                "const": "capture_manifest"
+              },
+              "org_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "dataset_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "real",
+                  "sim",
+                  "mixed"
+                ]
+              },
+              "layout": {
+                "type": "string",
+                "enum": [
+                  "chunked",
+                  "per_episode"
+                ]
+              },
+              "embodiment": {
+                "type": "string",
+                "minLength": 1
+              },
+              "rate_hz": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "duration_ms": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "captured_at": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "channels": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "dtype": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "shape": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    },
+                    "hz": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "unit": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "dtype",
+                    "shape"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "files": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "bytes": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "hash": {
+                      "type": "string",
+                      "pattern": "^0x[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "bytes",
+                    "hash"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "range": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "episode_index": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "frames": {
+                        "type": "array",
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "items": [
+                          {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          {
+                            "type": "integer",
+                            "minimum": 0
+                          }
+                        ]
+                      },
+                      "video": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "array",
+                          "minItems": 2,
+                          "maxItems": 2,
+                          "items": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "episode_index",
+                      "frames"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "payload_hash": {
+                "$ref": "#/definitions/CreateEpisodeBody/properties/manifest/properties/files/items/properties/hash"
+              },
+              "consent_commitment": {
+                "$ref": "#/definitions/CreateEpisodeBody/properties/manifest/properties/files/items/properties/hash"
+              },
+              "terms_hash": {
+                "$ref": "#/definitions/CreateEpisodeBody/properties/manifest/properties/files/items/properties/hash"
+              },
+              "scope_bits": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "task": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "instruction": {
+                        "type": "string"
+                      },
+                      "task_id": {
+                        "anyOf": [
+                          {
+                            "$ref": "#/definitions/CreateEpisodeBody/properties/manifest/properties/files/items/properties/hash"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "instruction",
+                      "task_id"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "outcome": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "success"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "sim": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "task_spec_hash": {
+                        "$ref": "#/definitions/CreateEpisodeBody/properties/manifest/properties/files/items/properties/hash"
+                      },
+                      "world_seed": {
+                        "type": "string",
+                        "pattern": "^[0-9]+$"
+                      }
+                    },
+                    "required": [
+                      "task_spec_hash",
+                      "world_seed"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "signature": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "alg": {
+                        "type": "string",
+                        "enum": [
+                          "ed25519",
+                          "p256",
+                          "secp256k1"
+                        ]
+                      },
+                      "key_id": {
+                        "$ref": "#/definitions/CreateEpisodeBody/properties/manifest/properties/files/items/properties/hash"
+                      },
+                      "sig": {
+                        "type": "string",
+                        "pattern": "^0x[0-9a-f]*$"
+                      }
+                    },
+                    "required": [
+                      "alg",
+                      "key_id",
+                      "sig"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "v",
+              "kind",
+              "org_id",
+              "dataset_id",
+              "source",
+              "layout",
+              "embodiment",
+              "rate_hz",
+              "duration_ms",
+              "captured_at",
+              "channels",
+              "files",
+              "range",
+              "payload_hash",
+              "consent_commitment",
+              "terms_hash",
+              "scope_bits",
+              "task",
+              "outcome",
+              "sim",
+              "signature"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "manifest"
+        ],
+        "additionalProperties": false
+      },
+      "RevokeConsentBody": {
+        "type": "object",
+        "properties": {
+          "record": {
+            "type": "object",
+            "properties": {
+              "v": {
+                "type": "number",
+                "const": 1
+              },
+              "kind": {
+                "type": "string",
+                "const": "consent_record"
+              },
+              "holder": {
+                "type": "string",
+                "enum": [
+                  "contributor",
+                  "organisation"
+                ]
+              },
+              "pubkey": {
+                "type": "string",
+                "pattern": "^0x[0-9a-f]*$"
+              },
+              "alg": {
+                "type": "string",
+                "enum": [
+                  "ed25519",
+                  "p256",
+                  "secp256k1"
+                ]
+              },
+              "scope_bits": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "terms_hash": {
+                "type": "string",
+                "pattern": "^0x[0-9a-f]{64}$"
+              },
+              "granted_at": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "nonce": {
+                "type": "string",
+                "pattern": "^0x[0-9a-f]{32}$"
+              }
+            },
+            "required": [
+              "v",
+              "kind",
+              "holder",
+              "pubkey",
+              "alg",
+              "scope_bits",
+              "terms_hash",
+              "granted_at",
+              "nonce"
+            ],
+            "additionalProperties": false
+          },
+          "signature": {
+            "type": "object",
+            "properties": {
+              "alg": {
+                "$ref": "#/definitions/RevokeConsentBody/properties/record/properties/alg"
+              },
+              "key_id": {
+                "$ref": "#/definitions/RevokeConsentBody/properties/record/properties/terms_hash"
+              },
+              "sig": {
+                "$ref": "#/definitions/RevokeConsentBody/properties/record/properties/pubkey"
+              }
+            },
+            "required": [
+              "alg",
+              "key_id",
+              "sig"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "record",
+          "signature"
+        ],
+        "additionalProperties": false
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "invalid_request",
+                  "unauthorized",
+                  "forbidden",
+                  "not_found",
+                  "conflict",
+                  "unprocessable",
+                  "rate_limited",
+                  "not_implemented",
+                  "internal"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {}
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/v1/orgs/{orgId}/keys": {
+      "post": {
+        "summary": "Create a signing key for an org",
+        "x-auth": "org",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateKeyBody"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "List signing keys for an org",
+        "x-auth": "public",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/orgs/{orgId}/keys/{keyId}/revoke": {
+      "post": {
+        "summary": "Revoke a signing key",
+        "x-auth": "org",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/uploads": {
+      "post": {
+        "summary": "Request an upload",
+        "x-auth": "org",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUploadBody"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/uploads/{hash}": {
+      "put": {
+        "summary": "Store upload bytes (local store only)",
+        "x-auth": "org",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/datasets": {
+      "post": {
+        "summary": "Create a dataset",
+        "x-auth": "org",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDatasetBody"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/datasets/{id}/ingest": {
+      "post": {
+        "summary": "Ingest a dataset",
+        "x-auth": "org",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestDatasetBody"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/jobs/{jobId}": {
+      "get": {
+        "summary": "Get job status",
+        "x-auth": "org",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/episodes": {
+      "post": {
+        "summary": "Log an episode",
+        "x-auth": "org",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEpisodeBody"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/episodes/{leafHash}": {
+      "get": {
+        "summary": "Get episode detail",
+        "x-auth": "public",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/proofs/inclusion": {
+      "get": {
+        "summary": "Get an inclusion proof",
+        "x-auth": "public",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/proofs/consistency": {
+      "get": {
+        "summary": "Get a consistency proof",
+        "x-auth": "public",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consent/{consentKey}": {
+      "get": {
+        "summary": "Get consent status",
+        "x-auth": "public",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/consent/{consentKey}/revoke": {
+      "post": {
+        "summary": "Revoke consent",
+        "x-auth": "public",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokeConsentBody"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/corpora": {
+      "post": {
+        "summary": "Create a corpus",
+        "x-auth": "org",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorpusManifest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/corpora/{id}/log": {
+      "post": {
+        "summary": "Log a corpus",
+        "x-auth": "org",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/corpora/{id}/seal-params": {
+      "get": {
+        "summary": "Get seal calldata inputs",
+        "x-auth": "org",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/corpora/{id}": {
+      "get": {
+        "summary": "Get a corpus",
+        "x-auth": "public",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/corpora/{id}/report": {
+      "get": {
+        "summary": "Get a corpus report",
+        "x-auth": "public",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/claims": {
+      "post": {
+        "summary": "Log a verification claim",
+        "x-auth": "verifier",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerificationClaim"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/anchors": {
+      "get": {
+        "summary": "List anchors",
+        "x-auth": "public",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/anchors/audit": {
+      "get": {
+        "summary": "Anchor audit status",
+        "x-auth": "public",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/licences/{receiptId}/download": {
+      "get": {
+        "summary": "Download licensed files",
+        "x-auth": "wallet_sig",
+        "responses": {
+          "501": {
+            "description": "not implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/healthz": {
+      "get": {
+        "summary": "Health check",
+        "x-auth": "public",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "v": 1,
+  "kind": "capture_manifest",
+  "org_id": "01JAQZXK7VJZ9Q6QZJH8VN3R4T",
+  "dataset_id": null,
+  "source": "real",
+  "layout": "per_episode",
+  "embodiment": "so_arm100",
+  "rate_hz": 30,
+  "duration_ms": 12400,
+  "captured_at": 1756900000,
+  "channels": [
+    { "name": "action", "dtype": "float32", "shape": [6], "hz": 30 },
+    { "name": "observation.images.front", "dtype": "video/mp4", "shape": [480, 640, 3], "hz": 30 },
+    { "name": "observation.state", "dtype": "float32", "shape": [6], "unit": "rad", "hz": 30 }
+  ],
+  "files": [
+    { "path": "data/chunk-000/file-000.parquet", "bytes": 104857600, "hash": "0x81aa7c36a09ec07a26c6734040f87bdccf433f21f7a2ec433e1b97d26f161664" },
+    { "path": "videos/observation.images.front/chunk-000/file-000.mp4", "bytes": 734003200, "hash": "0x77258ca9f4fb995cde9880dbbba452866e51c20eb0d3989d7e49932543aa9555" }
+  ],
+  "range": null,
+  "payload_hash": "0xdb97d36c037fcca7e27ba8bdd9e4f808081a7a7ddc60c504453430ec6c031416",
+  "consent_commitment": "0x4444444444444444444444444444444444444444444444444444444444444444",
+  "terms_hash": "0x5555555555555555555555555555555555555555555555555555555555555555",
+  "scope_bits": 11,
+  "task": { "instruction": "fold the towel", "task_id": null },
+  "outcome": { "success": true },
+  "sim": null,
+  "signature": null
+}

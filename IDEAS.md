@@ -1,3 +1,5 @@
+**Archived 2026-09-03 — describes v1; see PLAN.md**
+
 # 100 ideas, ranked
 
 Ranked by impact × feasibility × fit for an **accelerator reviewer doing

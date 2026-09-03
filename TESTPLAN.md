@@ -1,3 +1,5 @@
+**Archived 2026-09-03 — describes v1; see PLAN.md**
+
 # THENAR — test plan
 
 Every page, asset, endpoint, contract call and flow that exists today, with what

@@ -1,3 +1,5 @@
+**Archived 2026-09-03 — describes v1; see PLAN.md**
+
 # Every task, end to end
 
 Ordered by dependency, not by appeal. Anything marked **DONE** is verified on
