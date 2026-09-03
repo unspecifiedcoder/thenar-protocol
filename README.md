@@ -1,22 +1,22 @@
-# THENAR — GRASP on Avalanche
+# THENAR — Provenance and rights ledger for physical-AI data
 
-**Contact data for physical AI.** Robots can see. They still cannot feel.
-Manipulation models train on pixels and joint angles; neither records the signal
-that decides whether the glass lifts or shatters — how hard the hand squeezed,
-and how fast it corrected when the object began to slip.
+**Provenance and rights for physical-AI data.** The neutral log that suppliers
+and buyers trust: prove what a dataset is, where it came from, who may train on
+it, and whether that is still true — without asking anyone to trust THENAR.
 
-This repository is the settlement half: **GRASP**, the protocol that commits
-captures to an append-only log, lets anyone verify a slice of it without
-trusting us, lets a contributor withdraw consent provably, and puts payment and
-licence terms in the same transaction.
+This repository is the core: a Certificate Transparency-style log that commits
+episodes to an append-only ledger, lets anyone verify a corpus without trusting
+us, lets a contributor withdraw consent provably, and binds payment and licence
+terms in one transaction on Avalanche C-Chain (with Ethereum mirror).
 
 | | |
 | --- | --- |
 | **Site** | https://thenar.io |
-| **Network** | Avalanche Fuji — chain `43113` |
+| **Primary chain** | Avalanche C-Chain Fuji testnet |
+| **Mirror chain** | Ethereum Sepolia |
 | **`GraspLog`** | not yet deployed |
-| **`GraspMarket`** | not yet deployed |
-| **Verify a capture** | `/verify` — reads the contract directly, nothing through our servers |
+| **`LicenceRegistry`** | not yet deployed |
+| **Verify a corpus** | `/verify` — reads chains directly, nothing through our servers |
 
 ---
 
@@ -88,18 +88,18 @@ rewrite.
 ## Status
 
 v2 deploys on Avalanche C-Chain (Fuji testnet) with Ethereum (Sepolia) as a mirror.
-The contracts are not yet deployed. The web reader is pointed at zero addresses
-on purpose, so it reports that it cannot reach a log rather than drawing an
-invented one.
+The contracts are built and tested; deployment is pending. The web reader and
+`/verify` page work against live chains once addresses are deployed.
 
 ## Deployment history
 
-**v1** was proven end-to-end on Monad Testnet. Addresses and the final state are
+**v1** (archived) was prototyped end-to-end. Addresses and the final state are
 recorded in `docs/PLAN-2026-08-status.md` for reference.
 
-**v2** targets Avalanche C-Chain (primary) with an Ethereum mirror for
-cross-chain settlement and verification. It refactors the architecture around
-an RFC 6962 log, sparse Merkle consent tree, and stateless verifier.
+**v2** targets Avalanche C-Chain (primary) with Ethereum (Sepolia) as a mirror.
+Architecture: RFC 6962 log, sparse Merkle consent tree, identity-free leaves,
+stateless verifier. Four products: Provenance Report (W1), Recorder SDK (W2),
+Licence Registry, and Consent Service.
 
 ---
 

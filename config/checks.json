@@ -1,0 +1,28 @@
+{
+  "dedup.v1": {
+    "enabled": true,
+    "blocking": false,
+    "emit_fail": false,
+    "thresholds": { "T_exact": 0.02, "T_near": 0.05 }
+  },
+  "timing.v1": {
+    "enabled": true,
+    "blocking": true,
+    "emit_fail": true
+  },
+  "kinematics.v1": {
+    "enabled": true,
+    "blocking": true,
+    "emit_fail": true
+  },
+  "sensor_consistency.v1": {
+    "enabled": true,
+    "blocking": false,
+    "emit_fail": false
+  },
+  "sim_signature.v1": {
+    "enabled": true,
+    "blocking": false,
+    "emit_fail": false
+  }
+}

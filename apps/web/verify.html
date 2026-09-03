@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Verify — THENAR</title>
-<meta name="description" content="Check a capture against the anchored log yourself. Inclusion, append-only history and live consent, read straight from the contract on Monad.">
+<meta name="description" content="Verify capture data against the anchored log. Inclusion proofs, append-only history, live consent status — read straight from the contract.">
 <link rel="canonical" href="https://thenar.io/verify">
 <link rel="icon" href="./mark.svg" type="image/svg+xml">
 <meta property="og:title" content="Verify — THENAR">
@@ -61,7 +61,7 @@
 <!-- NAV:END -->
 <main id="main">
 <section class="wrap" style="padding-top:96px;padding-bottom:24px">
-  <p class="eyebrow" style="color:#6E6E6E;font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 12px">GRASP on Monad Testnet</p>
+  <p class="eyebrow" style="color:#6E6E6E;font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 12px">The log on chain</p>
   <h1 style="margin:0 0 18px">Check it yourself.</h1>
   <p style="max-width:62ch;font-size:17px;line-height:1.55;color:#C9C9C9">
     A buyer needs to verify a slice of capture data without trusting our internal
@@ -181,7 +181,7 @@
     </div>
   </div>
   <div class="fbase">
-    <span>THENAR — contact data for physical AI.</span>
+    <span>THENAR — Provenance and rights for physical-AI data.</span>
     <span>Built in the open. Quest and Meta are trade marks of Meta Platforms, Inc. Thenar is not affiliated with Meta.</span>
   </div>
 </div></footer>
@@ -219,9 +219,9 @@ let anchorCount = null;
       </tr>`).join("");
     $("#anchors tbody").innerHTML = rows || `<tr><td colspan="5" style="color:#6E6E6E">the log is empty</td></tr>`;
   } catch (e) {
-    $("#headline").textContent = "could not reach Monad";
+    $("#headline").textContent = "could not reach the chain";
     $("#anchors tbody").innerHTML =
-      `<tr><td colspan="5" style="color:#FA9DCD">Could not reach Monad, so nothing is shown. Refresh to retry.</td></tr>`;
+      `<tr><td colspan="5" style="color:#FA9DCD">Could not reach the chain, so nothing is shown. Refresh to retry.</td></tr>`;
   }
 })();
 

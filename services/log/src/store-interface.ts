@@ -39,6 +39,11 @@ export interface ILogStore {
   }[];
   lastAnchored(chainId: number): { size: number; revocationRoot: Hex } | null;
 
+  // ------------------------------------------------------------------ corpus (T-016 reads)
+
+  corpusById(corpusId: string): CorpusRow | null;
+  corpusEpisodeLeaves(corpusId: string): { leafHash: Hex; corpusIndex: number }[];
+
   episodeMeta(leafHash: Hex): EpisodeMeta | null;
 
   recordClaim(claim: ClaimRow): void;

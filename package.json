@@ -13,7 +13,7 @@
     "log": "tsx services/log/src/cli.ts",
     "log:daemon": "tsx services/log/src/daemon.ts",
     "admin": "tsx services/api/bin/thenar-admin.ts",
-    "test:web": "node apps/web/test/grasp.test.mjs && node apps/web/test/imports.test.mjs && tsx apps/web/test/keccak.test.mjs && tsx apps/web/test/scene.test.mjs && tsx apps/web/test/corpus.test.mjs && tsx apps/web/test/taskspec.test.mjs && tsx apps/web/test/build.test.mjs",
+    "test:web": "node apps/web/test/grasp.test.mjs && node apps/web/test/imports.test.mjs && tsx apps/web/test/keccak.test.mjs && tsx apps/web/test/scene.test.mjs && tsx apps/web/test/corpus.test.mjs && tsx apps/web/test/taskspec.test.mjs && tsx apps/web/test/build.test.mjs && node apps/web/test/copy.test.mjs",
     "test:parity": "node scripts/check-parity.mjs . ../thenar-avax",
     "gen:embodiments": "tsx scripts/gen-embodiments.mjs",
     "gen:chains": "node scripts/gen-chains.mjs",

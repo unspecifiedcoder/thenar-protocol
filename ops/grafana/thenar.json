@@ -1,0 +1,195 @@
+{
+  "dashboard": {
+    "title": "THENAR Observability (T-031)",
+    "tags": ["thenar", "observability", "metrics"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Log Size",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "log_size",
+            "legendFormat": "total leaves",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "short",
+            "label": "Leaf Count",
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Anchor Lag by Chain",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "anchor_lag_seconds",
+            "legendFormat": "chain {{ chain }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "seconds",
+            "label": "Lag (seconds)",
+            "show": true
+          }
+        ],
+        "alert": {
+          "name": "Anchor Lag High",
+          "description": "Alert when anchor lag exceeds 2x interval",
+          "evaluator": {
+            "type": "gt",
+            "params": [7200]
+          },
+          "duration": "5m"
+        }
+      },
+      {
+        "id": 3,
+        "title": "Ingest Queue",
+        "type": "gauge",
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 0,
+          "y": 8
+        },
+        "targets": [
+          {
+            "expr": "ingest_queue",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "max": 1000,
+            "min": 0,
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Verification Queue",
+        "type": "gauge",
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 6,
+          "y": 8
+        },
+        "targets": [
+          {
+            "expr": "verification_queue",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "max": 1000,
+            "min": 0,
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "Revocations Total",
+        "type": "stat",
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 12,
+          "y": 8
+        },
+        "targets": [
+          {
+            "expr": "revocations_total",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Claims by Check and Result",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        },
+        "targets": [
+          {
+            "expr": "rate(claims_total[5m])",
+            "legendFormat": "{{ check }} - {{ result }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "ops",
+            "label": "Claims/sec",
+            "show": true
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "API Errors by Status Code",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        },
+        "targets": [
+          {
+            "expr": "rate(api_errors_total[5m])",
+            "legendFormat": "{{ code }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "ops",
+            "label": "Errors/sec",
+            "show": true
+          }
+        ],
+        "alert": {
+          "name": "High Error Rate",
+          "description": "Alert when error rate exceeds threshold",
+          "evaluator": {
+            "type": "gt",
+            "params": [0.1]
+          },
+          "duration": "5m"
+        }
+      }
+    ],
+    "schemaVersion": 30,
+    "version": 0,
+    "refresh": "30s"
+  }
+}
