@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
 import {ClaimLeaf} from "../src/lib/ClaimLeaf.sol";
+import {Vectors} from "./Vectors.sol";
 
 contract ClaimLeafTest is Test {
     // Internal library calls compile to JUMP, not CALL, so a revert inside one
@@ -75,6 +76,18 @@ contract ClaimLeafTest is Test {
         assertEq(result, c.result, "result at offset 131");
         assertEq(level, c.levelAsserted, "levelAsserted at offset 132");
         assertEq(issuedAt, c.issuedAt, "issuedAt at offset 133");
+    }
+
+    // --------------------------------------------------- T-008 TS vectors
+
+    /**
+     * `ClaimLeaf.hashPreimage` on the T-008 vector's 0x04 preimage equals
+     * the leaf hash the TypeScript reference (`packages/protocol/src/claim.ts`)
+     * computed for the same fields — PLAN §5 I-5.
+     */
+    function test_vectorPreimageHashesToTheVectorLeaf() public pure {
+        assertEq(Vectors.CLAIM_PREIMAGE.length, ClaimLeaf.PREIMAGE_BYTES);
+        assertEq(ClaimLeaf.hashPreimage(Vectors.CLAIM_PREIMAGE), Vectors.CLAIM_LEAF);
     }
 
     // -------------------------------------------------------- rejections

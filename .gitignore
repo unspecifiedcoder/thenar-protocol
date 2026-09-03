@@ -5,4 +5,5 @@ packages/contracts/lib/
 packages/contracts/broadcast/
 .env*
 !.env.example
+!.env.contracts.example
 .vercel/

@@ -47,6 +47,19 @@ export interface ILogStore {
   byOrg(orgId: string, cursor?: number, limit?: number): { items: StoredLeaf[]; nextCursor: number | null };
   byDataset(datasetId: string): StoredLeaf[];
 
+  // -------------------------------------------------- org / key registry (T-024)
+
+  createOrg(org: OrgRow): void;
+  org(orgId: string): OrgRow | null;
+
+  insertApiKey(row: ApiKeyRow): void;
+  apiKeyByHash(keyHash: string): ApiKeyRow | null;
+
+  insertSigningKey(row: SigningKeyRow): void;
+  signingKey(keyId: Hex): SigningKeyRow | null;
+  revokeSigningKey(keyId: Hex, validTo: number): void;
+  signingKeysForOrg(orgId: string): SigningKeyRow[];
+
   close(): void;
 }
 
@@ -58,6 +71,37 @@ export type EpisodeMeta = StoredLeaf & {
   orgId: string | null;
   consentKey: Hex | null;
   submittedAt: number | null;
+};
+
+/** PLAN Sec8 Organisation. */
+export type OrgRow = {
+  orgId: string;
+  name: string;
+  kind: "supplier" | "buyer" | "verifier";
+  status: "active" | "suspended";
+  createdAt: number;
+};
+
+/** One `Authorization: Bearer` credential (PLAN Sec12 auth, T-024). Only the sha256 digest is ever stored. */
+export type ApiKeyRow = {
+  keyId: string;
+  orgId: string;
+  keyHash: string;
+  role: string;
+  createdAt: number;
+  revokedAt: number | null;
+};
+
+/** PLAN Sec8 SigningKey / Sec10.6 `keyId = keccak(pubkeyBytes)`. */
+export type SigningKeyRow = {
+  keyId: Hex;
+  orgId: string;
+  alg: "ed25519" | "p256" | "secp256k1";
+  pubkey: Hex;
+  validFrom: number;
+  validTo: number | null;
+  attestation: string | null;
+  status: "active" | "expired" | "revoked";
 };
 
 export type ClaimRow = {

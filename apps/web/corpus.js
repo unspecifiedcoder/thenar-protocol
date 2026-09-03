@@ -4,7 +4,7 @@
  * is absent rather than guessed: a corpus page that invents a quality spread is
  * worse than one that says it has none yet.
  */
-import { MONAD, readCorpora, readTasks, readReceiptCount } from "./grasp-chain.js";
+import { CHAIN, readCorpora, readTasks, readReceiptCount } from "./grasp-chain.js";
 
 const $ = (s, r = document) => r.querySelector(s);
 const short = (h) => h.slice(0, 10) + "…" + h.slice(-6);
@@ -146,7 +146,7 @@ function card(c, task, receipts) {
     <div class="actions">
       <a class="btn sm" href="./corpus-${c.index}/meta/info.json">Dataset metadata</a>
       <a class="btn sm ghost" href="./verify.html">Verify an episode</a>
-      <a class="btn sm ghost" href="${MONAD.explorer}/address/${MONAD.market}">Market on the explorer</a>
+      <a class="btn sm ghost" href="${CHAIN.explorer}/address/${CHAIN.market}">Market on the explorer</a>
     </div>
     <p class="cmeta" style="margin-top:10px">
       Exported as <strong>LeRobotDataset v3</strong>, the format the ecosystem already

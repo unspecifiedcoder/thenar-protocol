@@ -6,7 +6,7 @@ import type { Hex } from "viem";
 import * as tree from "./tree.ts";
 import { recordHash, consentKey as deriveConsentKey, revocationValue, type ConsentRecord } from "../../../packages/protocol/src/consent.ts";
 import { verify as verifySignature } from "../../../packages/protocol/src/sign.ts";
-import type { ILogStore, EpisodeMeta, ClaimRow } from "./store-interface.ts";
+import type { ILogStore, EpisodeMeta, ClaimRow, OrgRow, ApiKeyRow, SigningKeyRow } from "./store-interface.ts";
 
 /**
  * The log itself — one append-only tree, persisted.
@@ -308,6 +308,69 @@ export class LogStore implements ILogStore {
       leafHash: r.leaf_hash, subjectLeaf: r.subject_leaf, verifierKeyId: r.verifier_key_id,
       check: r.check_name, result: r.result, levelAsserted: r.level_asserted,
       detail: r.detail, detailHash: r.detail_hash, issuedAt: r.issued_at, signature: r.signature,
+    }));
+  }
+
+  // -------------------------------------------------- org / key registry (T-024)
+
+  /** Insert-only — the `org` table has no update path (fields other than status are meant to be edited via a later task, not here). */
+  createOrg(org: OrgRow): void {
+    this.db.prepare(
+      "INSERT INTO org (org_id, name, kind, status, created_at) VALUES (?, ?, ?, ?, ?)",
+    ).run(org.orgId, org.name, org.kind, org.status, org.createdAt);
+  }
+
+  org(orgId: string): OrgRow | null {
+    const r = this.db.prepare("SELECT * FROM org WHERE org_id = ?").get(orgId) as any;
+    if (!r) return null;
+    return { orgId: r.org_id, name: r.name, kind: r.kind, status: r.status, createdAt: r.created_at };
+  }
+
+  insertApiKey(row: ApiKeyRow): void {
+    this.db.prepare(
+      "INSERT INTO api_key (key_id, org_id, key_hash, role, created_at, revoked_at) VALUES (?, ?, ?, ?, ?, ?)",
+    ).run(row.keyId, row.orgId, row.keyHash, row.role, row.createdAt, row.revokedAt ?? null);
+  }
+
+  /** Looked up by the sha256 digest of the presented bearer token (`auth.ts`), never the plaintext. */
+  apiKeyByHash(keyHash: string): ApiKeyRow | null {
+    const r = this.db.prepare("SELECT * FROM api_key WHERE key_hash = ?").get(keyHash) as any;
+    if (!r) return null;
+    return { keyId: r.key_id, orgId: r.org_id, keyHash: r.key_hash, role: r.role, createdAt: r.created_at, revokedAt: r.revoked_at };
+  }
+
+  /** `key_id` is the PK — a duplicate `keyId` (same pubkey, PLAN Sec10.6) throws, which callers turn into 409 (PLAN Sec12 edge case). */
+  insertSigningKey(row: SigningKeyRow): void {
+    this.db.prepare(
+      `INSERT INTO signing_key (key_id, org_id, alg, pubkey, valid_from, valid_to, attestation, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(row.keyId, row.orgId, row.alg, row.pubkey, row.validFrom, row.validTo ?? null, row.attestation ?? null, row.status);
+  }
+
+  signingKey(keyId: Hex): SigningKeyRow | null {
+    const r = this.db.prepare("SELECT * FROM signing_key WHERE key_id = ?").get(keyId) as any;
+    if (!r) return null;
+    return {
+      keyId: r.key_id, orgId: r.org_id, alg: r.alg, pubkey: r.pubkey,
+      validFrom: r.valid_from, validTo: r.valid_to, attestation: r.attestation, status: r.status,
+    };
+  }
+
+  /**
+   * Sets `valid_to` once (PLAN Sec8 SigningKey: append-only, `validTo` set
+   * once). Unlike `leaf`/`anchor`/`revocation`/`claim`, `signing_key` has no
+   * blanket append-only trigger — `registry.ts` is the sole gate that
+   * refuses a second revoke (409) before this ever runs twice.
+   */
+  revokeSigningKey(keyId: Hex, validTo: number): void {
+    this.db.prepare("UPDATE signing_key SET valid_to = ?, status = 'revoked' WHERE key_id = ?").run(validTo, keyId);
+  }
+
+  signingKeysForOrg(orgId: string): SigningKeyRow[] {
+    const rows = this.db.prepare("SELECT * FROM signing_key WHERE org_id = ? ORDER BY valid_from ASC").all(orgId) as any[];
+    return rows.map((r) => ({
+      keyId: r.key_id, orgId: r.org_id, alg: r.alg, pubkey: r.pubkey,
+      validFrom: r.valid_from, validTo: r.valid_to, attestation: r.attestation, status: r.status,
     }));
   }
 

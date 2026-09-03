@@ -25,12 +25,19 @@ CREATE TABLE IF NOT EXISTS org (
   created_at INTEGER NOT NULL
 );
 
+-- `key_hash`/`role` (T-024): the sha256 hex digest of the bearer token
+-- (only the digest is ever stored, PLAN Sec12 auth) and the role it grants
+-- (`auth.ts` `Role`). Additive on top of T-014's original columns, same as
+-- every other table on this file.
 CREATE TABLE IF NOT EXISTS api_key (
   key_id     TEXT PRIMARY KEY,
   org_id     TEXT NOT NULL,
+  key_hash   TEXT NOT NULL,
+  role       TEXT NOT NULL CHECK (role IN ('supplier', 'buyer', 'verifier', 'operator')),
   created_at INTEGER NOT NULL,
   revoked_at INTEGER
 );
+CREATE INDEX IF NOT EXISTS api_key_hash ON api_key(key_hash);
 
 CREATE TABLE IF NOT EXISTS signing_key (
   key_id      TEXT PRIMARY KEY,

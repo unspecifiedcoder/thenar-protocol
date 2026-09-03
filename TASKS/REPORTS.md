@@ -292,3 +292,81 @@ anything not actually recorded rather than a placeholder).
 Open questions / conflicts filed: none filed to `TASKS/CONFLICTS.md` (no
 §26 condition was hit — see Deviations above for the two judgment calls and
 Incident for the non-blocking process issue).
+
+## T-008 — Vectors: TS → Solidity + JSON; CI diff guard — 2026-09-03 — CHEAP
+
+Changed: `packages/protocol/test/vectors.ts` (extended the generator to emit,
+deterministically: 0x02/0x03/0x04 leaf preimages + leaf hashes alongside the
+existing 0x01 clip and CT-log/SMT vectors; `fileLeaf`/`payloadHash` over the
+three fixture files; a JCS fixture; `manifestHash` of `fixtures/manifest.json`
+with and without a `signature` block attached — asserted equal in-script
+before being emitted; `consentKey`/`consentCommitment`/`revocationValue` for a
+fixed `ConsentRecord` and salt; the four §10.6 message byte strings; one
+Ed25519 and one P-256 signature — both fully deterministic, RFC 8032/RFC 6979
+— over the revoke message, under TEST-ONLY keys derived from labelled
+strings, never randomness; the §10.12 mapping's 0x02 preimage, derived from
+the fixture manifest via `manifestToEpisode` at a fixed `submittedAt`), now
+writes both `packages/contracts/test/Vectors.sol` and
+`packages/protocol/test/fixtures/vectors.json`), `packages/contracts/test/
+LeafVerifier.t.sol` (added `test_hashLeafAgreesWithTheTSVectorsForAllFourVersions`
+— `LeafVerifier.hashLeaf` on all four T-008 vector preimages equals the
+vector leaf hashes), `packages/contracts/test/CorpusLeaf.t.sol` and
+`packages/contracts/test/ClaimLeaf.t.sol` (each gained a
+`test_vectorPreimageHashesToTheVectorLeaf` checking `hashPreimage` on the
+vector preimage against the vector leaf), `.github/workflows/ci.yml`
+(inserted one step after "Protocol libraries": `pnpm vectors && git diff
+--exit-code packages/contracts/test/Vectors.sol packages/protocol/test/
+fixtures/vectors.json` — no other line touched).
+
+Created: `packages/contracts/test/PayloadVectors.t.sol` (a from-scratch
+Solidity port of §10.4 — `_fileLeaf` and a `_ctRoot` tree builder using
+`MerkleLog.hashNode`, independent of any production Solidity or the TS
+implementation — recomputes `fileLeaf` for each of the three fixture files
+and `payloadHash` over them from the vector inputs alone, proving §10.4 is
+unambiguous enough for a second implementation to land on the same root;
+also checks the one-file-tree-is-its-own-leaf case), `packages/protocol/
+test/fixtures/files/a.txt`, `packages/protocol/test/fixtures/files/b.bin`,
+`packages/protocol/test/fixtures/files/sub/c.parquet` (small, fixed,
+committed bytes — `files/`/`files/sub/` already existed as empty directories
+from another concurrent task; only the three files were added),
+`packages/protocol/test/fixtures/vectors.json` (self-describing: every
+computed output is paired with the inputs it came from, for reuse by a
+future re-implementation, e.g. the Python SDK, PLAN §23).
+
+`packages/protocol/test/fixtures/manifest.json` (T-035's fixture) was reused
+unmodified — it is already a valid `CaptureManifest` and is also read by
+`packages/protocol/test/schemas.ts`'s regression test, so this task's
+`manifestHash`/§10.12 vectors are computed from it via `validateManifest`
+rather than replacing it with a second manifest fixture.
+
+Tests: `pnpm vectors` → generates both files; re-run and diffed byte-for-byte
+identical (determinism, incl. the two signatures) → clean. `pnpm test:
+protocol` → all suites pass (`run.ts`, `foundry.ts`, `episode.ts`,
+`schemas.ts`, `ci.ts`). `cd packages/contracts && forge test` → 6 suites,
+143 tests, 0 failed (28 in `LeafVerifier.t.sol` incl. the new all-four-
+versions vector check, 11 in `CorpusLeaf.t.sol`, 17 in `ClaimLeaf.t.sol`, 39
+in `GraspLog.t.sol`, 46 in `LicenceRegistry.t.sol`, 2 in the new
+`PayloadVectors.t.sol`). Re-ran `pnpm vectors` a final time after all
+Solidity edits and re-ran `forge test` against the regenerated
+`Vectors.sol`: still 143/143.
+
+Deviations from PLAN.md: none in any hash rule, leaf layout, domain string,
+or Merkle rule. Two implementation choices this task's own text left open:
+(1) the 0x03 corpus and 0x04 claim leaves use fixed arbitrary test values
+(no corpus/claim fixture is in scope of this task's dependencies), following
+the same `h("label")` pattern the pre-existing clip vector already used; (2)
+the fixture files' manifest-style relative paths are `a.txt`, `b.bin`,
+`sub/c.parquet` (matching their on-disk names under `fixtures/files/`) rather
+than paths mirroring `fixtures/manifest.json`'s own (unrelated) two-file
+`files[]` array, since `payloadHash`/`fileLeaf` here is a standalone §10.4
+vector, not a recomputation of that manifest's own `payload_hash`.
+
+Invariants touched: I-5 (this task's entire purpose — TS/Solidity agreement
+on every leaf version, now including 0x02/0x03/0x04 and `payloadHash`, via
+an independent Solidity port for the latter), I-4 (every emitted value's
+generator comment cites its §10 rule), §27 trap #3 (the Solidity `_ctRoot`
+port explicitly does not add a second `0x00` when leaf hashes become tree
+nodes — commented and tested), §27 trap #4 (`abi.encodePacked`, tested via
+`PREIMAGE_BYTES` length assertions already present in each leaf library).
+
+Open questions / conflicts filed: none.

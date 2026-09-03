@@ -5,9 +5,43 @@
 pragma solidity ^0.8.24;
 
 library Vectors {
+    // ------------------------------------------------------- 0x01 ClipLeaf
     bytes constant CLIP_PREIMAGE = hex"01ebc84cbd75ba5516bf45e7024a9e12bc3c5c880f73e3a5beca7ebba52b2867a7c973f01c30db151771eca5d5661d5262b8df81b0f801adc18cd689e95256cb4e097b1bfd048585d5000c967c83edf6c040e12e37584a93ee7af931b473ce2f2be0a963fc269dbfbc06a8ddf8f46dde77423a203f59ab3c4e6ab2c6f7de2cb304000000006a8374c0000000006a8374fc000010680000000b06";
     bytes32 constant CLIP_LEAF = 0xa638fd10596b436636218ac0a3b9f56fd9c109315275c166fd011ca3736e12cc;
 
+    // ---------------------------------------------------- 0x02 EpisodeLeaf
+    // Derived from fixtures/manifest.json via manifestToEpisode (§10.12) at
+    // the fixed submittedAt below (never taken from the manifest itself).
+    uint64 constant EPISODE_SUBMITTED_AT = 1756900060;
+    bytes32 constant MANIFEST_HASH = 0x386f3842cc4b56591b5790179643186d4e994f513780b78f65f210980ea66502;
+    bytes constant EPISODE_PREIMAGE = hex"02db97d36c037fcca7e27ba8bdd9e4f808081a7a7ddc60c504453430ec6c031416386f3842cc4b56591b5790179643186d4e994f513780b78f65f210980ea66502444444444444444444444444444444444444444444444444444444444444444455555555555555555555555555555555555555555555555555555555555555557f66cb32abb88ff43c61bbf1a23bc17eda360901ea15fda913f0c7d46d2104020000000068b82aa00000000068b82adc000030700000000b030000000000000000010000";
+    bytes32 constant EPISODE_LEAF = 0x640561c53ca4945a3a120a31c474246a66905141bb2619ea3c2256fbc7e763c4;
+
+    // ----------------------------------------------- 0x03 CorpusManifestLeaf
+    bytes constant CORPUS_PREIMAGE = hex"033a8f351f016361fed60d923e4ddd534a4cacd69a18ef3ebae4d9c53619631eaf16d83dbbb9e8d53bfd47ca6db0757a6895765af1e00d95fbda2198ff865f22dfe0a963fc269dbfbc06a8ddf8f46dde77423a203f59ab3c4e6ab2c6f7de2cb3042802332cb60232155bd013f89ac155008bf711db6a24ac9ab175d3b9aa6de1be0000000000000003000000006a837524";
+    bytes32 constant CORPUS_LEAF = 0xb1d2bed8ac84dff26de9d042cd4c5277ff9f1c2fe68d97bb2df464dd51adb0f6;
+
+    // ------------------------------------------- 0x04 VerificationClaimLeaf
+    bytes constant CLAIM_PREIMAGE = hex"04bc1d4ec4b78a20162396ca39bdbb71ed49b1def695391ded62ebcc4dbe0b711735c37139eb500e770db096e8df0e905b103801ce450ed4db7033be7bcb84c0e8a796c55ea29f5dc24bd3d0b2b98135fbd69c93e4cb27425fc13c60ea7e98c6960cd5a744698351307de80be8212a8f88a3a8b3fa55f79bdc2639c2fb65d15fc300030102000000006a837588";
+    bytes32 constant CLAIM_LEAF = 0x09a57959bf5d13c484e1af7dc617b7f302c9abce70656320e2ab9cd005ab4f51;
+
+    // ------------------------------------------ §10.4 fileLeaf / payloadHash
+    // Three committed fixture files, bytewise-sorted by path.
+    string constant FILE0_PATH = "a.txt";
+    bytes32 constant FILE0_HASH = 0x6525d7a80f6595c67c381a6aa363723f05535756ec2847efe0f63d49ad274c69;
+    bytes32 constant FILE0_LEAF = 0x4e618b1f40c8d318f1d8999755a25992c256e7352c110c63dfeb6214bb876c0f;
+
+    string constant FILE1_PATH = "b.bin";
+    bytes32 constant FILE1_HASH = 0x0251cf13aa5b18f1cbda7cddbe85f3dc536fc93df590c2d20ca9b28af1ed2c39;
+    bytes32 constant FILE1_LEAF = 0x6e7ca9ea936e77da7777000be20d939d93bdeefc7bd8716cbc84b99dc3a61f29;
+
+    string constant FILE2_PATH = "sub/c.parquet";
+    bytes32 constant FILE2_HASH = 0xd9be3690475fff2773920161b324eb7b39c3c1483df2687cab99d84d1d44c478;
+    bytes32 constant FILE2_LEAF = 0xaf870472d5aea677a5e577e01b5419ccac1571ed730facb3a0233d2522c8e0c2;
+
+    bytes32 constant PAYLOAD_HASH = 0x30d375fe7cc10a5df387d73103e3b052f8075f16a8a22b933e6a1cc5251cbe7d;
+
+    // -------------------------------------------------------------- §10.1 CT
     uint64 constant N = 11;
     bytes32 constant ROOT_N = 0x54e52db853d259bef52ba2362e8d6eafd9cd046f433210646a3fef62734a39be;
     uint64 constant INCLUSION_INDEX = 4;
@@ -16,6 +50,7 @@ library Vectors {
     uint64 constant M = 7;
     bytes32 constant ROOT_M = 0xbed0c6c234c80b3aca2bb90699a2108e0d574a83c75b1af7017158000e831ff7;
 
+    // ------------------------------------------------------------ §10.2 SMT
     bytes32 constant SPARSE_ROOT = 0x43bb8421ba078f69815e2a725b6c6554c586f42318fdc87c603889e00f50e259;
     bytes32 constant KEY_REVOKED = 0x889d362a741a9aeb7b9590585a74391d21bd7ade714784bfef4e11bf14328277;
     bytes32 constant VALUE_REVOKED = 0x036d62b10ea2f8f0e65a6f6de0acc21bd78c8ca75484eae04586a17530b39beb;

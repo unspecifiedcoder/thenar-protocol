@@ -11,8 +11,8 @@ via_ir = false
 [rpc_endpoints]
 fuji = "https://api.avax-test.network/ext/bc/C/rpc"
 avalanche = "https://api.avax.network/ext/bc/C/rpc"
-sepolia = "${SEPOLIA_RPC:-https://ethereum-sepolia-rpc.publicnode.com}"
-base_sepolia = "${BASE_SEPOLIA_RPC:-https://sepolia.base.org}"
+sepolia = "${SEPOLIA_RPC}"
+base_sepolia = "${BASE_SEPOLIA_RPC}"
 
 [etherscan]
 fuji = { key = "${SNOWTRACE_API_KEY}", url = "https://api-testnet.snowtrace.io/api", chain = 43113 }

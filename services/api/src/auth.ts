@@ -1,12 +1,14 @@
 /**
- * `Authorization: Bearer <org API key>` — PLAN §12. Keys live in an
- * in-memory map loaded from `API_KEYS_JSON` (T-024 replaces this with the
- * `api_key` table). Only the sha256 of the key is ever held, and the
- * presented key is compared with `crypto.timingSafeEqual` so a timing
- * side-channel cannot narrow down a valid key byte by byte.
+ * `Authorization: Bearer <org API key>` — PLAN §12. Keys resolve against
+ * the `api_key` table (`services/log`, T-014/T-024) when `app.ts` is given
+ * a store; otherwise (and always in tests) against an in-memory list
+ * loaded from `API_KEYS_JSON`. Only the sha256 of the key is ever held,
+ * and the presented key is compared with `crypto.timingSafeEqual` so a
+ * timing side-channel cannot narrow down a valid key byte by byte.
  */
 import { createHash, timingSafeEqual } from "node:crypto";
 import { ApiError } from "./errors.ts";
+import type { ILogStore } from "../../log/src/store-interface.ts";
 
 export type Role = "supplier" | "buyer" | "verifier" | "operator";
 
@@ -30,7 +32,7 @@ export function loadApiKeys(json: string | undefined): ApiKeyRecord[] {
   return parsed as ApiKeyRecord[];
 }
 
-function sha256Hex(s: string): string {
+export function sha256Hex(s: string): string {
   return createHash("sha256").update(s, "utf8").digest("hex");
 }
 
@@ -43,11 +45,24 @@ function safeHexEqual(a: string, b: string): boolean {
 }
 
 export class KeyStore {
-  constructor(private keys: ApiKeyRecord[]) {}
+  /**
+   * `store` (T-024): when given, keys resolve against the `api_key` table
+   * (`services/log`) instead of the in-memory `keys` array — the real
+   * source once a DB is configured. `keys` stays live even then so tests
+   * that build a `KeyStore` straight from `API_KEYS_JSON` keep working
+   * (PLAN Sec25.2's "keep the env fallback for tests").
+   */
+  constructor(private keys: ApiKeyRecord[] = [], private store?: ILogStore) {}
 
   /** Look up the presented bearer key. Every stored key is compared (not short-circuited) to avoid leaking which prefix matched. */
   authenticate(presented: string): Principal | null {
     const digest = sha256Hex(presented);
+    if (this.store) {
+      const row = this.store.apiKeyByHash(digest);
+      if (!row || row.revokedAt !== null) return null;
+      if (!safeHexEqual(digest, row.keyHash)) return null;
+      return { orgId: row.orgId, role: row.role as Role };
+    }
     let found: ApiKeyRecord | null = null;
     for (const rec of this.keys) {
       if (safeHexEqual(digest, rec.key_sha256)) found = rec;

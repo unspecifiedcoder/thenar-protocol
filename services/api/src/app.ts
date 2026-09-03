@@ -1,10 +1,11 @@
 /**
  * `services/api` — Hono app factory. PLAN §12 lists every route this app
- * must expose; every one of them (other than `/v1/healthz`) validates its
- * body against the matching §9/§12 zod schema and then answers 501
- * `not_implemented`, so the shape of the API is real before any handler
- * has a store behind it (I-11: the service never invents a value, and a
- * stub that fabricates a 200 would be exactly that).
+ * must expose; every one of them (other than `/v1/healthz` and, since
+ * T-024, the `/v1/orgs/{orgId}/keys*` trio) validates its body against the
+ * matching §9/§12 zod schema and then answers 501 `not_implemented`, so
+ * the shape of the API is real before any handler has a store behind it
+ * (I-11: the service never invents a value, and a stub that fabricates a
+ * 200 would be exactly that).
  */
 import { Hono, type Context } from "hono";
 import type { ZodTypeAny } from "zod";
@@ -16,6 +17,8 @@ import type { BundleStore } from "./store/bundle.ts";
 import { LocalBundleStore } from "./store/localBundleStore.ts";
 import { MemoryUploadRegistry, type UploadRegistry } from "./store/uploadRegistry.ts";
 import { NotImplementedChainReader, type ChainReader } from "./chainReader.ts";
+import { Registry } from "./registry.ts";
+import { LogStore } from "../../log/src/store.ts";
 
 import { healthRoutes } from "./routes/health.ts";
 import { orgRoutes } from "./routes/orgs.ts";
@@ -42,14 +45,24 @@ export type Deps = {
   uploadRegistry: UploadRegistry;
   /** T-015 injection point for T-016's real viem reader (PLAN §12 `/licences/{id}/download`). */
   chainReader: ChainReader;
+  /** T-024: org/signing-key registry, backed by the `org`/`api_key`/`signing_key` tables. */
+  registry: Registry;
 };
 
 export type AppEnv = { Variables: { deps: Deps; parsedBody?: { value: unknown } } };
 export type AppContext = Context<AppEnv>;
 
 export function defaultDeps(env: NodeJS.ProcessEnv = process.env): Deps {
+  // T-024: `THENAR_LOG_DB` set -> the `api_key`/`signing_key` tables are the
+  // auth source and the registry's backing store; unset -> an in-memory
+  // store backs the registry (so the org routes still work) but auth keeps
+  // reading `API_KEYS_JSON`, same as before this task (kept for tests).
+  const dbPath = env.THENAR_LOG_DB;
+  const logStore = new LogStore(dbPath ?? ":memory:");
   return {
-    keyStore: new KeyStore(env.API_KEYS_JSON ? JSON.parse(env.API_KEYS_JSON) : []),
+    keyStore: dbPath
+      ? new KeyStore([], logStore)
+      : new KeyStore(env.API_KEYS_JSON ? JSON.parse(env.API_KEYS_JSON) : []),
     idempotencyStore: new MemoryIdempotencyStore(),
     rateLimiter: new TokenBucketLimiter(),
     nowMinute: () => Math.floor(Date.now() / 60_000),
@@ -57,6 +70,7 @@ export function defaultDeps(env: NodeJS.ProcessEnv = process.env): Deps {
     uploadRegistry: new MemoryUploadRegistry(),
     // T-016 supplies the real viem reader; until then, refuse rather than fabricate (I-11).
     chainReader: new NotImplementedChainReader(),
+    registry: new Registry(logStore),
   };
 }
 

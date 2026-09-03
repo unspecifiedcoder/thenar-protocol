@@ -187,17 +187,17 @@
 </div></footer>
 <!-- FOOT:END -->
 <script type="module">
-import { MONAD, readAnchors } from "./grasp-chain.js";
+import { CHAIN, readAnchors } from "./grasp-chain.js";
 import { sampleScene, drawScene } from "./scene.js";
 
 const $ = (s) => document.querySelector(s);
 const short = (h) => h.slice(0, 10) + "…" + h.slice(-6);
 const ZERO = "0x" + "0".repeat(64);
 
-$("#logaddr").textContent = short(MONAD.log);
-$("#logaddr").href = `${MONAD.explorer}/address/${MONAD.log}`;
-$("#mktaddr").textContent = short(MONAD.market);
-$("#mktaddr").href = `${MONAD.explorer}/address/${MONAD.market}`;
+$("#logaddr").textContent = short(CHAIN.log);
+$("#logaddr").href = `${CHAIN.explorer}/address/${CHAIN.log}`;
+$("#mktaddr").textContent = short(CHAIN.market);
+$("#mktaddr").href = `${CHAIN.explorer}/address/${CHAIN.market}`;
 
 let anchorCount = null;
 (async () => {
@@ -212,7 +212,7 @@ let anchorCount = null;
     const rows = anchors.slice().reverse().map((a) => `
       <tr>
         <td>${a.index}</td>
-        <td class="mono"><a href="${MONAD.explorer}/block/${a.blockNumber}" style="color:#8E6BFF">${short(a.root)}</a></td>
+        <td class="mono"><a href="${CHAIN.explorer}/block/${a.blockNumber}" style="color:#8E6BFF">${short(a.root)}</a></td>
         <td>${a.size}</td>
         <td class="mono">${a.blockNumber}</td>
         <td>${a.revocationRoot === ZERO ? '<span style="color:#6E6E6E">none</span>' : '<span style="color:#FA9DCD">carries a withdrawal</span>'}</td>
@@ -424,10 +424,10 @@ $("#vform").addEventListener("submit", async (e) => {
 
     // LeafVerifier handles both versions; the log itself only knows captures.
     const data = encodeVerify(index || 0, pre, proof, leaf || 0);
-    const res = await fetch(MONAD.rpc, {
+    const res = await fetch(CHAIN.rpc, {
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call",
-        params: [{ to: MONAD.verifier, data }, "latest"] }),
+        params: [{ to: CHAIN.verifier, data }, "latest"] }),
     }).then((r) => r.json());
 
     if (res.error) {

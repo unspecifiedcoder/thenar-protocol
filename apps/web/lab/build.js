@@ -9,7 +9,7 @@
 import { EMBODIMENTS } from "../embodiments.js";
 import { validateTaskSpec, taskId, PREDICATES, ACTION_SPACES } from "../taskspec.js";
 import { sampleScene, drawScene } from "../scene.js";
-import { MONAD } from "../grasp-chain.js";
+import { CHAIN } from "../grasp-chain.js";
 
 const $ = (s) => document.querySelector(s);
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -243,8 +243,8 @@ async function publish() {
     status.textContent = "Asking your wallet…";
     const [from] = await eth.request({ method: "eth_requestAccounts" });
     const chainId = await eth.request({ method: "eth_chainId" });
-    if (parseInt(chainId, 16) !== MONAD.chainId) {
-      status.textContent = `Switch to ${MONAD.name} (chain ${MONAD.chainId}) and try again.`;
+    if (parseInt(chainId, 16) !== CHAIN.chainId) {
+      status.textContent = `Switch to ${CHAIN.name} (chain ${CHAIN.chainId}) and try again.`;
       return;
     }
     const id = taskId(spec);
@@ -252,9 +252,9 @@ async function publish() {
     const data = encodePublish(id, uri, curatorBps, spec.acceptance.targetEpisodes);
     const tx = await eth.request({
       method: "eth_sendTransaction",
-      params: [{ from, to: MONAD.registry, data }],
+      params: [{ from, to: CHAIN.registry, data }],
     });
-    status.innerHTML = `Published. <a href="${MONAD.explorer}/tx/${tx}" style="color:#8E6BFF">${tx.slice(0, 14)}…</a>`;
+    status.innerHTML = `Published. <a href="${CHAIN.explorer}/tx/${tx}" style="color:#8E6BFF">${tx.slice(0, 14)}…</a>`;
   } catch (e) {
     status.textContent = e.message?.includes("User denied")
       ? "You rejected the transaction, so nothing was published."

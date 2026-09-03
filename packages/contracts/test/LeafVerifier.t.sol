@@ -124,6 +124,19 @@ contract LeafVerifierTest is Test {
         assertEq(verifier.hashLeaf(cl), ClaimLeaf.hashPreimage(cl));
     }
 
+    /**
+     * T-008: `LeafVerifier.hashLeaf` on every one of the four T-008 TS
+     * vectors (0x01-0x04) equals the leaf hash the TypeScript reference
+     * implementation computed for the same preimage — PLAN §5 I-5, the
+     * single guarantee that TS and Solidity agree on every leaf version.
+     */
+    function test_hashLeafAgreesWithTheTSVectorsForAllFourVersions() public view {
+        assertEq(verifier.hashLeaf(Vectors.CLIP_PREIMAGE), Vectors.CLIP_LEAF, "0x01 clip");
+        assertEq(verifier.hashLeaf(Vectors.EPISODE_PREIMAGE), Vectors.EPISODE_LEAF, "0x02 episode");
+        assertEq(verifier.hashLeaf(Vectors.CORPUS_PREIMAGE), Vectors.CORPUS_LEAF, "0x03 corpus");
+        assertEq(verifier.hashLeaf(Vectors.CLAIM_PREIMAGE), Vectors.CLAIM_LEAF, "0x04 claim");
+    }
+
     // ---------------------------------------------------- verifyLeafHash, per version
 
     function _oneLeafTreeVerifies(bytes memory preimage) internal {

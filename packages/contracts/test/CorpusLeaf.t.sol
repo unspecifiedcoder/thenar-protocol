@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
 import {CorpusLeaf} from "../src/lib/CorpusLeaf.sol";
+import {Vectors} from "./Vectors.sol";
 
 contract CorpusLeafTest is Test {
     // Internal library calls compile to JUMP, not CALL, so a revert inside one
@@ -70,6 +71,18 @@ contract CorpusLeafTest is Test {
         (,,,, uint64 episodeCount, uint64 sealedAt) = CorpusLeaf.facts(p);
         assertEq(episodeCount, c.episodeCount, "episodeCount at offset 129");
         assertEq(sealedAt, c.sealedAt, "sealedAt at offset 137");
+    }
+
+    // --------------------------------------------------- T-008 TS vectors
+
+    /**
+     * `CorpusLeaf.hashPreimage` on the T-008 vector's 0x03 preimage equals
+     * the leaf hash the TypeScript reference (`packages/protocol/src/corpus.ts`)
+     * computed for the same fields — PLAN §5 I-5.
+     */
+    function test_vectorPreimageHashesToTheVectorLeaf() public pure {
+        assertEq(Vectors.CORPUS_PREIMAGE.length, CorpusLeaf.PREIMAGE_BYTES);
+        assertEq(CorpusLeaf.hashPreimage(Vectors.CORPUS_PREIMAGE), Vectors.CORPUS_LEAF);
     }
 
     // -------------------------------------------------------- rejections

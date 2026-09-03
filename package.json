@@ -3,17 +3,22 @@
   "private": true,
   "packageManager": "pnpm@10.29.2",
   "scripts": {
-    "test:protocol": "tsx packages/protocol/test/run.ts && tsx packages/protocol/test/foundry.ts && tsx packages/protocol/test/episode.ts && tsx packages/protocol/test/schemas.ts && tsx packages/protocol/test/ci.ts",
+    "test:protocol": "tsx packages/protocol/test/run.ts && tsx packages/protocol/test/foundry.ts && tsx packages/protocol/test/episode.ts && tsx packages/protocol/test/schemas.ts && tsx packages/protocol/test/selectors.ts && tsx packages/protocol/test/ci.ts",
     "test:contracts": "cd packages/contracts && forge test",
-    "test:log": "tsx services/log/test/log.test.ts && tsx services/log/test/tree.test.ts",
-    "test:api": "tsx services/api/test/api.test.ts && tsx services/api/test/bundle.test.ts",
+    "test:log": "tsx services/log/test/log.test.ts && tsx services/log/test/tree.test.ts && tsx services/log/test/daemon.test.ts",
+    "test:api": "tsx services/api/test/api.test.ts && tsx services/api/test/bundle.test.ts && tsx services/api/test/registry.test.ts && tsx services/api/test/lerobot.test.ts",
     "test": "pnpm test:contracts && pnpm test:protocol && pnpm test:log && pnpm test:web && pnpm test:api",
     "vectors": "tsx packages/protocol/test/vectors.ts",
     "log": "tsx services/log/src/cli.ts",
+    "log:daemon": "tsx services/log/src/daemon.ts",
+    "admin": "tsx services/api/bin/thenar-admin.ts",
     "test:web": "node apps/web/test/grasp.test.mjs && node apps/web/test/imports.test.mjs && tsx apps/web/test/keccak.test.mjs && tsx apps/web/test/scene.test.mjs && tsx apps/web/test/corpus.test.mjs && tsx apps/web/test/taskspec.test.mjs && tsx apps/web/test/build.test.mjs",
     "test:parity": "node scripts/check-parity.mjs . ../thenar-avax",
     "gen:embodiments": "tsx scripts/gen-embodiments.mjs",
-    "deploy:fuji": "cd packages/contracts && forge script script/Deploy.s.sol:Deploy --rpc-url fuji --broadcast --slow"
+    "gen:chains": "node scripts/gen-chains.mjs",
+    "deploy:fuji": "bash scripts/deploy-chain.sh https://api.avax-test.network/ext/bc/C/rpc primary fuji",
+    "deploy:sepolia": "bash scripts/deploy-chain.sh \"${SEPOLIA_RPC:-https://ethereum-sepolia-rpc.publicnode.com}\" mirror sepolia",
+    "deploy:anvil": "bash scripts/deploy-chain.sh http://127.0.0.1:8545 primary none 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

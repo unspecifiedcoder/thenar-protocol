@@ -40,6 +40,14 @@ jobs:
       - name: Protocol libraries
         run: pnpm test:protocol
 
+      # T-008 / PLAN §5 I-5: the vectors generator is deterministic, so
+      # regenerating it must reproduce the checked-in Solidity and JSON
+      # vector files byte-for-byte. A diff here means TS and Solidity (or
+      # the fixtures) have drifted apart, or the generator picked up
+      # non-determinism.
+      - name: Vectors are up to date and deterministic
+        run: pnpm vectors && git diff --exit-code packages/contracts/test/Vectors.sol packages/protocol/test/fixtures/vectors.json
+
       - name: Log store
         run: pnpm test:log
 

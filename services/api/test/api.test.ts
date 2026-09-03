@@ -23,6 +23,8 @@ import { ApiError } from "../src/errors.ts";
 import { LocalBundleStore } from "../src/store/localBundleStore.ts";
 import { MemoryUploadRegistry } from "../src/store/uploadRegistry.ts";
 import { NotImplementedChainReader, type ChainReader, type ReceiptInfo, type CorpusFile } from "../src/chainReader.ts";
+import { Registry } from "../src/registry.ts";
+import { LogStore } from "../../log/src/store.ts";
 
 let fails = 0;
 const ok = (c: boolean, m: string, x = "") => { if (!c) fails++; console.log(`${c ? "  ok  " : " FAIL "} ${m}${x ? ` — ${x}` : ""}`); };
@@ -61,6 +63,7 @@ function makeDeps(overrides: Partial<Deps> = {}): Deps {
     bundleStore: new LocalBundleStore(mkdtempSync(join(tmpdir(), "thenar-api-bundles-"))),
     uploadRegistry: new MemoryUploadRegistry(),
     chainReader: new NotImplementedChainReader(),
+    registry: new Registry(new LogStore(":memory:")),
     ...overrides,
   };
 }
@@ -450,7 +453,6 @@ function validManifest() {
   const app = createApp(makeDeps());
   const authed = { Authorization: `Bearer ${SUPPLIER_KEY}` };
   const routes: [string, string, HeadersInit?][] = [
-    ["GET", "/v1/orgs/org_supplier/keys"],
     ["GET", "/v1/jobs/job_1", authed],
     ["GET", "/v1/episodes/" + hex(0x01)],
     ["GET", "/v1/proofs/inclusion?leaf=" + hex(0x01) + "&root=" + hex(0x02) + "&size=1"],
