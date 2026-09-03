@@ -71,6 +71,8 @@ jobs:
       - name: API
         run: pnpm test:api
 
+      - name: Verification checks
+        run: pnpm test:verify
 
       # Import integrity, the grasp timeline, and the two cross-implementation
       # checks: browser keccak against viem, and the browser sampler against
