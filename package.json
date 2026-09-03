@@ -8,7 +8,8 @@
     "test:log": "tsx services/log/test/log.test.ts && tsx services/log/test/tree.test.ts && tsx services/log/test/daemon.test.ts",
     "test:api": "tsx services/api/test/api.test.ts && tsx services/api/test/bundle.test.ts && tsx services/api/test/registry.test.ts && tsx services/api/test/lerobot.test.ts && tsx services/api/test/faults.test.ts && tsx services/api/test/chain.test.ts && tsx services/api/test/ingest.test.ts && tsx services/api/test/proofs.test.ts && tsx services/api/test/claims.test.ts && tsx services/api/test/licence-flow.test.ts",
     "test:verify": "tsx services/verify/test/timing.test.ts && tsx services/verify/test/kinematics.test.ts && tsx services/verify/test/dedup.test.ts && tsx services/verify/test/sensor_consistency.test.ts && tsx services/verify/test/sim_signature.test.ts && tsx services/verify/test/issue.test.ts",
-    "test": "pnpm test:contracts && pnpm test:protocol && pnpm test:log && pnpm test:web && pnpm test:api && pnpm test:verify",
+    "test:adversarial": "tsx packages/protocol/test/adversarial.ts && tsx services/api/test/adversarial.test.ts && cd packages/contracts && forge test --match-path test/Adversarial.t.sol",
+    "test": "pnpm test:contracts && pnpm test:protocol && pnpm test:log && pnpm test:web && pnpm test:api && pnpm test:verify && pnpm test:adversarial",
     "vectors": "tsx packages/protocol/test/vectors.ts",
     "log": "tsx services/log/src/cli.ts",
     "log:daemon": "tsx services/log/src/daemon.ts",
@@ -19,7 +20,9 @@
     "gen:chains": "node scripts/gen-chains.mjs",
     "deploy:fuji": "bash scripts/deploy-chain.sh https://api.avax-test.network/ext/bc/C/rpc primary fuji",
     "deploy:sepolia": "bash scripts/deploy-chain.sh \"${SEPOLIA_RPC:-https://ethereum-sepolia-rpc.publicnode.com}\" mirror sepolia",
-    "deploy:anvil": "bash scripts/deploy-chain.sh http://127.0.0.1:8545 primary none 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+    "deploy:anvil": "bash scripts/deploy-chain.sh http://127.0.0.1:8545 primary none 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+    "demo:golden": "tsx scripts/golden.mjs",
+    "verify:report": "tsx scripts/verify-report.mjs"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

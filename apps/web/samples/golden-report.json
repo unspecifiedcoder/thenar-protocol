@@ -1,0 +1,1274 @@
+{
+  "v": 1,
+  "kind": "provenance_report",
+  "report_id": "golden-corpus_golden_c1175cbb4fb2-30",
+  "generated_at": 1788430330,
+  "operator": {
+    "name": "THENAR golden demo",
+    "verifier_key_id": "0x98f79c7b2410442a527f18f1aba4763fb55bdc407cff8c029f77058f5e5e3d97"
+  },
+  "corpus": {
+    "id": "corpus_golden_c1175cbb4fb2",
+    "manifest_hash": "0xf04d341ff688dceee2b2625e60cc1cf1116df225fe273dc7c0e6a8f5f69580e6",
+    "corpus_root": "0x46f74009aac21f217a20e2191c6e3f0b171ed50b284a6de76fff6dde039e87fc",
+    "episode_count": 4,
+    "terms": {
+      "hash": "0x66df2990b885bad73977e153625064e40c1e2af0d61b1d21410ac85f2aad57e1",
+      "uri": "https://thenar.io/terms/golden-demo"
+    },
+    "contains_revoked": false,
+    "on_chain": null
+  },
+  "anchor": {
+    "root": "0xda1d629014ce40744a96a986a7733bae7551fbf9e3abdbcc5ef337e70073cd44",
+    "size": 30,
+    "revocation_root": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "chains": [
+      {
+        "chain_id": 31337,
+        "index": 1,
+        "at": 1788430329439,
+        "block_number": 6,
+        "tx_hash": "0xe2b22c4268752f28aa606f7b14e81696474f88be1502bafdf2f8258b1b8a255d",
+        "live": {
+          "confirmed": true,
+          "stale_at": 1788430345164
+        }
+      },
+      {
+        "chain_id": 31338,
+        "index": 1,
+        "at": 1788430329497,
+        "block_number": 4,
+        "tx_hash": "0x27bce9fe987bd55507192d6cc703e9f7673bf69734b446085d4b6e54e77653c0",
+        "live": {
+          "confirmed": true,
+          "stale_at": 1788430345169
+        }
+      }
+    ]
+  },
+  "sealing_anchor": {
+    "root": "0xda1d629014ce40744a96a986a7733bae7551fbf9e3abdbcc5ef337e70073cd44",
+    "size": 30,
+    "chains": [
+      {
+        "chain_id": 31337,
+        "index": 1,
+        "at": 1788430329439,
+        "block_number": 6,
+        "tx_hash": "0xe2b22c4268752f28aa606f7b14e81696474f88be1502bafdf2f8258b1b8a255d",
+        "live": {
+          "confirmed": true,
+          "stale_at": 1788430345164
+        }
+      },
+      {
+        "chain_id": 31338,
+        "index": 1,
+        "at": 1788430329497,
+        "block_number": 4,
+        "tx_hash": "0x27bce9fe987bd55507192d6cc703e9f7673bf69734b446085d4b6e54e77653c0",
+        "live": {
+          "confirmed": true,
+          "stale_at": 1788430345169
+        }
+      }
+    ]
+  },
+  "consistency_proof": [],
+  "episodes": [
+    {
+      "leaf": "0x8d6292e3760f11a5a6aee524d5904db17c588e3b360a299da1a3040924a2a2e2",
+      "log_index": 0,
+      "corpus_index": 0,
+      "badges": [
+        "L0"
+      ],
+      "wording": [
+        "Committed — existed by block 5 on primary; log unchanged since; consent live as of anchor (size 24)."
+      ],
+      "source": "teleop_real",
+      "manifest": {
+        "v": 1,
+        "kind": "capture_manifest",
+        "org_id": "org_golden_supplier",
+        "dataset_id": "01M1KC250EZKXJ01QZQNG26QTG",
+        "source": "teleop_real",
+        "layout": "chunked",
+        "embodiment": "so_arm100",
+        "rate_hz": 30,
+        "duration_ms": 200,
+        "captured_at": 1788430325,
+        "channels": [
+          {
+            "name": "action",
+            "dtype": "float32",
+            "shape": [
+              3
+            ],
+            "hz": 30
+          },
+          {
+            "name": "episode_index",
+            "dtype": "int64",
+            "shape": [
+              1
+            ],
+            "hz": 30
+          },
+          {
+            "name": "frame_index",
+            "dtype": "int64",
+            "shape": [
+              1
+            ],
+            "hz": 30
+          },
+          {
+            "name": "index",
+            "dtype": "int64",
+            "shape": [
+              1
+            ],
+            "hz": 30
+          },
+          {
+            "name": "next.success",
+            "dtype": "bool",
+            "shape": [
+              1
+            ],
+            "hz": 30
+          },
+          {
+            "name": "observation.images.front",
+            "dtype": "video/mp4",
+            "shape": [
+              64,
+              64,
+              3
+            ],
+            "hz": 30
+          },
+          {
+            "name": "observation.state",
+            "dtype": "float32",
+            "shape": [
+              3
+            ],
+            "hz": 30
+          },
+          {
+            "name": "task_index",
+            "dtype": "int64",
+            "shape": [
+              1
+            ],
+            "hz": 30
+          },
+          {
+            "name": "timestamp",
+            "dtype": "float32",
+            "shape": [
+              1
+            ],
+            "hz": 30
+          }
+        ],
+        "files": [
+          {
+            "path": "data/chunk-000/file-000.parquet",
+            "bytes": 1643,
+            "hash": "0x25123f0bca064b5bca48826859b9f46451c44320b29e3f46adae60498bcb3fbe"
+          },
+          {
+            "path": "videos/observation.images.front/chunk-000/file-000.mp4",
+            "bytes": 2048,
+            "hash": "0xd840665566940d3d1632f896cc732d7b53dbf8d3a78a81eb63c283cfc2398905"
+          }
+        ],
+        "range": {
+          "episode_index": 0,
+          "frames": [
+            0,
+            6
+          ],
+          "video": {
+            "observation.images.front": [
+              0,
+              0.2
+            ]
+          }
+        },
+        "payload_hash": "0x901448f0fc6d5b76d452c909d17f9d2cf822a9c9f5ba1e262bf5d2d46a118c22",
+        "consent_commitment": "0x3a62db586cf6fbccc492d6ffa9253c2d809f735d9ed9390b057b4dfe54831dea",
+        "terms_hash": "0x66df2990b885bad73977e153625064e40c1e2af0d61b1d21410ac85f2aad57e1",
+        "scope_bits": 11,
+        "task": {
+          "instruction": "fold the towel",
+          "task_id": null
+        },
+        "outcome": {
+          "success": true
+        },
+        "sim": null,
+        "signature": null
+      },
+      "manifest_hash": "0xc38ad4c6044b110fa2bc35c56e69f1bffe70891bb48cefa16a60cd1317c3de3b",
+      "payload_hash": "0x901448f0fc6d5b76d452c909d17f9d2cf822a9c9f5ba1e262bf5d2d46a118c22",
+      "preimage": "0x02901448f0fc6d5b76d452c909d17f9d2cf822a9c9f5ba1e262bf5d2d46a118c22c38ad4c6044b110fa2bc35c56e69f1bffe70891bb48cefa16a60cd1317c3de3b3a62db586cf6fbccc492d6ffa9253c2d809f735d9ed9390b057b4dfe54831dea66df2990b885bad73977e153625064e40c1e2af0d61b1d21410ac85f2aad57e17f66cb32abb88ff43c61bbf1a23bc17eda360901ea15fda913f0c7d46d210402000000006a9947f5000000006a9947f5000000c80000000b090000000000000000010000",
+      "files": [
+        {
+          "path": "data/chunk-000/file-000.parquet",
+          "bytes": 1643,
+          "hash": "0x25123f0bca064b5bca48826859b9f46451c44320b29e3f46adae60498bcb3fbe"
+        },
+        {
+          "path": "videos/observation.images.front/chunk-000/file-000.mp4",
+          "bytes": 2048,
+          "hash": "0xd840665566940d3d1632f896cc732d7b53dbf8d3a78a81eb63c283cfc2398905"
+        }
+      ],
+      "range": {
+        "episode_index": 0,
+        "frames": [
+          0,
+          6
+        ],
+        "video": {
+          "observation.images.front": [
+            0,
+            0.2
+          ]
+        }
+      },
+      "inclusion_proof_log": [
+        "0x09fa7f8946bb1e35dff969ca2d3b1f4946528b3cb02002f8df1425b5a7e84386",
+        "0xc184f031a89ac5cb0f779c9ba12d762890bcd521ec82b6d2d70f73d320454a15",
+        "0xa1cb609c342452414fe46bf012599763f3133ad157731bdca4fde301d4cb235e",
+        "0x87c010ce70ff2b3600dbec6d68d06f8c7540293a3d83dec290073f13ae160481",
+        "0x4f6292496c5d70dbdf751c4f0c4566d9cc3cb8de848eb6ebf41cf35e0311b211"
+      ],
+      "inclusion_proof_corpus": [
+        "0x5e7fa29c22a6965ad7dbf462008d1ac5f81d7fac681911134e692c0e9f09462b",
+        "0xc4425b1c52289af92234d054d6347f2328189ba161a40bc1bd9a013decc5eda7"
+      ],
+      "consent": {
+        "key": "0xcdbbdf9aa15cec51771b85d16cbd41d2aa798fb6c54a741c81f319e424cd63f5",
+        "holder": "organisation",
+        "status": "live",
+        "bitmap": "0",
+        "siblings": []
+      },
+      "claims": [
+        {
+          "check": "timing.v1",
+          "result": "pass",
+          "leaf": "0x09fa7f8946bb1e35dff969ca2d3b1f4946528b3cb02002f8df1425b5a7e84386",
+          "log_index": 1,
+          "verifier_key_id": "0x9830089c4a66c05fbe56275acbd2af70301574d59acf97352a1a4a4857c37690",
+          "detail_hash": "0xb06b88c749abf5900e5d588ba36bac19917fba7e3e4dcb319654d58027f9f2a7",
+          "detail": {
+            "check_version": "timing.v1.0",
+            "thresholds": {
+              "period_tolerance_fraction": 0.25,
+              "min_within_tolerance_fraction": 0.99,
+              "max_gap_fraction": 5,
+              "frame_count_tolerance": 2
+            }
+          },
+          "inclusion_proof": [
+            "0x8d6292e3760f11a5a6aee524d5904db17c588e3b360a299da1a3040924a2a2e2",
+            "0xc184f031a89ac5cb0f779c9ba12d762890bcd521ec82b6d2d70f73d320454a15",
+            "0xa1cb609c342452414fe46bf012599763f3133ad157731bdca4fde301d4cb235e",
+            "0x87c010ce70ff2b3600dbec6d68d06f8c7540293a3d83dec290073f13ae160481",
+            "0x4f6292496c5d70dbdf751c4f0c4566d9cc3cb8de848eb6ebf41cf35e0311b211"
+          ]
+        },
+        {
+          "check": "kinematics.v1",
+          "result": "inconclusive",
+          "leaf": "0xc42bf325c425bdebab4bec07a1f8aa3c9ce6ee16518a045948f62744c38762b0",
+          "log_index": 2,
+          "verifier_key_id": "0x9830089c4a66c05fbe56275acbd2af70301574d59acf97352a1a4a4857c37690",
+          "detail_hash": "0x8d5741021c568de64002ac6db124bd1bf73ca3615fe6bb83135372d4ef5d3679",
+          "detail": {
+            "check_version": "kinematics.v1.0",
+            "thresholds": {
+              "joint_limit_tolerance_deg": 1,
+              "max_accel_rad_s2": 50
+            },
+            "reason": "joint count mismatch",
+            "embodiment_id": "so_arm100",
+            "state_dof": 3,
+            "embodiment_dof": 5
+          },
+          "inclusion_proof": [
+            "0xfb0fda000574fe614663da8605e3a198b2a6ce126d086ecb7cb80f7151c710be",
+            "0x88c488760d8f29eac72fa6e3944bb4224ad9cd411811d2e1dff677d4205dd301",
+            "0xa1cb609c342452414fe46bf012599763f3133ad157731bdca4fde301d4cb235e",
+            "0x87c010ce70ff2b3600dbec6d68d06f8c7540293a3d83dec290073f13ae160481",
+            "0x4f6292496c5d70dbdf751c4f0c4566d9cc3cb8de848eb6ebf41cf35e0311b211"
+          ]
+        },
+        {
+          "check": "sensor_consistency.v1",
+          "result": "inconclusive",
+          "leaf": "0xfb0fda000574fe614663da8605e3a198b2a6ce126d086ecb7cb80f7151c710be",
+          "log_index": 3,
+          "verifier_key_id": "0x9830089c4a66c05fbe56275acbd2af70301574d59acf97352a1a4a4857c37690",
+          "detail_hash": "0x0212a727a5523a8c5dccefc99ac11b1424b8953776a0d22d80e4cbe5b81865dd",
+          "detail": {
+            "check_version": "sensor_consistency.v1.0",
+            "thresholds": {
+              "rho_pass": 0.4,
+              "rho_fail": 0.2
+            },
+            "reason": "ffmpeg unavailable"
+          },
+          "inclusion_proof": [
+            "0xc42bf325c425bdebab4bec07a1f8aa3c9ce6ee16518a045948f62744c38762b0",
+            "0x88c488760d8f29eac72fa6e3944bb4224ad9cd411811d2e1dff677d4205dd301",
+            "0xa1cb609c342452414fe46bf012599763f3133ad157731bdca4fde301d4cb235e",
+            "0x87c010ce70ff2b3600dbec6d68d06f8c7540293a3d83dec290073f13ae160481",
+            "0x4f6292496c5d70dbdf751c4f0c4566d9cc3cb8de848eb6ebf41cf35e0311b211"
+          ]
+        },
+        {
+          "check": "sim_signature.v1",
+          "result": "pass",
+          "leaf": "0x18890f1499ef54bddb81cc2a7921c4cae24612ab336aa1dc7100cdc4c9e2d3a9",
+          "log_index": 4,
+          "verifier_key_id": "0x9830089c4a66c05fbe56275acbd2af70301574d59acf97352a1a4a4857c37690",
+          "detail_hash": "0x146e458e4aa9e8e04fc6c98309b123af3b84fe4be85f1c2e09967e818ac62fb5",
+          "detail": {
+            "check_version": "sim_signature.v1.0",
+            "thresholds": {
+              "score_inconclusive": 2,
+              "score_fail": 3
+            },
+            "score": 1,
+            "features": [
+              {
+                "name": "exact_repeat_fraction",
+                "value": 0,
+                "tripped": false
+              },
+              {
+                "name": "dt_variance",
+                "value": 2.8888949165808537e-35,
+                "tripped": true
+              },
+              {
+                "name": "spectral_power_gt_5hz_fraction",
+                "value": 0.31450652215141023,
+                "tripped": false
+              }
+            ],
+            "ffmpeg_error": "ffmpeg unavailable"
+          },
+          "inclusion_proof": [
+            "0xf65bb6506e73625f3f47d2d089dcd7b08a2e34faeb1b68e1696a7b04417bd5da",
+            "0xed0b8abf6818d19f02b5ee27191bc2ba42ecf86d80844d7bfda98f4c49e3d08c",
+            "0xb4dfde9da81288045b8ed5d2531d1a1a2529b61f6d0c86416203f3349d7f0b9d",
+            "0x87c010ce70ff2b3600dbec6d68d06f8c7540293a3d83dec290073f13ae160481",
+            "0x4f6292496c5d70dbdf751c4f0c4566d9cc3cb8de848eb6ebf41cf35e0311b211"
+          ]
+        },
+        {
+          "check": "dedup.v1",
+          "result": "inconclusive",
+          "leaf": "0xf65bb6506e73625f3f47d2d089dcd7b08a2e34faeb1b68e1696a7b04417bd5da",
+          "log_index": 5,
+          "verifier_key_id": "0x9830089c4a66c05fbe56275acbd2af70301574d59acf97352a1a4a4857c37690",
+          "detail_hash": "0x8475ac64eb6edce379bd7ab6b9305e8bde5fcfc1a07938903362679ce130b276",
+          "detail": {
+            "check_version": "dedup.v1.0",
+            "thresholds": {
+              "T_exact": 0.02,
+              "T_near": 0.05
+            },
+            "reason": "episode shorter than 1s",
+            "duration_s": 0.16666666666666666
+          },
+          "inclusion_proof": [
+            "0x18890f1499ef54bddb81cc2a7921c4cae24612ab336aa1dc7100cdc4c9e2d3a9",
+            "0xed0b8abf6818d19f02b5ee27191bc2ba42ecf86d80844d7bfda98f4c49e3d08c",
+            "0xb4dfde9da81288045b8ed5d2531d1a1a2529b61f6d0c86416203f3349d7f0b9d",
+            "0x87c010ce70ff2b3600dbec6d68d06f8c7540293a3d83dec290073f13ae160481",
+            "0x4f6292496c5d70dbdf751c4f0c4566d9cc3cb8de848eb6ebf41cf35e0311b211"
+          ]
+        }
+      ]
+    },
+    {
+      "leaf": "0x5e7fa29c22a6965ad7dbf462008d1ac5f81d7fac681911134e692c0e9f09462b",
+      "log_index": 6,
+      "corpus_index": 1,
+      "badges": [
+        "L0"
+      ],
+      "wording": [
+        "Committed — existed by block 5 on primary; log unchanged since; consent live as of anchor (size 24)."
+      ],
+      "source": "teleop_real",
+      "manifest": {
+        "v": 1,
+        "kind": "capture_manifest",
+        "org_id": "org_golden_supplier",
+        "dataset_id": "01M1KC250EZKXJ01QZQNG26QTG",
+        "source": "teleop_real",
+        "layout": "chunked",
+        "embodiment": "so_arm100",
+        "rate_hz": 30,
+        "duration_ms": 167,
+        "captured_at": 1788430325,
+        "channels": [
+          {
+            "name": "action",
+            "dtype": "float32",
+            "shape": [
+              3
+            ],
+            "hz": 30
+          },
+          {
+            "name": "episode_index",
+            "dtype": "int64",
+            "shape": [
+              1
+            ],
+            "hz": 30
+          },
+          {
+            "name": "frame_index",
+            "dtype": "int64",
+            "shape": [
+              1
+            ],
+            "hz": 30
+          },
+          {
+            "name": "index",
+            "dtype": "int64",
+            "shape": [
+              1
+            ],
+            "hz": 30
+          },
+          {
+            "name": "next.success",
+            "dtype": "bool",
+            "shape": [
+              1
+            ],
+            "hz": 30
+          },
+          {
+            "name": "observation.images.front",
+            "dtype": "video/mp4",
+            "shape": [
+              64,
+              64,
+              3
+            ],
+            "hz": 30
+          },
+          {
+            "name": "observation.state",
+            "dtype": "float32",
+            "shape": [
+              3
+            ],
+            "hz": 30
+          },
+          {
+            "name": "task_index",
+            "dtype": "int64",
+            "shape": [
+              1
+            ],
+            "hz": 30
+          },
+          {
+            "name": "timestamp",
+            "dtype": "float32",
+            "shape": [
+              1
+            ],
+            "hz": 30
+          }
+        ],
+        "files": [
+          {
+            "path": "data/chunk-000/file-000.parquet",
+            "bytes": 1643,
+            "hash": "0x25123f0bca064b5bca48826859b9f46451c44320b29e3f46adae60498bcb3fbe"
+          },
+          {
+            "path": "videos/observation.images.front/chunk-000/file-000.mp4",
+            "bytes": 2048,
+            "hash": "0xd840665566940d3d1632f896cc732d7b53dbf8d3a78a81eb63c283cfc2398905"
+          }
+        ],
+        "range": {
+          "episode_index": 1,
+          "frames": [
+            6,
+            11
+          ],
+          "video": {
+            "observation.images.front": [
+              0.2,
+              0.36666666666666664
+            ]
+          }
+        },
+        "payload_hash": "0x901448f0fc6d5b76d452c909d17f9d2cf822a9c9f5ba1e262bf5d2d46a118c22",
+        "consent_commitment": "0x806d2bc8bc2abd4ec237f22dfb5ac222b2020a627678e5e01f0f7cd5497c5672",
+        "terms_hash": "0x66df2990b885bad73977e153625064e40c1e2af0d61b1d21410ac85f2aad57e1",
+        "scope_bits": 11,
+        "task": {
+          "instruction": "fold the towel",
+          "task_id": null
+        },
+        "outcome": {
+          "success": true
+        },
+        "sim": null,
+        "signature": null
+      },
+      "manifest_hash": "0x5576770e33f34d30eee70d27831169fa08c90364d943768f05bdf5a06138b108",
+      "payload_hash": "0x901448f0fc6d5b76d452c909d17f9d2cf822a9c9f5ba1e262bf5d2d46a118c22",
+      "preimage": "0x02901448f0fc6d5b76d452c909d17f9d2cf822a9c9f5ba1e262bf5d2d46a118c225576770e33f34d30eee70d27831169fa08c90364d943768f05bdf5a06138b108806d2bc8bc2abd4ec237f22dfb5ac222b2020a627678e5e01f0f7cd5497c567266df2990b885bad73977e153625064e40c1e2af0d61b1d21410ac85f2aad57e17f66cb32abb88ff43c61bbf1a23bc17eda360901ea15fda913f0c7d46d210402000000006a9947f5000000006a9947f6000000a70000000b090000000000000000010000",
+      "files": [
+        {
+          "path": "data/chunk-000/file-000.parquet",
+          "bytes": 1643,
+          "hash": "0x25123f0bca064b5bca48826859b9f46451c44320b29e3f46adae60498bcb3fbe"
+        },
+        {
+          "path": "videos/observation.images.front/chunk-000/file-000.mp4",
+          "bytes": 2048,
+          "hash": "0xd840665566940d3d1632f896cc732d7b53dbf8d3a78a81eb63c283cfc2398905"
+        }
+      ],
+      "range": {
+        "episode_index": 1,
+        "frames": [
+          6,
+          11
+        ],
+        "video": {
+          "observation.images.front": [
+            0.2,
+            0.36666666666666664
+          ]
+        }
+      },
+      "inclusion_proof_log": [
+        "0x2f0758ccb021706bbfd8dc8da8f561c92edf1f3007e4b03bd3e08241497958bc",
+        "0x549026065e095d50de6116eba7ae30b8373646453c0ff62593565be99d27709a",
+        "0xb4dfde9da81288045b8ed5d2531d1a1a2529b61f6d0c86416203f3349d7f0b9d",
+        "0x87c010ce70ff2b3600dbec6d68d06f8c7540293a3d83dec290073f13ae160481",
+        "0x4f6292496c5d70dbdf751c4f0c4566d9cc3cb8de848eb6ebf41cf35e0311b211"
+      ],
+      "inclusion_proof_corpus": [
+        "0x8d6292e3760f11a5a6aee524d5904db17c588e3b360a299da1a3040924a2a2e2",
+        "0xc4425b1c52289af92234d054d6347f2328189ba161a40bc1bd9a013decc5eda7"
+      ],
+      "consent": {
+        "key": "0x1d172b40d75a40e9ada861750298e0cef4f4ca14fe8b32c861511f0990270ee3",
+        "holder": "organisation",
+        "status": "live",
+        "bitmap": "0",
+        "siblings": []
+      },
+      "claims": [
+        {
+          "check": "timing.v1",
+          "result": "pass",
+          "leaf": "0x2f0758ccb021706bbfd8dc8da8f561c92edf1f3007e4b03bd3e08241497958bc",
+          "log_index": 7,
+          "verifier_key_id": "0x9830089c4a66c05fbe56275acbd2af70301574d59acf97352a1a4a4857c37690",
+          "detail_hash": "0xb06b88c749abf5900e5d588ba36bac19917fba7e3e4dcb319654d58027f9f2a7",
+          "detail": {
+            "check_version": "timing.v1.0",
+            "thresholds": {
+              "period_tolerance_fraction": 0.25,
+              "min_within_tolerance_fraction": 0.99,
+              "max_gap_fraction": 5,
+              "frame_count_tolerance": 2
+            }
+          },
+          "inclusion_proof": [
+            "0x5e7fa29c22a6965ad7dbf462008d1ac5f81d7fac681911134e692c0e9f09462b",
+            "0x549026065e095d50de6116eba7ae30b8373646453c0ff62593565be99d27709a",
+            "0xb4dfde9da81288045b8ed5d2531d1a1a2529b61f6d0c86416203f3349d7f0b9d",
+            "0x87c010ce70ff2b3600dbec6d68d06f8c7540293a3d83dec290073f13ae160481",
+            "0x4f6292496c5d70dbdf751c4f0c4566d9cc3cb8de848eb6ebf41cf35e0311b211"
+          ]
+        },
+        {
+          "check": "kinematics.v1",
+          "result": "inconclusive",
+          "leaf": "0xd26371466164b6bfb15f088271a884d39ecb0bbadb97b88c9cdece8390e3b2af",
+          "log_index": 8,
+          "verifier_key_id": "0x9830089c4a66c05fbe56275acbd2af70301574d59acf97352a1a4a4857c37690",
+          "detail_hash": "0x8d5741021c568de64002ac6db124bd1bf73ca3615fe6bb83135372d4ef5d3679",
+          "detail": {
+            "check_version": "kinematics.v1.0",
+            "thresholds": {
+              "joint_limit_tolerance_deg": 1,
+              "max_accel_rad_s2": 50
+            },
+            "reason": "joint count mismatch",
+            "embodiment_id": "so_arm100",
+            "state_dof": 3,
+            "embodiment_dof": 5
+          },
+          "inclusion_proof": [
+            "0x16e2b8189a6562dc6080c375aebbd34968154ce89200b22b4a931546107bdf9e",
+            "0x02544323e890ba96fee49ce0af25aae2bc9767bc7a045dad3cf9a4ef390fa567",
+            "0xdcb10ebf6dc99d7a00d23cfb1efaef8d35f776ae754273e173b3754a3e329fe6",
+            "0x5718d43a8f8a8c5a1ce783b11ec373148be73c277101578845f633ea858b5a35",
+            "0x4f6292496c5d70dbdf751c4f0c4566d9cc3cb8de848eb6ebf41cf35e0311b211"
+          ]
+        },
+        {
+          "check": "sensor_consistency.v1",
+          "result": "inconclusive",
+          "leaf": "0x16e2b8189a6562dc6080c375aebbd34968154ce89200b22b4a931546107bdf9e",
+          "log_index": 9,
+          "verifier_key_id": "0x9830089c4a66c05fbe56275acbd2af70301574d59acf97352a1a4a4857c37690",
+          "detail_hash": "0x0212a727a5523a8c5dccefc99ac11b1424b8953776a0d22d80e4cbe5b81865dd",
+          "detail": {
+            "check_version": "sensor_consistency.v1.0",
+            "thresholds": {
+              "rho_pass": 0.4,
+              "rho_fail": 0.2
+            },
+            "reason": "ffmpeg unavailable"
+          },
+          "inclusion_proof": [
+            "0xd26371466164b6bfb15f088271a884d39ecb0bbadb97b88c9cdece8390e3b2af",
+            "0x02544323e890ba96fee49ce0af25aae2bc9767bc7a045dad3cf9a4ef390fa567",
+            "0xdcb10ebf6dc99d7a00d23cfb1efaef8d35f776ae754273e173b3754a3e329fe6",
+            "0x5718d43a8f8a8c5a1ce783b11ec373148be73c277101578845f633ea858b5a35",
+            "0x4f6292496c5d70dbdf751c4f0c4566d9cc3cb8de848eb6ebf41cf35e0311b211"
+          ]
+        },
+        {
+          "check": "sim_signature.v1",
+          "result": "pass",
+          "leaf": "0xcdde64596deba1d0492235fe8547e628a4ea6610d45c123728b62cd549e8cf47",
+          "log_index": 10,
+          "verifier_key_id": "0x9830089c4a66c05fbe56275acbd2af70301574d59acf97352a1a4a4857c37690",
+          "detail_hash": "0x163aa128914954bff62a2a2068c703b72e738380952e46c3b09eb8c00b761032",
+          "detail": {
+            "check_version": "sim_signature.v1.0",
+            "thresholds": {
+              "score_inconclusive": 2,
+              "score_fail": 3
+            },
+            "score": 1,
+            "features": [
+              {
+                "name": "exact_repeat_fraction",
+                "value": 0,
+                "tripped": false
+              },
+              {
+                "name": "dt_variance",
+                "value": 2.407412430484045e-35,
+                "tripped": true
+              }
+            ],
+            "ffmpeg_error": "ffmpeg unavailable"
+          },
+          "inclusion_proof": [
+            "0xe3b23f0caeb3157b8588974bcd1dc7d7a0ec14c204435b1ae69eff09ff6a7f34",
+            "0xd8b5d4c56d809399efa7042a42ba9d36c7968b305d1f7517ba3ceff2edc3ae03",
+            "0xdcb10ebf6dc99d7a00d23cfb1efaef8d35f776ae754273e173b3754a3e329fe6",
+            "0x5718d43a8f8a8c5a1ce783b11ec373148be73c277101578845f633ea858b5a35",
+            "0x4f6292496c5d70dbdf751c4f0c4566d9cc3cb8de848eb6ebf41cf35e0311b211"
+          ]
+        },
+        {
+          "check": "dedup.v1",
+          "result": "inconclusive",
+          "leaf": "0xe3b23f0caeb3157b8588974bcd1dc7d7a0ec14c204435b1ae69eff09ff6a7f34",
+          "log_index": 11,
+          "verifier_key_id": "0x9830089c4a66c05fbe56275acbd2af70301574d59acf97352a1a4a4857c37690",
+          "detail_hash": "0x9f1810893de16fbdbac91feffd77ac2f40d0332f3b1e168bac35bfd8bb5d4388",
+          "detail": {
+            "check_version": "dedup.v1.0",
+            "thresholds": {
+              "T_exact": 0.02,
+              "T_near": 0.05
+            },
+            "reason": "episode shorter than 1s",
+            "duration_s": 0.13333333333333333
+          },
+          "inclusion_proof": [
+            "0xcdde64596deba1d0492235fe8547e628a4ea6610d45c123728b62cd549e8cf47",
+            "0xd8b5d4c56d809399efa7042a42ba9d36c7968b305d1f7517ba3ceff2edc3ae03",
+            "0xdcb10ebf6dc99d7a00d23cfb1efaef8d35f776ae754273e173b3754a3e329fe6",
+            "0x5718d43a8f8a8c5a1ce783b11ec373148be73c277101578845f633ea858b5a35",
+            "0x4f6292496c5d70dbdf751c4f0c4566d9cc3cb8de848eb6ebf41cf35e0311b211"
+          ]
+        }
+      ]
+    },
+    {
+      "leaf": "0x313c870084c85ef57d7597f3deef5903a7dfd5a9c71f5c2fcf30f23b9cd0290b",
+      "log_index": 12,
+      "corpus_index": 2,
+      "badges": [
+        "L0"
+      ],
+      "wording": [
+        "Committed — existed by block 5 on primary; log unchanged since; consent live as of anchor (size 24)."
+      ],
+      "source": "teleop_real",
+      "manifest": {
+        "v": 1,
+        "kind": "capture_manifest",
+        "org_id": "org_golden_supplier",
+        "dataset_id": "01M1KC250EZKXJ01QZQNG26QTG",
+        "source": "teleop_real",
+        "layout": "chunked",
+        "embodiment": "so_arm100",
+        "rate_hz": 30,
+        "duration_ms": 233,
+        "captured_at": 1788430325,
+        "channels": [
+          {
+            "name": "action",
+            "dtype": "float32",
+            "shape": [
+              3
+            ],
+            "hz": 30
+          },
+          {
+            "name": "episode_index",
+            "dtype": "int64",
+            "shape": [
+              1
+            ],
+            "hz": 30
+          },
+          {
+            "name": "frame_index",
+            "dtype": "int64",
+            "shape": [
+              1
+            ],
+            "hz": 30
+          },
+          {
+            "name": "index",
+            "dtype": "int64",
+            "shape": [
+              1
+            ],
+            "hz": 30
+          },
+          {
+            "name": "next.success",
+            "dtype": "bool",
+            "shape": [
+              1
+            ],
+            "hz": 30
+          },
+          {
+            "name": "observation.images.front",
+            "dtype": "video/mp4",
+            "shape": [
+              64,
+              64,
+              3
+            ],
+            "hz": 30
+          },
+          {
+            "name": "observation.state",
+            "dtype": "float32",
+            "shape": [
+              3
+            ],
+            "hz": 30
+          },
+          {
+            "name": "task_index",
+            "dtype": "int64",
+            "shape": [
+              1
+            ],
+            "hz": 30
+          },
+          {
+            "name": "timestamp",
+            "dtype": "float32",
+            "shape": [
+              1
+            ],
+            "hz": 30
+          }
+        ],
+        "files": [
+          {
+            "path": "data/chunk-000/file-000.parquet",
+            "bytes": 1643,
+            "hash": "0x25123f0bca064b5bca48826859b9f46451c44320b29e3f46adae60498bcb3fbe"
+          },
+          {
+            "path": "videos/observation.images.front/chunk-000/file-000.mp4",
+            "bytes": 2048,
+            "hash": "0xd840665566940d3d1632f896cc732d7b53dbf8d3a78a81eb63c283cfc2398905"
+          }
+        ],
+        "range": {
+          "episode_index": 2,
+          "frames": [
+            11,
+            18
+          ],
+          "video": {
+            "observation.images.front": [
+              0.36666666666666664,
+              0.6
+            ]
+          }
+        },
+        "payload_hash": "0x901448f0fc6d5b76d452c909d17f9d2cf822a9c9f5ba1e262bf5d2d46a118c22",
+        "consent_commitment": "0x48302758a3d52314e4b0d7c55187bf323562e9d7347d455604d2888be7f65016",
+        "terms_hash": "0x66df2990b885bad73977e153625064e40c1e2af0d61b1d21410ac85f2aad57e1",
+        "scope_bits": 11,
+        "task": {
+          "instruction": "stack the cups",
+          "task_id": null
+        },
+        "outcome": {
+          "success": true
+        },
+        "sim": null,
+        "signature": null
+      },
+      "manifest_hash": "0x84c60054e50d4166b685a3be2df497ad3c7d9a419598ffd667b1e1be6247141e",
+      "payload_hash": "0x901448f0fc6d5b76d452c909d17f9d2cf822a9c9f5ba1e262bf5d2d46a118c22",
+      "preimage": "0x02901448f0fc6d5b76d452c909d17f9d2cf822a9c9f5ba1e262bf5d2d46a118c2284c60054e50d4166b685a3be2df497ad3c7d9a419598ffd667b1e1be6247141e48302758a3d52314e4b0d7c55187bf323562e9d7347d455604d2888be7f6501666df2990b885bad73977e153625064e40c1e2af0d61b1d21410ac85f2aad57e1749cc0b9818c9fdfe1d675cd930639085d29979a8670b06ef195ae86641dd856000000006a9947f5000000006a9947f6000000e90000000b090000000000000000010000",
+      "files": [
+        {
+          "path": "data/chunk-000/file-000.parquet",
+          "bytes": 1643,
+          "hash": "0x25123f0bca064b5bca48826859b9f46451c44320b29e3f46adae60498bcb3fbe"
+        },
+        {
+          "path": "videos/observation.images.front/chunk-000/file-000.mp4",
+          "bytes": 2048,
+          "hash": "0xd840665566940d3d1632f896cc732d7b53dbf8d3a78a81eb63c283cfc2398905"
+        }
+      ],
+      "range": {
+        "episode_index": 2,
+        "frames": [
+          11,
+          18
+        ],
+        "video": {
+          "observation.images.front": [
+            0.36666666666666664,
+            0.6
+          ]
+        }
+      },
+      "inclusion_proof_log": [
+        "0xc32b810b78adc51404d7ebd272a7a979aa7e88d8fd75c027592c181e62abd480",
+        "0x85b14bea6630d13db9d37537e6cfd865511d2ab05a7672811b6d075435cc0aab",
+        "0x66dd9330984ea408d4117ec0ce86107e1efe34a233e526191cba894287682bb8",
+        "0x5718d43a8f8a8c5a1ce783b11ec373148be73c277101578845f633ea858b5a35",
+        "0x4f6292496c5d70dbdf751c4f0c4566d9cc3cb8de848eb6ebf41cf35e0311b211"
+      ],
+      "inclusion_proof_corpus": [
+        "0x90b5a096ca97a3ee7000bc537bf7843274ed1d6f26d4aa15443abd8d5a7823b5",
+        "0x65c69969bd5a41305570542b25f58b306b8ec9e95a342d1c7e8d59a60dc85925"
+      ],
+      "consent": {
+        "key": "0x27b01ff54ae9e27d037e21873b938d42aae6cf67a33d40bf030ef4d8cb024968",
+        "holder": "organisation",
+        "status": "live",
+        "bitmap": "0",
+        "siblings": []
+      },
+      "claims": [
+        {
+          "check": "timing.v1",
+          "result": "pass",
+          "leaf": "0xc32b810b78adc51404d7ebd272a7a979aa7e88d8fd75c027592c181e62abd480",
+          "log_index": 13,
+          "verifier_key_id": "0x9830089c4a66c05fbe56275acbd2af70301574d59acf97352a1a4a4857c37690",
+          "detail_hash": "0xb06b88c749abf5900e5d588ba36bac19917fba7e3e4dcb319654d58027f9f2a7",
+          "detail": {
+            "check_version": "timing.v1.0",
+            "thresholds": {
+              "period_tolerance_fraction": 0.25,
+              "min_within_tolerance_fraction": 0.99,
+              "max_gap_fraction": 5,
+              "frame_count_tolerance": 2
+            }
+          },
+          "inclusion_proof": [
+            "0x313c870084c85ef57d7597f3deef5903a7dfd5a9c71f5c2fcf30f23b9cd0290b",
+            "0x85b14bea6630d13db9d37537e6cfd865511d2ab05a7672811b6d075435cc0aab",
+            "0x66dd9330984ea408d4117ec0ce86107e1efe34a233e526191cba894287682bb8",
+            "0x5718d43a8f8a8c5a1ce783b11ec373148be73c277101578845f633ea858b5a35",
+            "0x4f6292496c5d70dbdf751c4f0c4566d9cc3cb8de848eb6ebf41cf35e0311b211"
+          ]
+        },
+        {
+          "check": "kinematics.v1",
+          "result": "inconclusive",
+          "leaf": "0xb565dcad7a75c8e470533a3122ead8ef14cf3e832a0cf7e6e99cc4f2a0c64ce4",
+          "log_index": 14,
+          "verifier_key_id": "0x9830089c4a66c05fbe56275acbd2af70301574d59acf97352a1a4a4857c37690",
+          "detail_hash": "0x8d5741021c568de64002ac6db124bd1bf73ca3615fe6bb83135372d4ef5d3679",
+          "detail": {
+            "check_version": "kinematics.v1.0",
+            "thresholds": {
+              "joint_limit_tolerance_deg": 1,
+              "max_accel_rad_s2": 50
+            },
+            "reason": "joint count mismatch",
+            "embodiment_id": "so_arm100",
+            "state_dof": 3,
+            "embodiment_dof": 5
+          },
+          "inclusion_proof": [
+            "0xd697ea85629716e7d2b784c00e8dd32c4b0c2555ac4bff82aaa93899be9e20a9",
+            "0xef57c465c8d96f07647f1ec49f5ea0261c4a8b93b8ccc0b2676a45ece5c845ed",
+            "0x66dd9330984ea408d4117ec0ce86107e1efe34a233e526191cba894287682bb8",
+            "0x5718d43a8f8a8c5a1ce783b11ec373148be73c277101578845f633ea858b5a35",
+            "0x4f6292496c5d70dbdf751c4f0c4566d9cc3cb8de848eb6ebf41cf35e0311b211"
+          ]
+        },
+        {
+          "check": "sensor_consistency.v1",
+          "result": "inconclusive",
+          "leaf": "0xd697ea85629716e7d2b784c00e8dd32c4b0c2555ac4bff82aaa93899be9e20a9",
+          "log_index": 15,
+          "verifier_key_id": "0x9830089c4a66c05fbe56275acbd2af70301574d59acf97352a1a4a4857c37690",
+          "detail_hash": "0x0212a727a5523a8c5dccefc99ac11b1424b8953776a0d22d80e4cbe5b81865dd",
+          "detail": {
+            "check_version": "sensor_consistency.v1.0",
+            "thresholds": {
+              "rho_pass": 0.4,
+              "rho_fail": 0.2
+            },
+            "reason": "ffmpeg unavailable"
+          },
+          "inclusion_proof": [
+            "0xb565dcad7a75c8e470533a3122ead8ef14cf3e832a0cf7e6e99cc4f2a0c64ce4",
+            "0xef57c465c8d96f07647f1ec49f5ea0261c4a8b93b8ccc0b2676a45ece5c845ed",
+            "0x66dd9330984ea408d4117ec0ce86107e1efe34a233e526191cba894287682bb8",
+            "0x5718d43a8f8a8c5a1ce783b11ec373148be73c277101578845f633ea858b5a35",
+            "0x4f6292496c5d70dbdf751c4f0c4566d9cc3cb8de848eb6ebf41cf35e0311b211"
+          ]
+        },
+        {
+          "check": "sim_signature.v1",
+          "result": "pass",
+          "leaf": "0x754c4f0ebf611c92443e18c1c71dd61b0fc12efec8b2aea9bb73d49c8f92e1ce",
+          "log_index": 16,
+          "verifier_key_id": "0x9830089c4a66c05fbe56275acbd2af70301574d59acf97352a1a4a4857c37690",
+          "detail_hash": "0xff07d9b5108921de6e39a590daaf400efdbe56b582b61d602f00c6c59163fcb5",
+          "detail": {
+            "check_version": "sim_signature.v1.0",
+            "thresholds": {
+              "score_inconclusive": 2,
+              "score_fail": 3
+            },
+            "score": 1,
+            "features": [
+              {
+                "name": "exact_repeat_fraction",
+                "value": 0,
+                "tripped": false
+              },
+              {
+                "name": "dt_variance",
+                "value": 9.62964972193618e-35,
+                "tripped": true
+              },
+              {
+                "name": "spectral_power_gt_5hz_fraction",
+                "value": 0.12732200350965706,
+                "tripped": false
+              }
+            ],
+            "ffmpeg_error": "ffmpeg unavailable"
+          },
+          "inclusion_proof": [
+            "0x419ff701e95f9afd161f2bfdf7655c1fb76b1111d92255af14a3119cf55aa1cf",
+            "0x84cf64b8ac803ab0c7a9c66ca6a12547d0b96ba3d3a029c8085030189e1b15a1",
+            "0x74229918cdb87e499f2c9a9bbd4e034acc9fe0b414a04ce40d98708d800e4fdc",
+            "0x1daacd742eab22dd4678b4da66c8690e9fb3659c17996b539ebc6e4b2d5d7c88",
+            "0x0ea617e93f653c31e1942f52c4b52c52be3c6fdeafcc7cb90ad9563849bb347f"
+          ]
+        },
+        {
+          "check": "dedup.v1",
+          "result": "inconclusive",
+          "leaf": "0x419ff701e95f9afd161f2bfdf7655c1fb76b1111d92255af14a3119cf55aa1cf",
+          "log_index": 17,
+          "verifier_key_id": "0x9830089c4a66c05fbe56275acbd2af70301574d59acf97352a1a4a4857c37690",
+          "detail_hash": "0xbec85c424de9c613bb3e6d46d5ca03ff22052466d2e22e59aaefbc6cc419d898",
+          "detail": {
+            "check_version": "dedup.v1.0",
+            "thresholds": {
+              "T_exact": 0.02,
+              "T_near": 0.05
+            },
+            "reason": "episode shorter than 1s",
+            "duration_s": 0.2
+          },
+          "inclusion_proof": [
+            "0x754c4f0ebf611c92443e18c1c71dd61b0fc12efec8b2aea9bb73d49c8f92e1ce",
+            "0x84cf64b8ac803ab0c7a9c66ca6a12547d0b96ba3d3a029c8085030189e1b15a1",
+            "0x74229918cdb87e499f2c9a9bbd4e034acc9fe0b414a04ce40d98708d800e4fdc",
+            "0x1daacd742eab22dd4678b4da66c8690e9fb3659c17996b539ebc6e4b2d5d7c88",
+            "0x0ea617e93f653c31e1942f52c4b52c52be3c6fdeafcc7cb90ad9563849bb347f"
+          ]
+        }
+      ]
+    },
+    {
+      "leaf": "0x90b5a096ca97a3ee7000bc537bf7843274ed1d6f26d4aa15443abd8d5a7823b5",
+      "log_index": 24,
+      "corpus_index": 3,
+      "badges": [
+        "L0"
+      ],
+      "wording": [
+        "Committed — existed by block 6 on primary; log unchanged since; consent live as of anchor (size 30)."
+      ],
+      "source": "teleop_real",
+      "manifest": {
+        "v": 1,
+        "kind": "capture_manifest",
+        "org_id": "org_golden_supplier",
+        "dataset_id": null,
+        "source": "teleop_real",
+        "layout": "per_episode",
+        "embodiment": "so_arm100",
+        "rate_hz": 30,
+        "duration_ms": 1000,
+        "captured_at": 1788430329,
+        "channels": [
+          {
+            "name": "action",
+            "dtype": "float32",
+            "shape": [
+              3
+            ]
+          }
+        ],
+        "files": [
+          {
+            "path": "data/episode_4.bin",
+            "bytes": 53,
+            "hash": "0xbce0ea8fc7c3cdeffb27275d68b59a4226b5c3801a51b95d4d0723865929bfda"
+          }
+        ],
+        "range": null,
+        "payload_hash": "0x9f91d05ecda14cc4ddd4a72ff92b9ed7875e31b8e00dc5a498c47f5eb06214c3",
+        "consent_commitment": "0x71bbc07830df93051d690c2710c77af8e556dc2f0e593f9c3700b1dfa6a35628",
+        "terms_hash": "0x66df2990b885bad73977e153625064e40c1e2af0d61b1d21410ac85f2aad57e1",
+        "scope_bits": 11,
+        "task": null,
+        "outcome": null,
+        "sim": null,
+        "signature": {
+          "alg": "ed25519",
+          "key_id": "0x580552ba4a8a428e5b39e01920405d29ce0a47060047ce683bf07ef5726e5668",
+          "sig": "0x7cabcd5c1a041bf0c18e3277a754eab3af41badbc63a32fc0a77fdc705faa062afe17c27ba5e51c9067461ef9b040b7b744722a847bae35d079bb530aa30df0a"
+        }
+      },
+      "manifest_hash": "0x86a0c6b2bcf5551971d899d5f69f7a876e1d5ec527e2f4dca72351dcd8a04e21",
+      "org_pubkey": "0xc6b7351c622f5e601b0d79a17ce060da1b36cc9357daf9965950f57f22007aa2",
+      "payload_hash": "0x9f91d05ecda14cc4ddd4a72ff92b9ed7875e31b8e00dc5a498c47f5eb06214c3",
+      "preimage": "0x029f91d05ecda14cc4ddd4a72ff92b9ed7875e31b8e00dc5a498c47f5eb06214c386a0c6b2bcf5551971d899d5f69f7a876e1d5ec527e2f4dca72351dcd8a04e2171bbc07830df93051d690c2710c77af8e556dc2f0e593f9c3700b1dfa6a3562866df2990b885bad73977e153625064e40c1e2af0d61b1d21410ac85f2aad57e10000000000000000000000000000000000000000000000000000000000000000000000006a9947f9000000006a9947f9000003e80000000b010000000000000000000000",
+      "files": [
+        {
+          "path": "data/episode_4.bin",
+          "bytes": 53,
+          "hash": "0xbce0ea8fc7c3cdeffb27275d68b59a4226b5c3801a51b95d4d0723865929bfda"
+        }
+      ],
+      "range": null,
+      "inclusion_proof_log": [
+        "0xbac14e6aeddf1bd83fe25135edd9e5b474885c609a24604aa85c6c7d7f298b46",
+        "0xe944b385bfb1e6645521e329868f25e6d80489e95e4e11614e03078946e5d78a",
+        "0x3564ba0f844fb031b4ce835bf8a4394838d572e89242edf0ad9b20ba58ecdac1",
+        "0xff0207eccb6cbb828a36a7758466896a3a22d19c6363c170fbcfa3d56889f06d",
+        "0x0ea617e93f653c31e1942f52c4b52c52be3c6fdeafcc7cb90ad9563849bb347f"
+      ],
+      "inclusion_proof_corpus": [
+        "0x313c870084c85ef57d7597f3deef5903a7dfd5a9c71f5c2fcf30f23b9cd0290b",
+        "0x65c69969bd5a41305570542b25f58b306b8ec9e95a342d1c7e8d59a60dc85925"
+      ],
+      "consent": {
+        "key": "0x05df0ac16d041f6070f613ef35f4cc3cdc0d47657c3adb51ce562577fd9e2b44",
+        "holder": "organisation",
+        "status": "live",
+        "bitmap": "0",
+        "siblings": []
+      },
+      "claims": [
+        {
+          "check": "timing.v1",
+          "result": "inconclusive",
+          "leaf": "0xbac14e6aeddf1bd83fe25135edd9e5b474885c609a24604aa85c6c7d7f298b46",
+          "log_index": 25,
+          "verifier_key_id": "0x9830089c4a66c05fbe56275acbd2af70301574d59acf97352a1a4a4857c37690",
+          "detail_hash": "0x762e0ccbe73b61b39149700e4b4a71d9f514e95c346878575ac91863b17b6694",
+          "detail": {
+            "check_version": "timing.v1.0",
+            "thresholds": {},
+            "error": "parquet file invalid (footer != PAR1)"
+          },
+          "inclusion_proof": [
+            "0x90b5a096ca97a3ee7000bc537bf7843274ed1d6f26d4aa15443abd8d5a7823b5",
+            "0xe944b385bfb1e6645521e329868f25e6d80489e95e4e11614e03078946e5d78a",
+            "0x3564ba0f844fb031b4ce835bf8a4394838d572e89242edf0ad9b20ba58ecdac1",
+            "0xff0207eccb6cbb828a36a7758466896a3a22d19c6363c170fbcfa3d56889f06d",
+            "0x0ea617e93f653c31e1942f52c4b52c52be3c6fdeafcc7cb90ad9563849bb347f"
+          ]
+        },
+        {
+          "check": "kinematics.v1",
+          "result": "inconclusive",
+          "leaf": "0xcfcc8d4ed64a82850e7b20f91671af80c0614e3f446295aa5df7a8b9fd2def23",
+          "log_index": 26,
+          "verifier_key_id": "0x9830089c4a66c05fbe56275acbd2af70301574d59acf97352a1a4a4857c37690",
+          "detail_hash": "0x820e9c8bdaf3b885463b4a7394e3b46fe62f64abe27a3c08e197cdc01d25ccc9",
+          "detail": {
+            "check_version": "kinematics.v1.0",
+            "thresholds": {},
+            "error": "parquet file invalid (footer != PAR1)"
+          },
+          "inclusion_proof": [
+            "0x1dc070c33fe6adb037cf83f2742144796da5d46be52e4faca32c76b8cbad092d",
+            "0x602fc2674a76fff71587679a8f8a0151c708f7db0cf3f2cdfb2c99bc66a743fd",
+            "0x3564ba0f844fb031b4ce835bf8a4394838d572e89242edf0ad9b20ba58ecdac1",
+            "0xff0207eccb6cbb828a36a7758466896a3a22d19c6363c170fbcfa3d56889f06d",
+            "0x0ea617e93f653c31e1942f52c4b52c52be3c6fdeafcc7cb90ad9563849bb347f"
+          ]
+        },
+        {
+          "check": "sensor_consistency.v1",
+          "result": "inconclusive",
+          "leaf": "0x1dc070c33fe6adb037cf83f2742144796da5d46be52e4faca32c76b8cbad092d",
+          "log_index": 27,
+          "verifier_key_id": "0x9830089c4a66c05fbe56275acbd2af70301574d59acf97352a1a4a4857c37690",
+          "detail_hash": "0xa118a91659b9e6e7f30f57d019eee486ce45cc4d623232238c768ed2fda18d88",
+          "detail": {
+            "check_version": "sensor_consistency.v1.0",
+            "thresholds": {},
+            "error": "parquet file invalid (footer != PAR1)"
+          },
+          "inclusion_proof": [
+            "0xcfcc8d4ed64a82850e7b20f91671af80c0614e3f446295aa5df7a8b9fd2def23",
+            "0x602fc2674a76fff71587679a8f8a0151c708f7db0cf3f2cdfb2c99bc66a743fd",
+            "0x3564ba0f844fb031b4ce835bf8a4394838d572e89242edf0ad9b20ba58ecdac1",
+            "0xff0207eccb6cbb828a36a7758466896a3a22d19c6363c170fbcfa3d56889f06d",
+            "0x0ea617e93f653c31e1942f52c4b52c52be3c6fdeafcc7cb90ad9563849bb347f"
+          ]
+        },
+        {
+          "check": "sim_signature.v1",
+          "result": "inconclusive",
+          "leaf": "0x53e6f3dbf9c52bfce30ff7bd724d2e5d415f9c3f7e4e5889e3fadd65f15e2d40",
+          "log_index": 28,
+          "verifier_key_id": "0x9830089c4a66c05fbe56275acbd2af70301574d59acf97352a1a4a4857c37690",
+          "detail_hash": "0xbad6ef06eb84d53a271b1fa6a83c8d492752c08750a5003c868c6928e349cf07",
+          "detail": {
+            "check_version": "sim_signature.v1.0",
+            "thresholds": {},
+            "error": "parquet file invalid (footer != PAR1)"
+          },
+          "inclusion_proof": [
+            "0x79495c2c70d74eba747f5542d02aad3df55480b3e76713cc4c95a86eca55a81e",
+            "0xfd8b8f1bb09459fc68d3d69a9167c69a31102333c285dee890ccdd07175990f4",
+            "0xff0207eccb6cbb828a36a7758466896a3a22d19c6363c170fbcfa3d56889f06d",
+            "0x0ea617e93f653c31e1942f52c4b52c52be3c6fdeafcc7cb90ad9563849bb347f"
+          ]
+        },
+        {
+          "check": "dedup.v1",
+          "result": "inconclusive",
+          "leaf": "0x79495c2c70d74eba747f5542d02aad3df55480b3e76713cc4c95a86eca55a81e",
+          "log_index": 29,
+          "verifier_key_id": "0x9830089c4a66c05fbe56275acbd2af70301574d59acf97352a1a4a4857c37690",
+          "detail_hash": "0x4c3e3f5d89e40d8d84d981b0c6175c7fd0e0a0cea00ac50db2e071c86af78bc9",
+          "detail": {
+            "check_version": "dedup.v1.0",
+            "thresholds": {
+              "T_exact": 0.02,
+              "T_near": 0.05
+            },
+            "error": "parquet file invalid (footer != PAR1)"
+          },
+          "inclusion_proof": [
+            "0x53e6f3dbf9c52bfce30ff7bd724d2e5d415f9c3f7e4e5889e3fadd65f15e2d40",
+            "0xfd8b8f1bb09459fc68d3d69a9167c69a31102333c285dee890ccdd07175990f4",
+            "0xff0207eccb6cbb828a36a7758466896a3a22d19c6363c170fbcfa3d56889f06d",
+            "0x0ea617e93f653c31e1942f52c4b52c52be3c6fdeafcc7cb90ad9563849bb347f"
+          ]
+        }
+      ]
+    }
+  ],
+  "receipts": [],
+  "checks_run": [
+    {
+      "check": "timing.v1",
+      "check_version": "timing.v1.0",
+      "thresholds": {}
+    },
+    {
+      "check": "kinematics.v1",
+      "check_version": "kinematics.v1.0",
+      "thresholds": {}
+    },
+    {
+      "check": "sensor_consistency.v1",
+      "check_version": "sensor_consistency.v1.0",
+      "thresholds": {}
+    },
+    {
+      "check": "sim_signature.v1",
+      "check_version": "sim_signature.v1.0",
+      "thresholds": {}
+    },
+    {
+      "check": "dedup.v1",
+      "check_version": "dedup.v1.0",
+      "thresholds": {
+        "T_exact": 0.02,
+        "T_near": 0.05
+      }
+    }
+  ],
+  "limitations": [
+    "The operator (THENAR) can decline to log or anchor a record; append receipts and public audit make this detectable, not impossible.",
+    "Checks are heuristics with recorded thresholds; they can be evaded and can err; they are evidence, not proof.",
+    "A signature proves which key signed, not what a sensor measured; captured_at, source and embodiment are claims by the signer.",
+    "Consent onset is recorded; what a buyer may do after onset is governed by the terms document, not by this protocol.",
+    "Anchors depend on the availability of at least one chain carrying the log; the same log is anchored on more than one."
+  ],
+  "report_hash": "0xf13f161b6ed74f48d06f63626f3bcf0fa486414a5ad86b73cd677b7a2d78a6f3"
+}

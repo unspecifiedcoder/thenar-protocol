@@ -79,8 +79,8 @@ function testContent(filePath, content, baseName) {
     }
   }
 
-  // Test 6: No 0x40-hex addresses outside chains.js
-  if (!filePath.includes("chains.js")) {
+  // Test 6: No 0x40-hex addresses outside chains.js (but README.md may list deployment addresses)
+  if (!filePath.includes("chains.js") && !filePath.includes("README.md")) {
     const hexRegex = /0x[0-9a-fA-F]{40}/g;
     const matches = content.match(hexRegex);
     if (matches && matches.length > 0) {

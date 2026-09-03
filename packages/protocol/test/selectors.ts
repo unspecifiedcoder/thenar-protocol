@@ -52,6 +52,27 @@ for (const name of DEPLOYED) {
     known.set(selector, `${name}.${sig}`);
   }
 }
+
+// Add standard ERC-20 selectors (from packages/contracts/test/mocks/MockERC20.sol or standard ABI)
+// The browser calls these functions on arbitrary token contracts (e.g., for corpus licensing — T-027).
+// These are not in the THENAR contract ABIs but are real ERC-20 functions.
+const erc20StandardFunctions: AbiFunction[] = [
+  { name: "approve", type: "function", inputs: [{ name: "spender", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ name: "", type: "bool" }], stateMutability: "nonpayable" },
+  { name: "transfer", type: "function", inputs: [{ name: "to", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ name: "", type: "bool" }], stateMutability: "nonpayable" },
+  { name: "transferFrom", type: "function", inputs: [{ name: "from", type: "address" }, { name: "to", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ name: "", type: "bool" }], stateMutability: "nonpayable" },
+  { name: "balanceOf", type: "function", inputs: [{ name: "account", type: "address" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { name: "allowance", type: "function", inputs: [{ name: "owner", type: "address" }, { name: "spender", type: "address" }], outputs: [{ name: "", type: "uint256" }], stateMutability: "view" },
+  { name: "decimals", type: "function", inputs: [], outputs: [{ name: "", type: "uint8" }], stateMutability: "view" },
+  { name: "name", type: "function", inputs: [], outputs: [{ name: "", type: "string" }], stateMutability: "view" },
+  { name: "symbol", type: "function", inputs: [], outputs: [{ name: "", type: "string" }], stateMutability: "view" },
+];
+
+for (const fn of erc20StandardFunctions) {
+  const selector = toFunctionSelector(fn);
+  const sig = `${fn.name}(${fn.inputs.map((i) => i.type).join(",")})`;
+  known.set(selector, `ERC20.${sig}`);
+}
+
 ok(known.size > 0, "derived at least one selector from the built ABIs", `${known.size}`);
 
 // Every `0x…` selector-shaped literal actually used in the shipped web code.

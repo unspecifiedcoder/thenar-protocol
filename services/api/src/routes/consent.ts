@@ -6,6 +6,7 @@ import { ApiError } from "../errors.ts";
 import { RevokeConsentBody } from "../schemas/requests.ts";
 import { SparseTree } from "../../../../packages/protocol/src/sparse.ts";
 import { hashObjectExcluding, type JsonObject } from "../../../../packages/protocol/src/canonical.ts";
+import { keyId } from "../../../../packages/protocol/src/sign.ts";
 import type { OperatorSigner } from "../ingest/receipt.ts";
 
 export type RevocationReceipt = {
@@ -123,8 +124,8 @@ export const consentRoutes = new Hono<AppEnv>()
     const { rateLimiter, logStore, registry, operator } = c.get("deps");
     const store = logStore ?? registry?.getStore();
     if (!store) throw new ApiError("internal", "log store not configured");
-    if (!operator) throw new ApiError("internal", "operator key not configured");
 
+    // Rate limit check BEFORE any other validation (§12 binding rule: 429 on rate limit regardless of body)
     const ip =
       c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
       c.req.header("x-real-ip") ||
@@ -133,12 +134,24 @@ export const consentRoutes = new Hono<AppEnv>()
       throw new ApiError("rate_limited", "too many revoke requests from this IP");
     }
 
+    if (!operator) throw new ApiError("internal", "operator key not configured");
+
+    // Validate body → 400 invalid_request on malformed input
     const body = parseOrThrow(RevokeConsentBody, await getJsonBody(c));
     const consentKey = c.req.param("consentKey") as Hex;
 
-    // Verify and record the revocation
+    // Validate signature envelope → 401 unauthorized on mismatch
+    if (body.signature.alg !== body.record.alg) {
+      throw new ApiError("unauthorized", `signature algorithm ${body.signature.alg} does not match record algorithm ${body.record.alg}`);
+    }
+    const recordKeyId = keyId(body.record.pubkey);
+    if (body.signature.key_id !== recordKeyId) {
+      throw new ApiError("unauthorized", `signature key_id does not match record pubkey`);
+    }
+
+    // Verify and record the revocation → 401 unauthorized on bad signature
     try {
-      await store.revoke(body.record, body.signature);
+      await store.revoke(body.record, body.signature.sig);
     } catch (e) {
       throw new ApiError("unauthorized", e instanceof Error ? e.message : "revocation signature verification failed");
     }

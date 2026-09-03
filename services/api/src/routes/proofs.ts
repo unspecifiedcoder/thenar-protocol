@@ -30,7 +30,7 @@ export const proofRoutes = new Hono<AppEnv>()
     }
 
     // Resolve the anchor by (root, size)
-    const anchor = logStore.anchorBy(root, size);
+    const anchor = store.anchorBy(root, size);
     if (!anchor) {
       throw new ApiError("not_found", `anchor (root: ${root}, size: ${size}) not found`);
     }

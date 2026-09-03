@@ -115,10 +115,22 @@ function throwsApiError(fn: () => unknown, code: string): boolean {
   );
 
   const attested = registry.registerKey(org.orgId, { alg: "ed25519", pubkey: ed25519Pubkey(2), attestation: { model: "x" } });
-  ok(attested.attestation === JSON.stringify({ model: "x" }), "registerKey: attestation stored raw");
+  // §1.1/D-30: `subject` defaults to "signer_device" when the caller omits it.
+  ok(attested.attestation === JSON.stringify({ subject: "signer_device", model: "x" }),
+    "registerKey: attestation stored with subject defaulted to \"signer_device\"", attested.attestation ?? "null");
   const [publicAttested] = registry.listKeys(org.orgId).filter((k) => k.key_id === attested.keyId);
   ok(publicAttested.attestation_level === 1, "listKeys: attestation_level is 1 (T-023 not built yet, never 2)");
   ok(!("attestation" in publicAttested), "listKeys: public shape omits the attestation blob");
+
+  const withSubject = registry.registerKey(org.orgId, {
+    alg: "ed25519", pubkey: ed25519Pubkey(3),
+    attestation: { subject: "robot_controller", manufacturer: "Acme", model: "Ctrl-1" },
+  });
+  ok(
+    withSubject.attestation === JSON.stringify({ subject: "robot_controller", manufacturer: "Acme", model: "Ctrl-1" }),
+    "registerKey: an explicit subject is kept, not overridden by the default",
+    withSubject.attestation ?? "null",
+  );
 
   ok(throwsApiError(() => registry.registerKey("no-such-org", { alg: "ed25519", pubkey: ed25519Pubkey(9) }), "not_found"),
     "registerKey: unknown org -> not_found");

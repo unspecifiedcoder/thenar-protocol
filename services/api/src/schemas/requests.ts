@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Hex32, HexBytes, Alg, FileEntry, Signature, strictObject } from "./common.ts";
 import { CaptureManifest } from "./manifest.ts";
 import { ConsentRecord } from "./consentRecord.ts";
+import { SourceEnum } from "../../../../packages/protocol/src/schemas.ts";
 
 export const CreateKeyBody = strictObject({
   alg: Alg,
@@ -29,7 +30,7 @@ export const CreateDatasetBody = strictObject({
 export const IngestDatasetBody = strictObject({
   terms_hash: Hex32,
   scope_bits: z.number().int().nonnegative(),
-  source: z.enum(["real", "sim", "mixed"]),
+  source: SourceEnum,
   consent: strictObject({
     holder: z.enum(["contributor", "organisation"]),
     pubkey: HexBytes,

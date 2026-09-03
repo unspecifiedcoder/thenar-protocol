@@ -23,6 +23,7 @@ import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 import { keccak256, toHex, type Hex } from "viem";
 import type { FileEntry } from "../../../../packages/protocol/src/payload.ts";
+import type { Source } from "../../../../packages/protocol/src/schemas.ts";
 import { payloadHash } from "../../../../packages/protocol/src/payload.ts";
 import { newConsentRecord, recordHash, consentCommitment, consentKey as deriveConsentKey } from "../../../../packages/protocol/src/consent.ts";
 import { readDataset, type EpisodeRef } from "./lerobot.ts";
@@ -58,7 +59,7 @@ export type IngestConsentInput = {
 export type IngestContext = {
   orgId: string;
   datasetId: string;
-  source: "real" | "sim" | "mixed";
+  source: Source;
   termsHash: Hex;
   scopeBits: number;
   consent: IngestConsentInput;
@@ -187,7 +188,7 @@ export async function processIngest(params: {
   body: {
     terms_hash: Hex;
     scope_bits: number;
-    source: "real" | "sim" | "mixed";
+    source: Source;
     consent: IngestConsentInput;
   };
 }): Promise<{ episodes: EpisodeResult[]; errors: EpisodeError[] }> {

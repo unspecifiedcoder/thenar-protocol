@@ -47,8 +47,10 @@
           "source": {
             "type": "string",
             "enum": [
-              "real",
               "sim",
+              "teleop_sim",
+              "teleop_real",
+              "autonomous_real",
               "mixed"
             ]
           },
@@ -259,8 +261,7 @@
                     "$ref": "#/definitions/CaptureManifest/properties/files/items/properties/hash"
                   },
                   "world_seed": {
-                    "type": "string",
-                    "pattern": "^[0-9]+$"
+                    "type": "string"
                   }
                 },
                 "required": [
@@ -378,6 +379,19 @@
                 "type": "null"
               }
             ]
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "sim",
+                "teleop_sim",
+                "teleop_real",
+                "autonomous_real",
+                "mixed"
+              ]
+            }
           },
           "filters": {
             "type": "object",
@@ -998,8 +1012,10 @@
           "source": {
             "type": "string",
             "enum": [
-              "real",
               "sim",
+              "teleop_sim",
+              "teleop_real",
+              "autonomous_real",
               "mixed"
             ]
           },
@@ -1079,8 +1095,10 @@
               "source": {
                 "type": "string",
                 "enum": [
-                  "real",
                   "sim",
+                  "teleop_sim",
+                  "teleop_real",
+                  "autonomous_real",
                   "mixed"
                 ]
               },
@@ -1291,8 +1309,7 @@
                         "$ref": "#/definitions/CreateEpisodeBody/properties/manifest/properties/files/items/properties/hash"
                       },
                       "world_seed": {
-                        "type": "string",
-                        "pattern": "^[0-9]+$"
+                        "type": "string"
                       }
                     },
                     "required": [
@@ -1438,13 +1455,20 @@
             "type": "object",
             "properties": {
               "alg": {
-                "$ref": "#/definitions/RevokeConsentBody/properties/record/properties/alg"
+                "type": "string",
+                "enum": [
+                  "ed25519",
+                  "p256",
+                  "secp256k1"
+                ]
               },
               "key_id": {
-                "$ref": "#/definitions/RevokeConsentBody/properties/record/properties/terms_hash"
+                "type": "string",
+                "pattern": "^0x[0-9a-f]{64}$"
               },
               "sig": {
-                "$ref": "#/definitions/RevokeConsentBody/properties/record/properties/pubkey"
+                "type": "string",
+                "pattern": "^0x[0-9a-f]*$"
               }
             },
             "required": [

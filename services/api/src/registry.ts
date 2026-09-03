@@ -40,6 +40,28 @@ export function validatePubkey(alg: Alg, pubkey: Hex): void {
   }
 }
 
+/**
+ * §1.1/D-30: who an attestation vouches for. Default `"signer_device"` —
+ * a phone's secure element attests the signer's own device, never the
+ * robot; only `"robot_controller"` can ever satisfy the `attestedPhysical`
+ * rule (`packages/protocol/src/wording.ts` `isAttestedPhysical`).
+ */
+export type AttestationSubject = "signer_device" | "robot_controller";
+
+/**
+ * Shape of the `attestation` blob `registerKey` accepts and stores
+ * (raw JSON, T-023 verification not built yet — see `registerKey` below).
+ * `subject` is new in T-040; `level` stays reported as 1 by `listKeys`
+ * regardless of what is stored here (T-023 not built).
+ */
+export type SigningKeyAttestation = {
+  level?: number;
+  subject?: AttestationSubject;
+  manufacturer?: string;
+  model?: string;
+  [key: string]: unknown;
+};
+
 /** PLAN §12 `GET /orgs/{orgId}/keys` shape — no attestation blob. */
 export type PublicSigningKey = {
   key_id: Hex;
@@ -112,13 +134,20 @@ export class Registry {
   }
 
   /** §10.6 `keyId = H(pubkeyBytes)`; 409 if that pubkey is already registered (edge case, same key twice). */
-  registerKey(orgId: string, params: { alg: Alg; pubkey: Hex; attestation?: unknown }): SigningKeyRow {
+  registerKey(orgId: string, params: { alg: Alg; pubkey: Hex; attestation?: SigningKeyAttestation }): SigningKeyRow {
     if (!this.store.org(orgId)) throw new ApiError("not_found", `org ${orgId} does not exist`);
     validatePubkey(params.alg, params.pubkey);
     const keyId = keccak256(params.pubkey);
     if (this.store.signingKey(keyId)) {
       throw new ApiError("conflict", `signing key for this pubkey is already registered`);
     }
+    // §1.1/D-30: `subject` defaults to "signer_device" — an attestation
+    // that doesn't say what it vouches for is assumed to attest the
+    // signer's own device, never the robot (only an explicit
+    // "robot_controller" can ever satisfy `attestedPhysical`).
+    const attestationToStore = params.attestation === undefined
+      ? undefined
+      : { subject: "signer_device" as const, ...params.attestation };
     const row: SigningKeyRow = {
       keyId,
       orgId,
@@ -129,7 +158,7 @@ export class Registry {
       // Attestation is accepted and kept, but T-023 (attestation roots/
       // verification) doesn't exist yet, so `listKeys` reports level 1
       // unconditionally (never 2) rather than trusting an unverified claim.
-      attestation: params.attestation === undefined ? null : JSON.stringify(params.attestation),
+      attestation: attestationToStore === undefined ? null : JSON.stringify(attestationToStore),
       status: "active",
     };
     this.store.insertSigningKey(row);

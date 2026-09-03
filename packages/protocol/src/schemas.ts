@@ -31,6 +31,14 @@ const UnixSeconds = z.number().int().nonnegative();
 
 const Alg = z.enum(["ed25519", "p256", "secp256k1"]);
 
+/**
+ * §1.1/D-30 — the source axis. Additive since v2.2: `"real"` is rejected
+ * (the enum's own error message names the new values). `sim`/`teleop_sim`
+ * can never become "attested"; only `teleop_real`/`autonomous_real` can.
+ */
+export const SourceEnum = z.enum(["sim", "teleop_sim", "teleop_real", "autonomous_real", "mixed"]);
+export type Source = z.infer<typeof SourceEnum>;
+
 const strictObject = <T extends z.ZodRawShape>(shape: T) => z.object(shape).strict();
 
 /** Compare two strings by their UTF-8 byte sequence, not UTF-16 code units (§27 trap #2). */
@@ -112,7 +120,7 @@ export const CaptureManifestSchema = strictObject({
   kind: z.literal("capture_manifest"),
   org_id: z.string().min(1),
   dataset_id: z.string().min(1).nullable(),
-  source: z.enum(["real", "sim", "mixed"]),
+  source: SourceEnum,
   layout: z.enum(["chunked", "per_episode"]),
   embodiment: z.string().min(1),
   rate_hz: z.number().positive(),
@@ -175,6 +183,11 @@ export const CorpusManifestSchema = strictObject({
   episode_count: z.number().int().nonnegative().optional(),
   terms_hash: Hex32,
   task_id: Hex32.nullable(),
+  // §9.2/D-30: SORTED, unique, derived by the server from member episodes.
+  // Optional here for the same reason `corpus_root`/`episode_count` are:
+  // it is server-computed, so `CorpusManifestInput` (services/api) omits it
+  // from the caller-supplied body.
+  sources: z.array(SourceEnum).optional(),
   filters: strictObject({
     min_badges: z.array(z.string()),
     exclude_failed_checks: z.boolean(),
@@ -187,6 +200,16 @@ export const CorpusManifestSchema = strictObject({
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["episodes", i], message: "episodes[] must be unique" });
     }
     seen.add(e);
+  }
+  if (m.sources) {
+    const sourcesSorted = sortedUniqueBy(m.sources, (s) => s, utf8Compare);
+    if (!sourcesSorted.ok) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["sources"],
+        message: `sources[] must be sorted (bytewise) and unique: ${sourcesSorted.reason}`,
+      });
+    }
   }
 });
 

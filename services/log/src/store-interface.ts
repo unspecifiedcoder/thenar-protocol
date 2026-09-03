@@ -61,6 +61,32 @@ export interface ILogStore {
   corpusById(corpusId: string): CorpusRow | null;
   corpusEpisodeLeaves(corpusId: string): { leafHash: Hex; corpusIndex: number }[];
 
+  /**
+   * Production write path for `POST /v1/corpora` (T-025): inserts a new
+   * `corpus` row (status `"draft"` initially) and its `corpus_episode`
+   * membership rows in one call. Throws if `corpusId` already exists.
+   */
+  insertCorpus(row: CorpusRow, episodes: { leafHash: Hex; corpusIndex: number }[]): void;
+
+  /**
+   * Production write path for `POST /v1/corpora/{id}/log` (T-025): records
+   * the corpus manifest's 0x03 leaf hash/index once it has been appended to
+   * the log, advances `status` to `"logged"`, and stores the manifest text
+   * with `sealed_at` now filled in (the manifest logged at `POST /corpora`
+   * time carries no `sealed_at`; §9.2's `sealed_at` is set exactly when the
+   * 0x03 leaf is built here). `corpusManifestHash` is recomputed with
+   * `sealed_at` included — the draft-time hash (over `sealed_at: null`)
+   * would no longer match the leaf's own `corpusManifestHash` field
+   * (`GET /corpora/{id}/seal-params` recomputes the 0x03 preimage from this
+   * exact row and rejects a mismatch). The `corpus` table has no
+   * append-only trigger (unlike `leaf`/`anchor`/`revocation`/`claim`) since
+   * a draft row's manifest/status/hash are expected to change once before
+   * sealing.
+   */
+  setCorpusManifestLeaf(
+    corpusId: string, leafHash: Hex, leafIdx: number, status: CorpusRow["status"], manifest: string, corpusManifestHash: Hex,
+  ): void;
+
   episodeMeta(leafHash: Hex): EpisodeMeta | null;
 
   /** The episode (0x02 leaf) row logged for `orgId` with this exact `manifestHash`, or null (T-036 duplicate check). */

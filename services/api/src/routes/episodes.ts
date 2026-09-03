@@ -8,6 +8,8 @@ import { CreateEpisodeBody } from "../schemas/requests.ts";
 import { manifestHash as computeManifestHash } from "../../../../packages/protocol/src/mapping.ts";
 import { verify as verifySignature } from "../../../../packages/protocol/src/sign.ts";
 import { commitEpisode } from "../ingest/commit.ts";
+import { computeBadges } from "../../../../packages/protocol/src/badges.ts";
+import { loadChecksConfig } from "../../../verify/src/config.ts";
 
 export const episodeRoutes = new Hono<AppEnv>()
   // POST /v1/episodes — org (SDK path). §9.1 validated, §10.4 payload_hash
@@ -89,10 +91,17 @@ export const episodeRoutes = new Hono<AppEnv>()
 
     // Find the anchor containing this leaf
     let anchor: { root: Hex; size: number; chains?: any[] } | undefined;
+    let latestAnchor: { root: Hex; size: number; blockNumber: number; at: number } | undefined;
     const leaves = store.leaves();
     const leafIndex = leaves.indexOf(leafHash);
     if (leafIndex !== -1) {
       const anchors = store.anchors();
+      // Get the latest anchor for badge computation
+      if (anchors.length > 0) {
+        const latest = anchors[anchors.length - 1];
+        latestAnchor = latest;
+      }
+      // Find the first anchor covering this leaf
       for (const a of anchors) {
         if (leafIndex < a.size) {
           anchor = { root: a.root, size: a.size };
@@ -112,14 +121,32 @@ export const episodeRoutes = new Hono<AppEnv>()
       }
     }
 
-    // For now, return basic episode info with placeholder badges
-    // T-021 badge engine will be used to compute proper badges
+    // Compute badges using T-021 badge engine
+    const checksConfig = loadChecksConfig();
+    const badgeResult = computeBadges({
+      anchored: anchor ? {
+        chain: "primary", // TODO: get actual chain name from chain config
+        block: String(anchor.chains?.[0]?.block_number ?? 0),
+        size: String(anchor.size),
+      } : null,
+      consent: { status: "live" }, // TODO: query actual consent status from store
+      signature: null, // T-021 notes: signature/attestation null for now
+      attestation: null,
+      claims: claims.map((c) => ({
+        check: c.check,
+        result: c.result as "pass" | "fail" | "inconclusive",
+        issued_at: c.issuedAt,
+        detail: c.detail ? { summary: c.detail } : undefined,
+      })),
+      checksConfig,
+    });
+
     const response: any = {
       preimage: episodeMeta.preimage,
       leaf_index: episodeMeta.index,
       submitted_at: episodeMeta.submittedAt,
-      badges: anchor ? ["L0"] : [],
-      wording: anchor ? ["Committed — ..."] : ["Pending — received, not yet anchored."],
+      badges: badgeResult.badges,
+      wording: badgeResult.wording,
       claims: claims.map((c) => ({
         check: c.check,
         result: c.result,

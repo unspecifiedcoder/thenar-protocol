@@ -4,7 +4,7 @@ import type { AppEnv } from "../app.ts";
 import { getJsonBody, parseOrThrow } from "../app.ts";
 import { requireAuth, requireOwnOrg } from "../auth.ts";
 import { CreateKeyBody } from "../schemas/requests.ts";
-import { toPublicSigningKey } from "../registry.ts";
+import { toPublicSigningKey, type SigningKeyAttestation } from "../registry.ts";
 import { paginated } from "../pagination.ts";
 
 export const orgRoutes = new Hono<AppEnv>()
@@ -15,7 +15,13 @@ export const orgRoutes = new Hono<AppEnv>()
     const orgId = c.req.param("orgId");
     requireOwnOrg(principal, orgId);
     const body = parseOrThrow(CreateKeyBody, await getJsonBody(c));
-    const row = registry.registerKey(orgId, { alg: body.alg, pubkey: body.pubkey as Hex, attestation: body.attestation });
+    const row = registry.registerKey(orgId, {
+      alg: body.alg,
+      pubkey: body.pubkey as Hex,
+      // CreateKeyBody accepts an unvalidated attestation blob (T-023 not
+      // built yet, PLAN §12); registerKey defaults `subject` itself.
+      attestation: body.attestation as SigningKeyAttestation | undefined,
+    });
     return c.json(toPublicSigningKey(row), 201);
   })
   // GET /v1/orgs/{orgId}/keys — public

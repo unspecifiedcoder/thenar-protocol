@@ -9,7 +9,10 @@
 
 import {
   l0Wording, l1Wording, l2Wording, l3Wording, pendingWording, checkFailedWording,
+  sourceWording, attestedPhysicalWording, isAttestedPhysical,
+  type SourceAttestation, type SourceClaim,
 } from "./wording";
+import type { Source } from "./schemas";
 
 export type BadgeLevel = "L0" | "L1" | "L2" | "L3";
 
@@ -49,6 +52,26 @@ export interface CheckConfig {
   emit_fail: boolean;
 }
 
+/**
+ * §1.1/D-30 — the source axis block, orthogonal to L0-L3. `attestation`
+ * here is the *robot controller's* attestation (level, subject,
+ * manufacturer/model), distinct from `BadgeInput.attestation` (the
+ * signer's L2 badge attestation) — a phone's `signer_device` attestation
+ * can satisfy L2 but can never satisfy `attestedPhysical` (§1.1: "a
+ * phone's secure element attests the signer's device, never the robot").
+ */
+export interface SourceInput {
+  declared: Source;
+  attestation?: SourceAttestation | null;
+  hasVideoChannel?: boolean;
+}
+
+export interface SourceOutput {
+  declared: Source;
+  attested: boolean;
+  wording: string;
+}
+
 export interface BadgeInput {
   anchored: AnchorInfo | null;
   consent: ConsentStatus;
@@ -56,6 +79,8 @@ export interface BadgeInput {
   attestation: AttestationInfo | null;
   claims: VerificationClaim[];
   checksConfig: Record<string, CheckConfig>;
+  /** §1.1/D-30 source axis; optional so existing callers/tests need no change. */
+  source?: SourceInput;
 }
 
 export interface BadgeOutput {
@@ -63,6 +88,28 @@ export interface BadgeOutput {
   pending: boolean;
   failed: Array<{ check: string; summary: string }>;
   wording: string[];
+  /** §1.1/D-30 — present iff `input.source` was given. */
+  source?: SourceOutput;
+}
+
+/**
+ * §1.1/D-30 — computes the `source` block: whether the attested-physical
+ * rule holds (using the episode's own `claims` for `sim_signature.v1`/
+ * `sensor_consistency.v1`, the same array badges L0-L3 read), and the
+ * verbatim declared/attested wording line.
+ */
+function computeSourceBlock(source: SourceInput, claims: VerificationClaim[]): SourceOutput {
+  const sourceClaims: SourceClaim[] = claims.map((c) => ({ check: c.check, result: c.result, issued_at: c.issued_at }));
+  const attested = isAttestedPhysical({
+    source: source.declared,
+    attestation: source.attestation,
+    claims: sourceClaims,
+    hasVideoChannel: source.hasVideoChannel,
+  });
+  const wording = attested
+    ? attestedPhysicalWording(source.attestation!.manufacturer as string, source.attestation!.model as string)
+    : sourceWording(source.declared);
+  return { declared: source.declared, attested, wording };
 }
 
 /**
@@ -189,10 +236,17 @@ export function computeBadges(input: BadgeInput): BadgeOutput {
     wording.push(pendingWording());
   }
 
+  // §1.1/D-30 — orthogonal to L0-L3: computed whenever `input.source` was
+  // given, independent of anchoring/pending status (source is a claim the
+  // manifest itself carries, not a fact about the log).
+  const sourceOutput = input.source ? computeSourceBlock(input.source, input.claims) : undefined;
+  if (sourceOutput) wording.push(sourceOutput.wording);
+
   return {
     badges,
     pending,
     failed,
     wording,
+    ...(sourceOutput ? { source: sourceOutput } : {}),
   };
 }

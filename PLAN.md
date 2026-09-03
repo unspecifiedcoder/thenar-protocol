@@ -104,8 +104,9 @@ attestedPhysical = source ∈ {teleop_real, autonomous_real}
 A phone's secure element attests the *signer's device*
 (`attestation.subject = "signer_device"`), never the robot; it can never
 satisfy the rule. Corpus wording: `Sources — {list}; {n} of {m} episodes
-declared physical, {k} attested.` Guard: the word "physical" may not appear on
-any surface without "declared" or "attested" in the same line (T-040).
+declared physical, {k} attested.` Guard: the word "physical" — with the field-name tokens "physical-AI" /
+"physical AI" exempt — may not appear on any surface without "declared" or
+"attested" in the same line (T-040; C-2).
 
 ## 2. Current architecture (as of `11facc8`)
 

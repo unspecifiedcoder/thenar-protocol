@@ -1,0 +1,82 @@
+<!-- T-025 — Provenance Report HTML template (PLAN §9.6, §13).
+     Placeholders (`{{NAME}}`) are replaced by `services/api/src/report/render.ts`
+     with values already computed by `report/build.ts` — nothing here computes
+     or re-derives a proof; the template only displays what the report object
+     already carries (I-11: a render step must not invent a value). Every
+     placeholder is escaped as HTML text except `{{EPISODES_ROWS}}` and
+     `{{LIMITATIONS_ITEMS}}`, which `render.ts` builds itself from escaped
+     pieces. Kept dependency-free (no external stylesheet/script) so it can
+     be rendered to PDF by a headless browser with nothing else to fetch. -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Provenance Report {{REPORT_ID}}</title>
+<style>
+  :root { color-scheme: light; }
+  body { font-family: -apple-system, Segoe UI, Helvetica, Arial, sans-serif; margin: 0; padding: 2.5rem 3rem; color: #1a1a1a; background: #ffffff; font-size: 14px; line-height: 1.5; }
+  h1 { font-size: 1.4rem; margin: 0 0 0.25rem; }
+  h2 { font-size: 1.05rem; margin: 2rem 0 0.5rem; border-bottom: 1px solid #ddd; padding-bottom: 0.25rem; }
+  .meta { color: #555; font-size: 0.85rem; }
+  .badge { display: inline-block; padding: 0.05rem 0.4rem; border-radius: 3px; background: #eef; border: 1px solid #99a; font-size: 0.75rem; margin-right: 0.25rem; }
+  .draft { background: #ffe9b3; border-color: #cc9900; padding: 0.15rem 0.5rem; border-radius: 3px; font-size: 0.8rem; }
+  .revoked { color: #a30000; font-weight: 600; }
+  table { border-collapse: collapse; width: 100%; margin: 0.5rem 0; }
+  th, td { border: 1px solid #ddd; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; font-size: 0.82rem; }
+  th { background: #f6f6f6; }
+  code, .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.78rem; word-break: break-all; }
+  ul.limitations li { margin-bottom: 0.4rem; }
+  .hash { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.8rem; word-break: break-all; background: #f6f6f6; padding: 0.5rem; border-radius: 4px; }
+  a { color: #1a4fbf; }
+</style>
+</head>
+<body>
+  <h1>Provenance Report</h1>
+  <div class="meta">
+    report id {{REPORT_ID}} &middot; generated {{GENERATED_AT}} &middot; operator {{OPERATOR_NAME}}
+    {{DRAFT_BADGE}}
+  </div>
+
+  <h2>Corpus</h2>
+  <table>
+    <tr><th>Corpus id</th><td class="mono">{{CORPUS_ID}}</td></tr>
+    <tr><th>Manifest hash</th><td class="mono">{{CORPUS_MANIFEST_HASH}}</td></tr>
+    <tr><th>Corpus root</th><td class="mono">{{CORPUS_ROOT}}</td></tr>
+    <tr><th>Episode count</th><td>{{EPISODE_COUNT}}</td></tr>
+    <tr><th>Terms</th><td class="mono">{{TERMS_HASH}}</td></tr>
+    <tr><th>Contains revoked episodes</th><td>{{CONTAINS_REVOKED}}</td></tr>
+  </table>
+
+  <h2>Anchor</h2>
+  <table>
+    <tr><th>Root</th><td class="mono">{{ANCHOR_ROOT}}</td></tr>
+    <tr><th>Size</th><td>{{ANCHOR_SIZE}}</td></tr>
+    <tr><th>Revocation root</th><td class="mono">{{ANCHOR_REVOCATION_ROOT}}</td></tr>
+  </table>
+
+  <h2>Episodes</h2>
+  <table>
+    <thead><tr><th>#</th><th>Leaf</th><th>Badges</th><th>Wording</th><th>Consent</th></tr></thead>
+    <tbody>
+      {{EPISODES_ROWS}}
+    </tbody>
+  </table>
+
+  <h2>Checks run</h2>
+  <table>
+    <thead><tr><th>Check</th><th>Version</th><th>Thresholds</th></tr></thead>
+    <tbody>
+      {{CHECKS_ROWS}}
+    </tbody>
+  </table>
+
+  <h2>Known limitations</h2>
+  <ul class="limitations">
+    {{LIMITATIONS_ITEMS}}
+  </ul>
+
+  <h2>Verify</h2>
+  <p>This report can be checked independently: <a href="{{VERIFY_URL}}">{{VERIFY_URL}}</a></p>
+  <p class="hash">report_hash&nbsp;{{REPORT_HASH}}</p>
+</body>
+</html>

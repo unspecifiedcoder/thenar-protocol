@@ -8,8 +8,8 @@
  * (except inside the L3 wording template which already contains them by necessity).
  */
 
-import { readFileSync, existsSync } from "fs";
-import { resolve, dirname } from "path";
+import { readFileSync, existsSync, readdirSync, statSync } from "fs";
+import { resolve, dirname, join, extname } from "path";
 import { fileURLToPath } from "url";
 import { describe, it } from "node:test";
 import assert from "node:assert";
@@ -165,5 +165,103 @@ describe("Wording guard (PLAN §1, I-1)", () => {
     assert.ok(FORBIDDEN_WORDS.includes("proven real"), "proven real should be forbidden");
     assert.ok(FORBIDDEN_WORDS.includes("verified"), "verified should be forbidden");
     assert.ok(FORBIDDEN_WORDS.includes("independent"), "independent should be forbidden");
+  });
+});
+
+/**
+ * T-040 — §1.1/D-30 "physical" guard.
+ *
+ * PLAN §1.1: 'the word "physical" may not appear on any surface without
+ * "declared" or "attested" in the same line'. Scoped here to the surfaces
+ * that actually render a `source`/badge claim: `apps/web/*.js` (excluding
+ * the vendored `ed25519.js`, which never touches wording) and
+ * `services/api/src/report/**` (skipped gracefully if that directory does
+ * not exist yet, same as the forbidden-words scans above).
+ *
+ * Also excludes `wording.js` itself: it is the canonical source of the
+ * qualified templates (`sourceWording`, `attestedPhysicalWording`), built
+ * up from fragments (a doc comment, and a `SOURCE_TEXT` map whose values
+ * are template *pieces* like "human-driven physical robot" that only gain
+ * "declared"/"attested" once `sourceWording` concatenates them at call
+ * time) — a per-line source scan flags the fragments and the comment
+ * describing this very guard, not an actual unqualified rendering.
+ * `verify.test.mjs` already asserts, functionally, that every string
+ * `sourceWording`/`attestedPhysicalWording` actually produce satisfies the
+ * guard (see its "physical" guard block) — that is the real check on this
+ * file's output; this test guards every *other* file that might render
+ * "physical" text some other way.
+ *
+ * NOT extended to `apps/web/*.html`: every marketing page's footer tagline
+ * ("THENAR — Provenance and rights for physical-AI data.") — and a few
+ * pages' older "contact data for physical AI." footer — use "physical" as
+ * the product-category name, not as a claim about any episode's capture,
+ * and are already covered/asserted verbatim by `copy.test.mjs`'s "tagline
+ * updated everywhere" test. A literal per-line scan over all HTML would
+ * fail on those pre-existing, already-tested lines. Filed as C-1 in
+ * `TASKS/CONFLICTS.md` for a FRONTIER call on whether marketing copy
+ * itself needs rewording or PLAN §1.1's guard needs scoping language.
+ */
+function scanPhysicalGuard(filePath, content) {
+  const errors = [];
+  const lines = content.split("\n");
+  lines.forEach((line, i) => {
+    // Remove "physical-AI" and "physical AI" tokens (case-insensitive) per C-2 resolution
+    let cleanedLine = line.replace(/physical[\s-]AI/gi, "");
+    if (!/\bphysical\b/i.test(cleanedLine)) return;
+    if (/declared|attested/i.test(cleanedLine)) return;
+    errors.push(`${filePath}:${i + 1}: contains "physical" without "declared" or "attested" on the same line`);
+  });
+  return errors;
+}
+
+function walkFiles(dir, ext, callback) {
+  if (!existsSync(dir)) return;
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    const stat = statSync(full);
+    if (stat.isDirectory()) {
+      walkFiles(full, ext, callback);
+    } else if (extname(full) === ext) {
+      callback(full);
+    }
+  }
+}
+
+describe('"physical" guard (PLAN §1.1, D-30, I-16, §27 trap #23, C-2 resolved)', () => {
+  it('no apps/web/*.html file has "physical" without "declared"/"attested" on the same line (after removing "physical-AI"/"physical AI" tokens)', () => {
+    const allErrors = [];
+    walkFiles(webDir, ".html", (filePath) => {
+      // Only apps/web's own top-level *.html files are in scope (not apps/web/test/**).
+      if (dirname(filePath) !== webDir) return;
+      const content = readFileIfExists(filePath);
+      allErrors.push(...scanPhysicalGuard(filePath, content));
+    });
+    assert.strictEqual(allErrors.length, 0, allErrors.join("\n"));
+  });
+
+  it('no apps/web/*.js file (excluding ed25519.js and wording.js, see doc comment) has "physical" without "declared"/"attested" on the same line (after removing "physical-AI"/"physical AI" tokens)', () => {
+    const allErrors = [];
+    walkFiles(webDir, ".js", (filePath) => {
+      if (filePath.endsWith("ed25519.js") || filePath.endsWith("wording.js")) return;
+      // Only apps/web's own top-level *.js files are in scope (not apps/web/test/**).
+      if (dirname(filePath) !== webDir) return;
+      const content = readFileIfExists(filePath);
+      allErrors.push(...scanPhysicalGuard(filePath, content));
+    });
+    assert.strictEqual(allErrors.length, 0, allErrors.join("\n"));
+  });
+
+  it('no services/api/src/report/** file has "physical" without "declared"/"attested" on the same line (after removing "physical-AI"/"physical AI" tokens, if that directory exists)', () => {
+    const reportDir = resolve(repoRoot, "services", "api", "src", "report");
+    const allErrors = [];
+    walkFiles(reportDir, ".ts", (filePath) => {
+      const content = readFileIfExists(filePath);
+      allErrors.push(...scanPhysicalGuard(filePath, content));
+    });
+    walkFiles(reportDir, ".tsx", (filePath) => {
+      const content = readFileIfExists(filePath);
+      allErrors.push(...scanPhysicalGuard(filePath, content));
+    });
+    assert.strictEqual(allErrors.length, 0, allErrors.join("\n"));
   });
 });

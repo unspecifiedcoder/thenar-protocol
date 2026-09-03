@@ -95,6 +95,15 @@ export type Deps = {
   /** T-020: the shared `dedup.v1` fingerprint index (T-017), reused across every `onEpisodeCommitted` run. */
   trajectoryIndex?: TrajectoryIndex;
   /**
+   * T-025: PDF renderer for `GET /corpora/{id}/report?format=pdf`.
+   * Optional — `routes/corpora.ts` falls back to its own
+   * `PlaywrightPdfRenderer` instance when unset, so existing `Deps`
+   * literals that predate this field keep compiling. A test can inject
+   * `UnavailablePdfRenderer` (or a fake) to exercise the 503 path without
+   * a real browser.
+   */
+  pdfRenderer?: import("./report/pdf.ts").PdfRenderer;
+  /**
    * T-020: fired by `commitEpisode` after a successful append
    * (`services/api/src/ingest/commit.ts`) — wired here to
    * `processPending` (`services/verify/src/worker.ts`) rather than a hard

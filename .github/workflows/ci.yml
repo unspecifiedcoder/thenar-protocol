@@ -4,6 +4,13 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    # T-033: the golden demo path (PLAN §21) end to end, nightly, against
+    # two local Anvils — `continue-on-error` (this job and its one step)
+    # since it is a much heavier, network/timing-sensitive run than the
+    # rest of CI and is not meant to block a merge (PLAN §24's release gate
+    # is where §21 running against Fuji + a mirror is actually required).
+    - cron: "17 3 * * *"
 
 jobs:
   test:
@@ -74,6 +81,13 @@ jobs:
       - name: Verification checks
         run: pnpm test:verify
 
+      # T-030: the adversarial suite — every PLAN §7 threat attempted
+      # against the TS reference, the Solidity, and the API, asserting
+      # each is refused with the specific named error. Regression guard
+      # for I-10.
+      - name: Adversarial suite
+        run: pnpm test:adversarial
+
       # Import integrity, the grasp timeline, and the two cross-implementation
       # checks: browser keccak against viem, and the browser sampler against
       # the exporter. If either drifts, the site shows a world that is not the
@@ -98,3 +112,37 @@ jobs:
         with:
           target: packages/contracts
           fail-on: high
+
+  golden-demo-nightly:
+    # T-033, PLAN §21/§24: the golden demo path end to end against two
+    # local Anvils, on a schedule only — `continue-on-error` because this
+    # is a heavier, timing-sensitive integration run, not the fast gate the
+    # `push`/`pull_request` `test` job is.
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Install forge-std
+        working-directory: packages/contracts
+        run: forge install foundry-rs/forge-std --no-git
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Golden demo (--local)
+        run: pnpm demo:golden --local
+        continue-on-error: true

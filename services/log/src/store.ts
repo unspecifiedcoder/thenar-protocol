@@ -282,9 +282,47 @@ export class LogStore implements ILogStore {
   }
 
   /**
+   * Production write path for `POST /v1/corpora` (T-025). `INSERT` (not
+   * `OR REPLACE`) — a duplicate `corpusId` is a bug, not a legitimate
+   * re-write, and should throw rather than silently overwrite a draft.
+   * Runs both the `corpus` row and its `corpus_episode` membership rows in
+   * one transaction so a caller never observes one without the other.
+   */
+  insertCorpus(row: CorpusRow, episodes: { leafHash: Hex; corpusIndex: number }[]): void {
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      this.db.prepare(
+        `INSERT INTO corpus (corpus_id, org_id, manifest, corpus_manifest_hash, corpus_root,
+                              manifest_leaf_hash, manifest_leaf_idx, on_chain_id, status, contains_revoked, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        row.corpusId, row.orgId, row.manifest, row.corpusManifestHash, row.corpusRoot,
+        row.manifestLeafHash, row.manifestLeafIdx, row.onChainId, row.status, row.containsRevoked ? 1 : 0, row.createdAt,
+      );
+      for (const e of episodes) {
+        this.db.prepare(
+          "INSERT INTO corpus_episode (corpus_id, leaf_hash, corpus_index) VALUES (?, ?, ?)",
+        ).run(row.corpusId, e.leafHash, e.corpusIndex);
+      }
+      this.db.exec("COMMIT");
+    } catch (e) {
+      this.db.exec("ROLLBACK");
+      throw e;
+    }
+  }
+
+  /** Production write path for `POST /v1/corpora/{id}/log` (T-025) — see interface doc. */
+  setCorpusManifestLeaf(
+    corpusId: string, leafHash: Hex, leafIdx: number, status: CorpusRow["status"], manifest: string, corpusManifestHash: Hex,
+  ): void {
+    this.db.prepare(
+      "UPDATE corpus SET manifest_leaf_hash = ?, manifest_leaf_idx = ?, status = ?, manifest = ?, corpus_manifest_hash = ? WHERE corpus_id = ?",
+    ).run(leafHash, leafIdx, status, manifest, corpusManifestHash, corpusId);
+  }
+
+  /**
    * Test-only escape hatch: writes a `corpus` row directly, bypassing the
-   * not-yet-built `POST /corpora` pipeline. Never called from production
-   * code paths.
+   * `POST /corpora` pipeline. Never called from production code paths.
    */
   _insertCorpusUnchecked(row: CorpusRow): void {
     this.db.prepare(

@@ -3,7 +3,7 @@
   "kind": "capture_manifest",
   "org_id": "01JAQZXK7VJZ9Q6QZJH8VN3R4T",
   "dataset_id": null,
-  "source": "real",
+  "source": "teleop_real",
   "layout": "per_episode",
   "embodiment": "so_arm100",
   "rate_hz": 30,

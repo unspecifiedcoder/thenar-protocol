@@ -76,6 +76,22 @@ const manifestFixture: unknown = JSON.parse(readFileSync(join(here, "fixtures/ma
 
   const okWorldSeed = { ...m, sim: { task_spec_hash: h("task-spec"), world_seed: "18446744073709551615" } }; // uint64 max
   ok(CaptureManifestSchema.safeParse(okWorldSeed).success, "CaptureManifest: sim.world_seed at exactly uint64 max parses");
+
+  // §1.1/D-30 — source axis: additive enum, "real" rejected since v2.2.
+  for (const src of ["sim", "teleop_sim", "teleop_real", "autonomous_real", "mixed"]) {
+    ok(CaptureManifestSchema.safeParse({ ...m, source: src }).success, `CaptureManifest: source "${src}" parses`);
+  }
+  const realRejected = CaptureManifestSchema.safeParse({ ...m, source: "real" });
+  ok(!realRejected.success, 'CaptureManifest: source "real" is rejected');
+  if (!realRejected.success) {
+    const msg = realRejected.error.issues.map((i) => i.message).join(" ");
+    ok(
+      ["sim", "teleop_sim", "teleop_real", "autonomous_real", "mixed"].every((v) => msg.includes(v)),
+      'CaptureManifest: "real" rejection message names the new enum values',
+      msg,
+    );
+  }
+  ok(!CaptureManifestSchema.safeParse({ ...m, source: "physical" }).success, 'CaptureManifest: source "physical" is rejected (not an enum member)');
 }
 
 // --- validateManifest: recomputes payloadHash(files) and rejects a mismatch.
@@ -111,6 +127,22 @@ const manifestFixture: unknown = JSON.parse(readFileSync(join(here, "fixtures/ma
   ok(!CorpusManifestSchema.safeParse(dupEpisodes).success, "CorpusManifest: duplicate episodes[] is rejected");
 
   ok(corpusManifestHash(validCorpus as any).length === 66, "corpusManifestHash: produces a 32-byte hash");
+
+  // §9.2/D-30: sources[] — SORTED bytewise, unique, from the same enum as CaptureManifest.source.
+  const withSources = { ...validCorpus, sources: ["sim", "teleop_real"] };
+  ok(CorpusManifestSchema.safeParse(withSources).success, "CorpusManifest: sorted unique sources[] parses");
+
+  const unsortedSources = { ...validCorpus, sources: ["teleop_real", "sim"] };
+  ok(!CorpusManifestSchema.safeParse(unsortedSources).success, "CorpusManifest: unsorted sources[] is rejected");
+
+  const dupSources = { ...validCorpus, sources: ["sim", "sim"] };
+  ok(!CorpusManifestSchema.safeParse(dupSources).success, "CorpusManifest: duplicate sources[] entries are rejected");
+
+  const badSourceValue = { ...validCorpus, sources: ["sim", "real"] };
+  ok(!CorpusManifestSchema.safeParse(badSourceValue).success, "CorpusManifest: sources[] rejects a value not in the source enum (e.g. \"real\")");
+
+  const noSources = { ...validCorpus };
+  ok(CorpusManifestSchema.safeParse(noSources).success, "CorpusManifest: sources[] is optional (server-computed, like corpus_root/episode_count)");
 }
 
 // =============================================================================

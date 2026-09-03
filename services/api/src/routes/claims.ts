@@ -24,12 +24,13 @@ export const claimRoutes = new Hono<AppEnv>()
   // (thresholds/check_version present) still applies via `appendClaim`.
   .post("/claims", async (c) => {
     const { keyStore, registry, logStore } = c.get("deps");
-    if (!logStore) throw new ApiError("internal", "log store not configured");
 
     const principal = requireAuth(keyStore, c.req.header("Authorization"));
     requireRole(principal, "verifier");
 
     const body = parseOrThrow(VerificationClaim, await getJsonBody(c));
+
+    if (!logStore) throw new ApiError("internal", "log store not configured");
 
     // Unknown check -> 422 before any key/signature work (cheap check first).
     try {

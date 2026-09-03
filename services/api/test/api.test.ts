@@ -342,7 +342,7 @@ async function json(res: Response) {
 function validManifest() {
   return {
     v: 1, kind: "capture_manifest", org_id: "org_supplier", dataset_id: null,
-    source: "real", layout: "per_episode", embodiment: "so_arm100",
+    source: "teleop_real", layout: "per_episode", embodiment: "so_arm100",
     rate_hz: 30, duration_ms: 12400, captured_at: 1756900000,
     channels: [
       { name: "action", dtype: "float32", shape: [6], hz: 30 },
@@ -470,16 +470,37 @@ function validManifest() {
   const app = createApp(makeDeps());
   const authed = { Authorization: `Bearer ${SUPPLIER_KEY}` };
   const routes: [string, string, HeadersInit?][] = [
-    ["GET", "/v1/episodes/" + hex(0x01)],
-    ["GET", "/v1/proofs/inclusion?leaf=" + hex(0x01) + "&root=" + hex(0x02) + "&size=1"],
-    ["GET", "/v1/proofs/consistency?from_size=1&to_size=2"],
-    ["GET", "/v1/consent/" + hex(0x01)],
     ["GET", "/v1/corpora/corpus_1/report"],
-    ["GET", "/v1/anchors/audit"],
   ];
   for (const [method, path, headers] of routes) {
     const res = await req(app, path, { method, headers });
     ok(res.status === 501, `${method} ${path} -> 501 not_implemented`, String(res.status));
+  }
+
+  // T-012 — These routes are now implemented (T-012) and should return appropriate status codes
+  // when called with minimal/invalid test data (not 501).
+  {
+    // GET /v1/episodes/{leafHash} - returns 404 for unknown episode
+    const episodeRes = await req(app, "/v1/episodes/" + hex(0x01));
+    ok(episodeRes.status === 404, "GET /v1/episodes/{unknown} -> 404", String(episodeRes.status));
+
+    // GET /v1/proofs/inclusion - returns 404 for unknown anchor
+    const inclusionRes = await req(app, "/v1/proofs/inclusion?leaf=" + hex(0x01) + "&root=" + hex(0x02) + "&size=1");
+    ok(inclusionRes.status === 404, "GET /v1/proofs/inclusion for unknown anchor -> 404", String(inclusionRes.status));
+
+    // GET /v1/proofs/consistency - returns 404 for unknown size
+    const consistencyRes = await req(app, "/v1/proofs/consistency?from_size=1&to_size=2");
+    ok(consistencyRes.status === 404, "GET /v1/proofs/consistency for unknown size -> 404", String(consistencyRes.status));
+
+    // GET /v1/consent/{consentKey} - returns 400 for missing parameters
+    const consentRes = await req(app, "/v1/consent/" + hex(0x01));
+    ok(consentRes.status === 400, "GET /v1/consent/{key} without parameters -> 400", String(consentRes.status));
+
+    // GET /v1/anchors/audit - returns 200 with empty audit results
+    const auditRes = await req(app, "/v1/anchors/audit");
+    ok(auditRes.status === 200, "GET /v1/anchors/audit -> 200", String(auditRes.status));
+    const auditBody = await auditRes.json();
+    ok(Array.isArray(auditBody.items), "audit response has items array");
   }
 }
 

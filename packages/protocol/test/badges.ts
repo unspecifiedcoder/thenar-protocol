@@ -521,5 +521,182 @@ const ok = (c: boolean, m: string, x = "") => {
   ok(result.failed.length === 0, "Test 24k: no failed checks");
 }
 
+// ============================================================================
+// §1.1/D-30 — the source axis. Truth table over source × attestation
+// subject × sim_signature.v1 result × video-present/sensor_consistency
+// result.
+// ============================================================================
+
+const baseInput = (): BadgeInput => ({
+  anchored: { chain: "Avalanche C-Chain", block: "1000", size: "42" },
+  consent: { status: "live" },
+  signature: null,
+  attestation: null,
+  claims: [],
+  checksConfig: {},
+});
+
+const robotControllerAttestation = { level: 2, subject: "robot_controller" as const, manufacturer: "Acme", model: "Ctrl-1" };
+const signerDeviceAttestation = { level: 2, subject: "signer_device" as const, manufacturer: "Acme", model: "Phone" };
+const passClaim = (check: string, issued_at = 10) => ({ check, result: "pass" as const, issued_at });
+const failClaim = (check: string, issued_at = 10) => ({ check, result: "fail" as const, issued_at });
+
+// Test 25: sim/teleop_sim can never be attested, regardless of attestation/claims
+{
+  for (const declared of ["sim", "teleop_sim"] as const) {
+    const input = {
+      ...baseInput(),
+      source: {
+        declared,
+        attestation: robotControllerAttestation,
+        hasVideoChannel: false,
+      },
+      claims: [passClaim("sim_signature.v1")],
+    };
+    const result = computeBadges(input);
+    ok(result.source?.attested === false, `Test 25: source="${declared}" is never attested`);
+    ok(result.source?.wording === (declared === "sim"
+      ? "Source — declared by the signer: simulation. Not attested."
+      : "Source — declared by the signer: human-driven simulation. Not attested."),
+      `Test 25: source="${declared}" declared wording exact`, result.source?.wording);
+  }
+}
+
+// Test 26: teleop_real/autonomous_real, no attestation -> declared, not attested
+{
+  for (const declared of ["teleop_real", "autonomous_real"] as const) {
+    const input = { ...baseInput(), source: { declared }, claims: [] };
+    const result = computeBadges(input);
+    ok(result.source?.attested === false, `Test 26: source="${declared}" with no attestation is not attested`);
+  }
+}
+
+// Test 27: robot_controller attestation but no sim_signature.v1 claim -> not attested
+{
+  const input = {
+    ...baseInput(),
+    source: { declared: "teleop_real" as const, attestation: robotControllerAttestation, hasVideoChannel: false },
+    claims: [],
+  };
+  const result = computeBadges(input);
+  ok(result.source?.attested === false, "Test 27: no sim_signature.v1 claim -> not attested");
+}
+
+// Test 28: robot_controller attestation + sim_signature.v1 fail -> not attested
+{
+  const input = {
+    ...baseInput(),
+    source: { declared: "teleop_real" as const, attestation: robotControllerAttestation, hasVideoChannel: false },
+    claims: [failClaim("sim_signature.v1")],
+  };
+  const result = computeBadges(input);
+  ok(result.source?.attested === false, "Test 28: sim_signature.v1 = fail -> not attested");
+}
+
+// Test 29: signer_device attestation (phone) can never satisfy the rule
+{
+  const input = {
+    ...baseInput(),
+    source: { declared: "teleop_real" as const, attestation: signerDeviceAttestation, hasVideoChannel: false },
+    claims: [passClaim("sim_signature.v1")],
+  };
+  const result = computeBadges(input);
+  ok(result.source?.attested === false, "Test 29: signer_device attestation can never satisfy attestedPhysical (a phone attests the signer, not the robot)");
+}
+
+// Test 30: robot_controller + sim_signature.v1 pass + no video channel -> attested
+{
+  const input = {
+    ...baseInput(),
+    source: { declared: "teleop_real" as const, attestation: robotControllerAttestation, hasVideoChannel: false },
+    claims: [passClaim("sim_signature.v1")],
+  };
+  const result = computeBadges(input);
+  ok(result.source?.attested === true, "Test 30: robot_controller + sim_signature.v1 pass + no video -> attested");
+  ok(result.source?.wording === "Source — attested physical capture: controller key attested by Acme (Ctrl-1); simulation-signature check passed.",
+    "Test 30: attested wording exact", result.source?.wording);
+}
+
+// Test 31: video channel present, sensor_consistency.v1 missing -> not attested
+{
+  const input = {
+    ...baseInput(),
+    source: { declared: "teleop_real" as const, attestation: robotControllerAttestation, hasVideoChannel: true },
+    claims: [passClaim("sim_signature.v1")],
+  };
+  const result = computeBadges(input);
+  ok(result.source?.attested === false, "Test 31: video channel present, sensor_consistency.v1 missing -> not attested");
+}
+
+// Test 32: video channel present, sensor_consistency.v1 fail -> not attested
+{
+  const input = {
+    ...baseInput(),
+    source: { declared: "teleop_real" as const, attestation: robotControllerAttestation, hasVideoChannel: true },
+    claims: [passClaim("sim_signature.v1"), failClaim("sensor_consistency.v1")],
+  };
+  const result = computeBadges(input);
+  ok(result.source?.attested === false, "Test 32: video channel present, sensor_consistency.v1 = fail -> not attested");
+}
+
+// Test 33: video channel present, sensor_consistency.v1 pass -> attested
+{
+  const input = {
+    ...baseInput(),
+    source: { declared: "autonomous_real" as const, attestation: robotControllerAttestation, hasVideoChannel: true },
+    claims: [passClaim("sim_signature.v1"), passClaim("sensor_consistency.v1")],
+  };
+  const result = computeBadges(input);
+  ok(result.source?.attested === true, "Test 33: video channel present + both checks pass -> attested (autonomous_real)");
+}
+
+// Test 34: latest claim wins (an old fail superseded by a later pass)
+{
+  const input = {
+    ...baseInput(),
+    source: { declared: "teleop_real" as const, attestation: robotControllerAttestation, hasVideoChannel: false },
+    claims: [failClaim("sim_signature.v1", 5), passClaim("sim_signature.v1", 50)],
+  };
+  const result = computeBadges(input);
+  ok(result.source?.attested === true, "Test 34: latest sim_signature.v1 claim (pass) wins over an earlier fail");
+}
+
+// Test 35: "mixed" can never be attested as a whole, even with a full attested claim set
+{
+  const input = {
+    ...baseInput(),
+    source: { declared: "mixed" as const, attestation: robotControllerAttestation, hasVideoChannel: false },
+    claims: [passClaim("sim_signature.v1")],
+  };
+  const result = computeBadges(input);
+  ok(result.source?.attested === false, 'Test 35: source="mixed" is never attested as a whole');
+  ok(result.source?.wording === "Source — declared by the signer: mixed. Not attested.", "Test 35: mixed declared wording exact", result.source?.wording);
+}
+
+// Test 36: source block is orthogonal to anchoring — present even when not anchored (pending)
+{
+  const input = {
+    anchored: null,
+    consent: { status: "live" as const },
+    signature: null,
+    attestation: null,
+    claims: [],
+    checksConfig: {},
+    source: { declared: "sim" as const },
+  };
+  const result = computeBadges(input);
+  ok(result.pending === true, "Test 36a: still pending with no anchor");
+  ok(result.source?.declared === "sim", "Test 36b: source block computed even when pending");
+  ok(result.wording[0] === pendingWording(), "Test 36c: Pending wording still first");
+  ok(result.wording[1] === result.source?.wording, "Test 36d: source wording appended after Pending");
+}
+
+// Test 37: source block absent from output when input.source is omitted (back-compat)
+{
+  const input = baseInput();
+  const result = computeBadges(input);
+  ok(result.source === undefined, "Test 37: no source block in output when input.source is omitted");
+}
+
 console.log(fails === 0 ? "\nbadges: all checks passed\n" : `\n${fails} check(s) failed\n`);
 process.exit(fails ? 1 : 0);

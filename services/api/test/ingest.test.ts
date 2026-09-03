@@ -30,6 +30,7 @@ import { LogStore } from "../../log/src/store.ts";
 import { ensureOperatorKey } from "../src/ingest/operator.ts";
 import type { OperatorSigner } from "../src/ingest/receipt.ts";
 import { commitEpisodesFromRefs, type IngestContext } from "../src/ingest/job.ts";
+import { deriveSources } from "../src/ingest/corpus.ts";
 import type { EpisodeRef } from "../src/ingest/lerobot.ts";
 import { buildFileEntries, payloadHash } from "../../../packages/protocol/src/payload.ts";
 import { manifestHash as computeManifestHash } from "../../../packages/protocol/src/mapping.ts";
@@ -126,7 +127,7 @@ async function uploadFixture(deps: Deps, orgId: string) {
   const ingestBody = {
     terms_hash: hex(0x9a),
     scope_bits: 11,
-    source: "real",
+    source: "teleop_real",
     consent: { holder: "contributor", pubkey: consentPubkey, alg: "ed25519", scope_bits: 11 },
   };
   const ingestRes = await req(app, `/v1/datasets/${dataset.dataset_id}/ingest`, {
@@ -250,7 +251,7 @@ async function uploadFixture(deps: Deps, orgId: string) {
   const ingestRes = await req(app, `/v1/datasets/${dataset.dataset_id}/ingest`, {
     method: "POST", headers,
     body: JSON.stringify({
-      terms_hash: hex(0x9a), scope_bits: 1, source: "real",
+      terms_hash: hex(0x9a), scope_bits: 1, source: "teleop_real",
       consent: { holder: "contributor", pubkey: hex(0x01, 32), alg: "ed25519", scope_bits: 1 },
     }),
   });
@@ -282,7 +283,7 @@ async function uploadFixture(deps: Deps, orgId: string) {
 
   const refs: EpisodeRef[] = [baseRef(0), { ...baseRef(1), embodiment: null }, baseRef(2)];
   const ctx: IngestContext = {
-    orgId: "org_atomic", datasetId: "ds_atomic", source: "real",
+    orgId: "org_atomic", datasetId: "ds_atomic", source: "teleop_real",
     termsHash: hex(0x11), scopeBits: 1,
     consent: { holder: "contributor", pubkey: hex(0x22, 32), alg: "ed25519", scope_bits: 1 },
     capturedAt: 1_756_900_000,
@@ -312,7 +313,7 @@ async function uploadFixture(deps: Deps, orgId: string) {
   });
   const refs: EpisodeRef[] = [baseRef(0), baseRef(1)];
   const ctx: IngestContext = {
-    orgId: "org_salt", datasetId: "ds_salt", source: "real",
+    orgId: "org_salt", datasetId: "ds_salt", source: "teleop_real",
     termsHash: hex(0x33), scopeBits: 1,
     consent: { holder: "contributor", pubkey: hex(0x44, 32), alg: "ed25519", scope_bits: 1 },
     capturedAt: 1_756_900_000,
@@ -345,7 +346,7 @@ async function uploadFixture(deps: Deps, orgId: string) {
   await deps.uploadRegistry.markStored(files[0].hash);
   const manifest = {
     v: 1, kind: "capture_manifest", org_id: SUPPLIER_ORG, dataset_id: null,
-    source: "real", layout: "per_episode", embodiment: "so_arm100",
+    source: "teleop_real", layout: "per_episode", embodiment: "so_arm100",
     rate_hz: 30, duration_ms: 333, captured_at: 1_756_900_000,
     channels: [{ name: "action", dtype: "float32", shape: [1] }],
     files, range: null,
@@ -356,6 +357,23 @@ async function uploadFixture(deps: Deps, orgId: string) {
   };
   const res = await req(app, "/v1/episodes", { method: "POST", headers, body: JSON.stringify({ manifest }) });
   ok(res.status === 401, "POST /episodes with a bad signature -> 401", String(res.status));
+}
+
+// =========================================================================
+// deriveSources — §9.2/D-30: CorpusManifest.sources[] derivation
+// =========================================================================
+{
+  ok(
+    JSON.stringify(deriveSources(["teleop_real", "sim", "sim"])) === JSON.stringify(["sim", "teleop_real"]),
+    "deriveSources: sorts bytewise and de-duplicates",
+  );
+  ok(JSON.stringify(deriveSources(["mixed"])) === JSON.stringify(["mixed"]), "deriveSources: single source round-trips");
+  ok(JSON.stringify(deriveSources([])) === JSON.stringify([]), "deriveSources: empty input -> empty output");
+  ok(
+    JSON.stringify(deriveSources(["autonomous_real", "teleop_sim", "teleop_real", "sim"])) ===
+      JSON.stringify(["autonomous_real", "sim", "teleop_real", "teleop_sim"]),
+    "deriveSources: bytewise sort order across all enum members",
+  );
 }
 
 console.log(fails === 0 ? "\nall ingest tests passed" : `\n${fails} ingest test(s) failed`);
