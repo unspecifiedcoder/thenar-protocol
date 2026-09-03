@@ -42,14 +42,14 @@ const utf8 = (s) => toHex(s);
 
 async function main() {
   // ---- test-only keys (deterministic seeds, never used in production) ----
-  const orgSecret = "0xbc9dbe5d67de1cf65c08009bbe31ffff2fa63f226abb31246a8018217bd73e39";
+  const orgSecret = "0x" + "11".repeat(32); // TEST-ONLY key — deterministic, never used in production
   const orgPub = toHex(ed.getPublicKey(hexToBytes(orgSecret)));
   const orgKeyId = keyId(orgPub);
 
-  const holderSecret = "0x4303d3455066772b073b47cf983c1cd6f0ff3d54baf14472cffb8e254cf185b";
+  const holderSecret = "0x" + "22".repeat(32); // TEST-ONLY key — deterministic, never used in production
   const holderPub = toHex(ed.getPublicKey(hexToBytes(holderSecret)));
 
-  const verifierSecret = "0x2c623ab5ef2196ea998001ee630bd14acd4bbba1324af1e18781eee1ff73b70";
+  const verifierSecret = "0x" + "33".repeat(32); // TEST-ONLY key — deterministic, never used in production
   const verifierPub = toHex(ed.getPublicKey(hexToBytes(verifierSecret)));
   const verifierKeyId = keyId(verifierPub);
 
