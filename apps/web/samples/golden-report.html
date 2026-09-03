@@ -1,0 +1,574 @@
+<!-- T-041d — Provenance Report HTML template (PLAN §9.6, §13; docs/DESIGN.md
+     §4 "Provenance Report"). Double-brace placeholders are replaced by
+     `services/api/src/report/render.ts` with values already computed by
+     `report/build.ts` — nothing here computes or re-derives a proof; the
+     template only displays what the report object already carries (I-11).
+     Every placeholder is escaped as HTML text by render.ts except the
+     block-shaped placeholders (EPISODE_SECTIONS, SUMMARY_ROWS, …), which
+     render.ts builds itself from already-escaped pieces.
+
+     Self-contained on purpose, since a headless browser renders this to
+     PDF with nothing else to fetch except the Google Fonts stylesheet
+     (IBM Plex, with system fallbacks if that request fails or is
+     blocked — the page still reads correctly with the fallback stack).
+     The design tokens below are copied from `apps/web/design.css`
+     (docs/DESIGN.md §2) with the dark `--window` surfaces dropped: a
+     report is paper, print-safe, never a dark page. -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Provenance Report 01M1KGW9W0YWEASM3B5ZB97V8K</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    color-scheme: light;
+    --paper:#F1F2F4; --paper-2:#E7E9ED; --ink:#0F1B2D; --ink-2:#4A5567;
+    --rule:#C7CCD4; --seal:#1F3A93; --ok:#157F6D; --warn:#B7791F; --fail:#B3261E;
+    --sans:"IBM Plex Sans",-apple-system,Segoe UI,Helvetica,Arial,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  @page { size: A4; margin: 18mm 16mm; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{background:#fff;color:var(--ink);font:400 13px/20px var(--sans);-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-weight:600;letter-spacing:-.01em}
+  h1{font-size:30px;line-height:36px}
+  h2{font-size:19px;line-height:26px;border-bottom:2px solid var(--ink);padding-bottom:6px;margin-bottom:12px}
+  h3{font-size:14px;line-height:20px;margin:16px 0 6px;color:var(--ink-2)}
+  p{margin:4px 0}
+  .small{font-size:11px;line-height:16px;color:var(--ink-2)}
+  a{color:var(--seal)}
+  code,.mono{font-family:var(--mono)}
+  .hash{font-family:var(--mono);overflow-wrap:anywhere;font-size:11px}
+
+  /* ---- pages ---- */
+  .page{position:relative;padding-bottom:26px;page-break-after:always}
+  .page:last-child{page-break-after:auto}
+  .episode-page{page-break-before:always}
+
+  /* ---- running footer: one div per page section (see render.ts) ---- */
+  .reg-footer-print{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;
+    border-top:1px solid var(--rule);padding-top:6px;font-family:var(--mono);font-size:10px;color:var(--ink-2)}
+
+  /* ---- cover ---- */
+  .cover{display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:48px}
+  .seal{width:88px;height:88px;border-radius:50%;border:3px solid var(--seal);position:relative;
+    display:inline-grid;place-items:center;color:var(--seal);flex:0 0 auto}
+  .seal svg{width:36px;height:36px}
+  .seal .ring-label{position:absolute;inset:-15px;font:500 9px/1 var(--mono);letter-spacing:.14em;
+    text-transform:uppercase;color:var(--seal)}
+  .seal .ring-label span{position:absolute;left:50%;top:0;transform:translateX(-50%)}
+  .cover h1{margin-top:20px}
+  .cover .subtitle{color:var(--ink-2);margin-top:4px;font-size:15px}
+  .cover-kv{margin-top:28px;width:100%;max-width:480px;text-align:left;border-top:2px solid var(--ink)}
+  .cover-kv tr{border-bottom:1px solid var(--rule)}
+  .cover-kv th{text-align:left;font:500 11px/16px var(--sans);color:var(--ink-2);padding:8px 12px 8px 0;
+    white-space:nowrap;vertical-align:top}
+  .cover-kv td{padding:8px 0;vertical-align:top;word-break:break-all}
+  .qrbox{margin-top:24px;border:2px solid var(--ink);padding:16px;max-width:340px}
+  .qrbox .label{font:600 12px/18px var(--sans);margin-bottom:6px}
+  .qrbox .url{font-family:var(--mono);font-size:11px;overflow-wrap:anywhere}
+  .qrbox .note{font-size:10px;color:var(--ink-2);margin-top:8px}
+  .draft{display:inline-block;margin-top:12px;padding:2px 10px;border:1px dashed var(--warn);color:var(--warn);
+    font:500 11px/18px var(--sans);border-radius:2px}
+
+  /* ---- summary register ---- */
+  .register{width:100%;border-collapse:collapse;border-top:2px solid var(--ink);margin-bottom:8px}
+  .register th{text-align:left;font:500 11px/16px var(--sans);color:var(--ink-2);padding:6px 8px 6px 0;
+    border-bottom:1px solid var(--rule)}
+  .register td{padding:6px 8px 6px 0;border-bottom:1px solid var(--rule);vertical-align:top;font-size:11px}
+  .register td.mono,.register td .mono{overflow-wrap:anywhere}
+  .register.claims td:first-child{white-space:nowrap}
+  .register .num{font-family:var(--mono);text-align:right}
+  .register tr.anchored td:first-child{box-shadow:inset 3px 0 0 var(--seal);padding-left:8px}
+  .sources-line{padding:10px 12px;background:var(--paper-2);font-size:12px;margin:8px 0 16px}
+
+  /* ---- badges ---- */
+  .badges{display:flex;flex-wrap:wrap;gap:6px}
+  .badge{display:inline-flex;align-items:stretch;border:2px solid var(--ink);border-radius:2px;
+    font:600 10px/18px var(--sans);color:var(--ink);height:20px}
+  .badge .lvl{font:500 9px/18px var(--mono);padding:0 6px;border-right:2px solid var(--ink);background:var(--ink);color:#fff}
+  .badge .lbl{padding:0 8px}
+  .badge.off{border-color:var(--rule);color:var(--rule)}
+  .badge.off .lvl{background:transparent;color:var(--rule);border-color:var(--rule)}
+  .badge.inline{height:16px}
+  .badge.inline .lvl{padding:0 4px;border-right:none}
+  .badge.inline .lbl{display:none}
+
+  /* ---- wording / source ---- */
+  .wording{margin-top:10px;color:var(--ink-2);font-size:12px;line-height:18px}
+  .source{display:flex;gap:8px;align-items:flex-start;color:var(--ink-2);font-size:12px;line-height:18px;margin-top:6px}
+  .source::before{content:"";flex:0 0 9px;width:9px;height:9px;margin-top:4px;background:var(--warn)}
+  .source[data-attested="1"]::before{background:var(--ok)}
+  .revoked{color:var(--fail);font-weight:600}
+  .result-pass{color:var(--ok)}
+  .result-fail{color:var(--fail)}
+  .result-inconclusive{color:var(--warn)}
+  .empty-note{color:var(--ink-2);font-size:11px;font-style:normal}
+
+  /* ---- episode kv ---- */
+  .kv{width:100%;border-collapse:collapse;margin-top:10px}
+  .kv th{text-align:left;font:500 11px/18px var(--sans);color:var(--ink-2);padding:3px 12px 3px 0;
+    white-space:nowrap;vertical-align:top;width:110px}
+  .kv td{padding:3px 0;font-size:11px}
+  .episode-head{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--ink);
+    padding-bottom:6px}
+  .episode-head h2{border:0;padding:0;margin:0}
+  .consent{font-size:12px}
+
+  /* ---- limitations / procedure ---- */
+  ul.limitations{margin:8px 0 0 18px}
+  ul.limitations li{margin-bottom:8px;font-size:12px;line-height:18px}
+  ol.procedure{margin:8px 0 0 18px}
+  ol.procedure li{margin-bottom:8px;font-size:12px;line-height:18px}
+
+  @media print{ a{color:var(--ink)} }
+
+  /* On screen (not print), give each `.page` the look of a sheet of paper
+     sitting on the browser chrome, rather than content running flush to
+     the viewport edge — `@page`'s own 18mm/16mm margin above is what the
+     PDF actually prints with and is untouched by this block. */
+  @media screen{
+    body{background:var(--paper-2)}
+    .page{max-width:210mm;min-height:297mm;margin:24px auto;padding:18mm 16mm 26px;
+      background:#fff;box-shadow:0 1px 3px rgba(15,27,45,.15);border:1px solid var(--rule)}
+  }
+</style>
+</head>
+<body>
+
+  <!-- ============ page 1 — cover ============ -->
+  <section class="page cover">
+    <div class="seal" aria-hidden="true">
+      <span class="ring-label"><span>anchored</span></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="4 12 10 18 20 6"></polyline>
+      </svg>
+    </div>
+    <h1>Provenance Report</h1>
+    <div class="subtitle">Corpus <span class="mono">corpus_golden_801e90399da9</span></div>
+    
+
+    <table class="cover-kv">
+      <tr><th>Corpus manifest hash</th><td class="hash">0x731f38d8e69db40f88d5b560a4d513cbe51170d4b1c464b69ec6a4f524250532</td></tr>
+      <tr><th>Report hash</th><td class="hash">0x2a9c60eec7494c5251452327412a684d7b2d015e2c960c7159d8a18e95488563</td></tr>
+      <tr><th>Anchor</th><td class="hash">root 0xeebbfe4e81beaaea202f3e0d1aa85bae24e5171f11eb3c2286f5e8cda839554b<br />size 55</td></tr>
+      <tr><th>Anchor locators</th><td><div class="mono small">chain 31338 · block 6 · tx 0xaff31e7f…2cb5d7</div><div class="mono small">chain 43113 · block 58154520 · tx 0x1d800d5f…244c9d</div></td></tr>
+      <tr><th>Generated</th><td>2026-09-03T11:36:16.000Z</td></tr>
+      <tr><th>Operator</th><td>THENAR <span class="small">(v1 provenance_report)</span></td></tr>
+      <tr><th>Verifier key</th><td class="hash">0xec9eafdee2af5484f79958368e51bf3ae7cf23aa2abb4e3240722b8d4877fa56</td></tr>
+    </table>
+
+    <div class="qrbox">
+      <div class="label">Verify this report</div>
+      <div class="url">/verify?report=%2Fsamples%2Fgolden-report.json</div>
+      <div class="note">Open this link, or run <code>scripts/verify-report.mjs</code> against the report JSON, to check every claim on this document yourself, without trusting THENAR — see the last page.</div>
+    </div>
+
+    <div class="reg-footer-print">
+    <span class="mono">report 0x2a9c60ee…488563</span>
+    <span class="page-no">page 1 of 7</span>
+  </div>
+  </section>
+
+  <!-- ============ page 2 — summary register ============ -->
+  <section class="page summary-page">
+    <h1 style="font-size:22px;margin-bottom:16px">Summary</h1>
+
+    <h2>Corpus</h2>
+    <table class="cover-kv" style="max-width:none">
+      <tr><th>Corpus root</th><td class="hash">0xa9795c773e7d711e0bbab3afac59a00f35a49ef349af01d83844e46a79601438</td></tr>
+      <tr><th>Episode count</th><td>4</td></tr>
+      <tr><th>Terms hash</th><td class="hash">0x66df2990b885bad73977e153625064e40c1e2af0d61b1d21410ac85f2aad57e1</td></tr>
+      <tr><th>Terms document</th><td><a href="https://thenar.io/terms/golden-demo">https://thenar.io/terms/golden-demo</a></td></tr>
+      <tr><th>On-chain corpus</th><td><span class="mono">chain 43113 · registry 0x1a89aB71…f23Ccd · corpus_id 0 · tx 0x105d9ec3…7386c1</span></td></tr>
+      <tr><th>Contains revoked episodes</th><td>no</td></tr>
+    </table>
+    <p class="small">Sealing anchor <span class="mono">(root 0xeebbfe4e…39554b, size 55)</span> — identical to the report anchor; no consistency proof needed.</p>
+
+    <h2>Episodes by badge set</h2>
+    <table class="register">
+      <thead><tr><th>Badges earned</th><th class="num">Episodes</th></tr></thead>
+      <tbody><tr><td>L0</td><td class="num">4</td></tr></tbody>
+    </table>
+
+    <div class="sources-line">Sources — teleop_real; 4 of 4 episodes declared physical, 0 attested.</div>
+
+    <h2>Episode index</h2>
+    <table class="register">
+      <thead><tr><th>#</th><th>Badges</th><th>Source</th><th>Consent</th><th>Leaf</th></tr></thead>
+      <tbody><tr class="">
+        <td class="num">24</td>
+        <td><span class="badge inline"><span class="lvl">L0</span></span></td>
+        <td>teleop_real</td>
+        <td>live</td>
+        <td class="mono">0x8f783d87…463644</td>
+      </tr>
+<tr class="">
+        <td class="num">30</td>
+        <td><span class="badge inline"><span class="lvl">L0</span></span></td>
+        <td>teleop_real</td>
+        <td>live</td>
+        <td class="mono">0x9c7ee6ce…02a01a</td>
+      </tr>
+<tr class="">
+        <td class="num">36</td>
+        <td><span class="badge inline"><span class="lvl">L0</span></span></td>
+        <td>teleop_real</td>
+        <td>live</td>
+        <td class="mono">0xa6f0726e…aa29d6</td>
+      </tr>
+<tr class="">
+        <td class="num">48</td>
+        <td><span class="badge inline"><span class="lvl">L0</span></span></td>
+        <td>teleop_real</td>
+        <td>live</td>
+        <td class="mono">0xeda41d47…0fb6e9</td>
+      </tr></tbody>
+    </table>
+
+    <h2>Checks run</h2>
+    <table class="register">
+      <thead><tr><th>Check</th><th>Version</th><th>Thresholds</th></tr></thead>
+      <tbody><tr>
+        <td>timing.v1</td>
+        <td class="mono">timing.v1.0</td>
+        <td class="mono">{}</td>
+      </tr>
+<tr>
+        <td>kinematics.v1</td>
+        <td class="mono">kinematics.v1.0</td>
+        <td class="mono">{}</td>
+      </tr>
+<tr>
+        <td>sensor_consistency.v1</td>
+        <td class="mono">sensor_consistency.v1.0</td>
+        <td class="mono">{}</td>
+      </tr>
+<tr>
+        <td>sim_signature.v1</td>
+        <td class="mono">sim_signature.v1.0</td>
+        <td class="mono">{}</td>
+      </tr>
+<tr>
+        <td>dedup.v1</td>
+        <td class="mono">dedup.v1.0</td>
+        <td class="mono">{&quot;T_exact&quot;:0.02,&quot;T_near&quot;:0.05}</td>
+      </tr></tbody>
+    </table>
+
+    <h2>Receipts</h2>
+    <p class="empty-note">No append receipts recorded on this report.</p>
+
+    <div class="reg-footer-print">
+    <span class="mono">report 0x2a9c60ee…488563</span>
+    <span class="page-no">page 2 of 7</span>
+  </div>
+  </section>
+
+  <!-- ============ one register block per episode ============ -->
+  <section class="page episode-page">
+    <header class="episode-head">
+      <h2>Episode <span class="mono">#24</span></h2>
+      <div class="badges"><span class="badge"><span class="lvl">L0</span><span class="lbl">Committed</span></span><span class="badge off"><span class="lvl">L1</span><span class="lbl">Signed</span></span><span class="badge off"><span class="lvl">L2</span><span class="lbl">Attested</span></span><span class="badge off"><span class="lvl">L3</span><span class="lbl">Checked</span></span></div>
+    </header>
+    <table class="kv">
+      <tr><th>Leaf</th><td class="mono hash">0x8f783d8749f5f55a7d5ab2a95444e11218bfd98697bb7bf238083a00f7463644</td></tr>
+      <tr><th>Log index</th><td>24</td></tr>
+      <tr><th>Corpus index</th><td>0</td></tr>
+      <tr><th>Manifest hash</th><td class="mono hash">0xaeb6030769a8c429b35f3c717bfba0a0b8fc4eae09c06344d6534227931feffc</td></tr>
+      <tr><th>Payload hash</th><td class="mono hash">0x901448f0fc6d5b76d452c909d17f9d2cf822a9c9f5ba1e262bf5d2d46a118c22</td></tr>
+    </table>
+    <div class="wording"><div>Committed — existed by block 6 on chain 31338; log unchanged since; consent live as of anchor (size 55).</div><div>Source — declared by the signer: human-driven physical robot. Not attested.</div></div>
+    <div class="source" data-attested="0">Source — declared by the signer: human-driven physical robot. Not attested.</div>
+    <h3>Claims</h3>
+    <table class="register claims">
+    <thead><tr><th>Check</th><th>Result</th><th>Thresholds</th><th>Log index</th></tr></thead>
+    <tbody><tr>
+        <td>timing.v1</td>
+        <td class="result-pass">pass</td>
+        <td class="mono">{&quot;period_tolerance_fraction&quot;:0.25,&quot;min_within_tolerance_fraction&quot;:0.99,&quot;max_gap_fraction&quot;:5,&quot;frame_count_tolerance&quot;:2}</td>
+        <td class="mono">25</td>
+      </tr>
+<tr>
+        <td>kinematics.v1</td>
+        <td class="result-inconclusive">inconclusive</td>
+        <td class="mono">{&quot;joint_limit_tolerance_deg&quot;:1,&quot;max_accel_rad_s2&quot;:50}</td>
+        <td class="mono">26</td>
+      </tr>
+<tr>
+        <td>sensor_consistency.v1</td>
+        <td class="result-inconclusive">inconclusive</td>
+        <td class="mono">{&quot;rho_pass&quot;:0.4,&quot;rho_fail&quot;:0.2}</td>
+        <td class="mono">27</td>
+      </tr>
+<tr>
+        <td>sim_signature.v1</td>
+        <td class="result-pass">pass</td>
+        <td class="mono">{&quot;score_inconclusive&quot;:2,&quot;score_fail&quot;:3}</td>
+        <td class="mono">28</td>
+      </tr>
+<tr>
+        <td>dedup.v1</td>
+        <td class="result-inconclusive">inconclusive</td>
+        <td class="mono">{&quot;T_exact&quot;:0.02,&quot;T_near&quot;:0.05}</td>
+        <td class="mono">29</td>
+      </tr></tbody>
+  </table>
+    <h3>Consent</h3>
+    <div class="consent">Live <span class="mono">key 0x62c5d31c…e947c6</span></div>
+    <h3>Files</h3>
+    <table class="register files">
+    <thead><tr><th>File</th><th>Bytes</th><th>Hash</th></tr></thead>
+    <tbody><tr>
+        <td>data/chunk-000/file-000.parquet</td>
+        <td class="num">1643</td>
+        <td class="mono">0x25123f0b…cb3fbe</td>
+      </tr>
+<tr>
+        <td>videos/observation.images.front/chunk-000/file-000.mp4</td>
+        <td class="num">2048</td>
+        <td class="mono">0xd8406655…398905</td>
+      </tr></tbody>
+  </table>
+    <div class="reg-footer-print">
+    <span class="mono">report 0x2a9c60ee…488563</span>
+    <span class="page-no">page 3 of 7</span>
+  </div>
+  </section>
+<section class="page episode-page">
+    <header class="episode-head">
+      <h2>Episode <span class="mono">#30</span></h2>
+      <div class="badges"><span class="badge"><span class="lvl">L0</span><span class="lbl">Committed</span></span><span class="badge off"><span class="lvl">L1</span><span class="lbl">Signed</span></span><span class="badge off"><span class="lvl">L2</span><span class="lbl">Attested</span></span><span class="badge off"><span class="lvl">L3</span><span class="lbl">Checked</span></span></div>
+    </header>
+    <table class="kv">
+      <tr><th>Leaf</th><td class="mono hash">0x9c7ee6cecb1b1f14a08a7c16a1c47c2f2ab3038a271185023946655fc502a01a</td></tr>
+      <tr><th>Log index</th><td>30</td></tr>
+      <tr><th>Corpus index</th><td>1</td></tr>
+      <tr><th>Manifest hash</th><td class="mono hash">0x7a3e91703181c1d1cae281d91f2cc493e5843dcfa7afe456aa66478d2a848bbd</td></tr>
+      <tr><th>Payload hash</th><td class="mono hash">0x901448f0fc6d5b76d452c909d17f9d2cf822a9c9f5ba1e262bf5d2d46a118c22</td></tr>
+    </table>
+    <div class="wording"><div>Committed — existed by block 6 on chain 31338; log unchanged since; consent live as of anchor (size 55).</div><div>Source — declared by the signer: human-driven physical robot. Not attested.</div></div>
+    <div class="source" data-attested="0">Source — declared by the signer: human-driven physical robot. Not attested.</div>
+    <h3>Claims</h3>
+    <table class="register claims">
+    <thead><tr><th>Check</th><th>Result</th><th>Thresholds</th><th>Log index</th></tr></thead>
+    <tbody><tr>
+        <td>timing.v1</td>
+        <td class="result-pass">pass</td>
+        <td class="mono">{&quot;period_tolerance_fraction&quot;:0.25,&quot;min_within_tolerance_fraction&quot;:0.99,&quot;max_gap_fraction&quot;:5,&quot;frame_count_tolerance&quot;:2}</td>
+        <td class="mono">31</td>
+      </tr>
+<tr>
+        <td>kinematics.v1</td>
+        <td class="result-inconclusive">inconclusive</td>
+        <td class="mono">{&quot;joint_limit_tolerance_deg&quot;:1,&quot;max_accel_rad_s2&quot;:50}</td>
+        <td class="mono">32</td>
+      </tr>
+<tr>
+        <td>sensor_consistency.v1</td>
+        <td class="result-inconclusive">inconclusive</td>
+        <td class="mono">{&quot;rho_pass&quot;:0.4,&quot;rho_fail&quot;:0.2}</td>
+        <td class="mono">33</td>
+      </tr>
+<tr>
+        <td>sim_signature.v1</td>
+        <td class="result-pass">pass</td>
+        <td class="mono">{&quot;score_inconclusive&quot;:2,&quot;score_fail&quot;:3}</td>
+        <td class="mono">34</td>
+      </tr>
+<tr>
+        <td>dedup.v1</td>
+        <td class="result-inconclusive">inconclusive</td>
+        <td class="mono">{&quot;T_exact&quot;:0.02,&quot;T_near&quot;:0.05}</td>
+        <td class="mono">35</td>
+      </tr></tbody>
+  </table>
+    <h3>Consent</h3>
+    <div class="consent">Live <span class="mono">key 0x7312c60d…10bb91</span></div>
+    <h3>Files</h3>
+    <table class="register files">
+    <thead><tr><th>File</th><th>Bytes</th><th>Hash</th></tr></thead>
+    <tbody><tr>
+        <td>data/chunk-000/file-000.parquet</td>
+        <td class="num">1643</td>
+        <td class="mono">0x25123f0b…cb3fbe</td>
+      </tr>
+<tr>
+        <td>videos/observation.images.front/chunk-000/file-000.mp4</td>
+        <td class="num">2048</td>
+        <td class="mono">0xd8406655…398905</td>
+      </tr></tbody>
+  </table>
+    <div class="reg-footer-print">
+    <span class="mono">report 0x2a9c60ee…488563</span>
+    <span class="page-no">page 4 of 7</span>
+  </div>
+  </section>
+<section class="page episode-page">
+    <header class="episode-head">
+      <h2>Episode <span class="mono">#36</span></h2>
+      <div class="badges"><span class="badge"><span class="lvl">L0</span><span class="lbl">Committed</span></span><span class="badge off"><span class="lvl">L1</span><span class="lbl">Signed</span></span><span class="badge off"><span class="lvl">L2</span><span class="lbl">Attested</span></span><span class="badge off"><span class="lvl">L3</span><span class="lbl">Checked</span></span></div>
+    </header>
+    <table class="kv">
+      <tr><th>Leaf</th><td class="mono hash">0xa6f0726e6bd9fe83355695c9d66a7a4213e629d4074001a62a2e877a7eaa29d6</td></tr>
+      <tr><th>Log index</th><td>36</td></tr>
+      <tr><th>Corpus index</th><td>2</td></tr>
+      <tr><th>Manifest hash</th><td class="mono hash">0xc3b64b120b10c99e77a812103065a6b9baf6b2a2bb2eafa7ea6031dea77cc459</td></tr>
+      <tr><th>Payload hash</th><td class="mono hash">0x901448f0fc6d5b76d452c909d17f9d2cf822a9c9f5ba1e262bf5d2d46a118c22</td></tr>
+    </table>
+    <div class="wording"><div>Committed — existed by block 6 on chain 31338; log unchanged since; consent live as of anchor (size 55).</div><div>Source — declared by the signer: human-driven physical robot. Not attested.</div></div>
+    <div class="source" data-attested="0">Source — declared by the signer: human-driven physical robot. Not attested.</div>
+    <h3>Claims</h3>
+    <table class="register claims">
+    <thead><tr><th>Check</th><th>Result</th><th>Thresholds</th><th>Log index</th></tr></thead>
+    <tbody><tr>
+        <td>timing.v1</td>
+        <td class="result-pass">pass</td>
+        <td class="mono">{&quot;period_tolerance_fraction&quot;:0.25,&quot;min_within_tolerance_fraction&quot;:0.99,&quot;max_gap_fraction&quot;:5,&quot;frame_count_tolerance&quot;:2}</td>
+        <td class="mono">37</td>
+      </tr>
+<tr>
+        <td>kinematics.v1</td>
+        <td class="result-inconclusive">inconclusive</td>
+        <td class="mono">{&quot;joint_limit_tolerance_deg&quot;:1,&quot;max_accel_rad_s2&quot;:50}</td>
+        <td class="mono">38</td>
+      </tr>
+<tr>
+        <td>sensor_consistency.v1</td>
+        <td class="result-inconclusive">inconclusive</td>
+        <td class="mono">{&quot;rho_pass&quot;:0.4,&quot;rho_fail&quot;:0.2}</td>
+        <td class="mono">39</td>
+      </tr>
+<tr>
+        <td>sim_signature.v1</td>
+        <td class="result-pass">pass</td>
+        <td class="mono">{&quot;score_inconclusive&quot;:2,&quot;score_fail&quot;:3}</td>
+        <td class="mono">40</td>
+      </tr>
+<tr>
+        <td>dedup.v1</td>
+        <td class="result-inconclusive">inconclusive</td>
+        <td class="mono">{&quot;T_exact&quot;:0.02,&quot;T_near&quot;:0.05}</td>
+        <td class="mono">41</td>
+      </tr></tbody>
+  </table>
+    <h3>Consent</h3>
+    <div class="consent">Live <span class="mono">key 0x2c75c0af…597bb0</span></div>
+    <h3>Files</h3>
+    <table class="register files">
+    <thead><tr><th>File</th><th>Bytes</th><th>Hash</th></tr></thead>
+    <tbody><tr>
+        <td>data/chunk-000/file-000.parquet</td>
+        <td class="num">1643</td>
+        <td class="mono">0x25123f0b…cb3fbe</td>
+      </tr>
+<tr>
+        <td>videos/observation.images.front/chunk-000/file-000.mp4</td>
+        <td class="num">2048</td>
+        <td class="mono">0xd8406655…398905</td>
+      </tr></tbody>
+  </table>
+    <div class="reg-footer-print">
+    <span class="mono">report 0x2a9c60ee…488563</span>
+    <span class="page-no">page 5 of 7</span>
+  </div>
+  </section>
+<section class="page episode-page">
+    <header class="episode-head">
+      <h2>Episode <span class="mono">#48</span></h2>
+      <div class="badges"><span class="badge"><span class="lvl">L0</span><span class="lbl">Committed</span></span><span class="badge off"><span class="lvl">L1</span><span class="lbl">Signed</span></span><span class="badge off"><span class="lvl">L2</span><span class="lbl">Attested</span></span><span class="badge off"><span class="lvl">L3</span><span class="lbl">Checked</span></span></div>
+    </header>
+    <table class="kv">
+      <tr><th>Leaf</th><td class="mono hash">0xeda41d4726bea05bdc6368bafec54213be69b3fd1429557795fe2800c80fb6e9</td></tr>
+      <tr><th>Log index</th><td>48</td></tr>
+      <tr><th>Corpus index</th><td>3</td></tr>
+      <tr><th>Manifest hash</th><td class="mono hash">0x6adb6f1459263a24ccb6044cdeaab7a2f0379e4baeb652c5c8254b21dd5d2ff1</td></tr>
+      <tr><th>Payload hash</th><td class="mono hash">0x288e730e11087ddfc9e9499a879ef94fb44e6b57810c0e0874116f05ad419cd5</td></tr>
+    </table>
+    <div class="wording"><div>Committed — existed by block 6 on chain 31338; log unchanged since; consent live as of anchor (size 55).</div><div>Source — declared by the signer: human-driven physical robot. Not attested.</div></div>
+    <div class="source" data-attested="0">Source — declared by the signer: human-driven physical robot. Not attested.</div>
+    <h3>Claims</h3>
+    <table class="register claims">
+    <thead><tr><th>Check</th><th>Result</th><th>Thresholds</th><th>Log index</th></tr></thead>
+    <tbody><tr>
+        <td>timing.v1</td>
+        <td class="result-inconclusive">inconclusive</td>
+        <td class="mono">{}</td>
+        <td class="mono">49</td>
+      </tr>
+<tr>
+        <td>kinematics.v1</td>
+        <td class="result-inconclusive">inconclusive</td>
+        <td class="mono">{}</td>
+        <td class="mono">50</td>
+      </tr>
+<tr>
+        <td>sensor_consistency.v1</td>
+        <td class="result-inconclusive">inconclusive</td>
+        <td class="mono">{}</td>
+        <td class="mono">51</td>
+      </tr>
+<tr>
+        <td>sim_signature.v1</td>
+        <td class="result-inconclusive">inconclusive</td>
+        <td class="mono">{}</td>
+        <td class="mono">52</td>
+      </tr>
+<tr>
+        <td>dedup.v1</td>
+        <td class="result-inconclusive">inconclusive</td>
+        <td class="mono">{&quot;T_exact&quot;:0.02,&quot;T_near&quot;:0.05}</td>
+        <td class="mono">53</td>
+      </tr></tbody>
+  </table>
+    <h3>Consent</h3>
+    <div class="consent">Live <span class="mono">key 0x44450579…188ce5</span></div>
+    <h3>Files</h3>
+    <table class="register files">
+    <thead><tr><th>File</th><th>Bytes</th><th>Hash</th></tr></thead>
+    <tbody><tr>
+        <td>data/episode_4.bin</td>
+        <td class="num">53</td>
+        <td class="mono">0x825032ab…e13e4c</td>
+      </tr></tbody>
+  </table>
+    <div class="reg-footer-print">
+    <span class="mono">report 0x2a9c60ee…488563</span>
+    <span class="page-no">page 6 of 7</span>
+  </div>
+  </section>
+
+  <!-- ============ final page — limitations + verification procedure ============ -->
+  <section class="page final-page">
+    <h1 style="font-size:22px;margin-bottom:16px">What this report does not prove</h1>
+    <ul class="limitations">
+      <li>The operator (THENAR) can decline to log or anchor a record; append receipts and public audit make this detectable, not impossible.</li>
+<li>Checks are heuristics with recorded thresholds; they can be evaded and can err; they are evidence, not proof.</li>
+<li>A signature proves which key signed, not what a sensor measured; captured_at, source and embodiment are claims by the signer.</li>
+<li>Consent onset is recorded; what a buyer may do after onset is governed by the terms document, not by this protocol.</li>
+<li>Anchors depend on the availability of at least one chain carrying the log; the same log is anchored on more than one.</li>
+    </ul>
+
+    <h2 style="margin-top:24px">How to check this report yourself</h2>
+    <p class="small">Run <code>scripts/verify-report.mjs</code> against the delivered files and this report's JSON, or perform these steps by hand (PLAN §10.10):</p>
+    <ol class="procedure">
+      <li>For each delivered file: H(fileBytes) equals files[].hash; rebuild payloadHash (§10.4) and compare.</li>
+<li>Recompute manifestHash; if signature present, verify per §10.6 against the org&#39;s published key valid at the leaf&#39;s first-anchor time.</li>
+<li>Rebuild the 0x02 preimage from §10.12 + submittedAt (delivered in report); leaf hash; inclusion against the report anchor (root,size) read from any chain carrying the log (indexOfRoot lookup).</li>
+<li>Consistency proof from the sealing anchor to the report anchor.</li>
+<li>Consent non-membership at the report anchor; if revoked, onset.</li>
+<li>Each claim leaf: inclusion; verifier signature over the claim; detailHash matches detail; thresholds present.</li>
+<li>Corpus inclusion against corpusRoot; corpus manifest leaf inclusion; corpusRoot/corpusManifestHash equal the on-chain corpus and receipt.</li>
+    </ol>
+
+    <div class="reg-footer-print">
+    <span class="mono">report 0x2a9c60ee…488563</span>
+    <span class="page-no">page 7 of 7</span>
+  </div>
+  </section>
+
+</body>
+</html>

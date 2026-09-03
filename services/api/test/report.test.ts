@@ -21,7 +21,7 @@ import type { ILogStore } from "../../log/src/store-interface.ts";
 import { ApiError } from "../src/errors.ts";
 import { buildReport, LIMITATIONS } from "../src/report/build.ts";
 import { renderReportHtml } from "../src/report/render.ts";
-import { UnavailablePdfRenderer, PdfUnavailableError } from "../src/report/pdf.ts";
+import { UnavailablePdfRenderer, PdfUnavailableError, PlaywrightPdfRenderer } from "../src/report/pdf.ts";
 import { commitEpisode } from "../src/ingest/commit.ts";
 import type { OperatorSigner } from "../src/ingest/receipt.ts";
 import { appendClaim } from "../../verify/src/issue.ts";
@@ -274,6 +274,65 @@ async function run() {
     ok(html.includes(escapeForCheck(l)), "render: limitations text present verbatim", l.slice(0, 30));
   }
 
+  // ---- render: verbatim §10.10 seven-step verification procedure -------------
+  const { VERIFICATION_STEPS } = await import("../src/report/render.ts");
+  ok(VERIFICATION_STEPS.length === 7, "render: VERIFICATION_STEPS has exactly seven steps");
+  for (const step of VERIFICATION_STEPS) {
+    ok(html.includes(escapeForCheck(step)), "render: §10.10 verification step present verbatim", step.slice(0, 30));
+  }
+
+  // ---- render: PLAN §9.6 normative fields are all on the page -----------------
+  const has = (needle: string, label: string) => ok(html.includes(needle), `render: HTML carries §9.6 field ${label}`, needle.slice(0, 40));
+  has(String(report.v), "v");
+  has(report.kind, "kind");
+  has(report.operator.name, "operator.name");
+  has(report.operator.verifier_key_id, "operator.verifier_key_id");
+  has(report.corpus.id, "corpus.id");
+  has(report.corpus.manifest_hash, "corpus.manifest_hash");
+  has(report.corpus.corpus_root, "corpus.corpus_root");
+  has(String(report.corpus.episode_count), "corpus.episode_count");
+  has(report.corpus.terms.hash, "corpus.terms.hash");
+  has(report.anchor.root, "anchor.root");
+  has(String(report.anchor.size), "anchor.size");
+  for (const ch of report.anchor.chains) has(String(ch.chain_id), "anchor.chains[].chain_id");
+  ok(!!report.sealing_anchor && html.includes(report.sealing_anchor.root.slice(0, 10)), "render: sealing_anchor is shown on the summary page");
+  ok(html.includes(String(report.consistency_proof.length)), "render: consistency_proof length is shown");
+  for (const ep of report.episodes) {
+    has(ep.leaf, "episodes[].leaf");
+    has(String(ep.log_index), "episodes[].log_index");
+    has(String(ep.corpus_index), "episodes[].corpus_index");
+    for (const b of ep.badges) ok(html.includes(`>${b}<`), `render: episode ${ep.log_index} badge ${b} stamped`);
+    for (const w of ep.wording) has(escapeForCheck(w), "episodes[].wording line");
+    has(ep.manifest_hash, "episodes[].manifest_hash");
+    has(ep.payload_hash, "episodes[].payload_hash");
+    for (const f of ep.files) has(escapeForCheck(f.path), "episodes[].files[].path");
+    for (const c of ep.claims) has(c.check, "episodes[].claims[].check");
+  }
+  for (const row of report.checks_run) has(row.check, "checks_run[].check");
+  ok(html.includes("Receipts"), "render: receipts section present");
+  has(report.report_hash, "report_hash");
+
+  // ---- render: no forbidden words anywhere on the finished HTML page ---------
+  // (per T-021/§5: the only sanctioned exception is inside the L3 "Checked by
+  // ... Heuristic; see details." line, which never spells any of these words.)
+  const htmlLower = html.toLowerCase();
+  for (const w of ["authentic", "genuine", "proven real", "independent"]) {
+    ok(!htmlLower.includes(w), `render: finished HTML contains no forbidden word "${w}"`);
+  }
+  // "real"/"verified" legitimately appear inside source *values* like
+  // "teleop_real" and inside script/file names like "verify-report.mjs" —
+  // check word-boundary occurrences only.
+  ok(!/\breal\b/.test(htmlLower), 'render: finished HTML contains no bare word "real"');
+  ok(!/\bverified\b/.test(htmlLower), 'render: finished HTML contains no bare word "verified"');
+
+  // ---- render: I-16 — "physical" only ever appears with declared/attested ----
+  for (const line of html.split(/\n/)) {
+    const lower = line.toLowerCase();
+    if (lower.includes("physical")) {
+      ok(lower.includes("declared") || lower.includes("attested"), 'render: a line containing "physical" also says declared/attested', line.trim().slice(0, 80));
+    }
+  }
+
   // ---- pdf.ts: PdfRenderer interface / 503 path ------------------------------
   const unavailable = new UnavailablePdfRenderer();
   let pdfThrew = false;
@@ -284,13 +343,35 @@ async function run() {
   }
   ok(pdfThrew, "UnavailablePdfRenderer.renderPdf throws PdfUnavailableError");
 
+  // ---- pdf.ts: PlaywrightPdfRenderer — real PDF when Chromium is available ---
+  // Never a hard failure when no browser can launch on this machine/CI image
+  // (T-041d task text: "skip loudly otherwise") — only a genuinely produced
+  // PDF is asserted against shape/size.
+  try {
+    const pdfBytes = await new PlaywrightPdfRenderer().renderPdf(html);
+    ok(pdfBytes.length > 20 * 1024, "PlaywrightPdfRenderer: produced PDF is > 20 KB", `${pdfBytes.length} bytes`);
+    const header = Buffer.from(pdfBytes.slice(0, 5)).toString("latin1");
+    ok(header === "%PDF-", "PlaywrightPdfRenderer: output starts with the PDF magic bytes", header);
+  } catch (e) {
+    if (e instanceof PdfUnavailableError) {
+      console.log(`  skip  PlaywrightPdfRenderer: no Chromium available in this environment — ${e.message}`);
+    } else {
+      throw e;
+    }
+  }
+
   console.log(fails === 0 ? "\nreport.test.ts: all ok" : `\nreport.test.ts: ${fails} FAILURES`);
   if (fails > 0) process.exit(1);
 }
 
-/** Matches the HTML-escaping `render.ts` applies (no special chars in our limitations text besides plain ASCII, so this is effectively identity — kept explicit for clarity). */
+/** Matches `render.ts`'s `esc()` exactly, so a verbatim-text assertion compares against what the escaped HTML actually contains (LIMITATIONS has no special characters, but PLAN §10.10's verification steps carry apostrophes — "org's", "leaf's" — that `esc()` turns into `&#39;`). */
 function escapeForCheck(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 run();

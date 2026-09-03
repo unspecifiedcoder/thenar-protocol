@@ -49,6 +49,19 @@ export type BuildReportDeps = {
   chainName?: (chainId: number) => string;
   /** Resolves a terms hash to its published URI; not every deployment has a terms registry wired up (PLAN §11.3 `termsAt` is on-chain, primary only) — defaults to always-unknown (`null`) rather than fabricating one (I-11). */
   termsUri?: (termsHash: Hex) => string | null;
+  /**
+   * Resolves `corpus.on_chain` (PLAN §9.6: `null | { chain_id, registry,
+   * corpus_id, tx }`) for `corpusManifestHash` — the `LicenceRegistry`
+   * `corpusCount`/`corpusAt` scan `GET /v1/corpora/{id}/onchain` already
+   * does (`routes/corpora.ts`, `services/api/src/chain.ts`), pre-resolved
+   * by the caller into a plain synchronous lookup so `buildReport` itself
+   * stays synchronous (T-041d: adding a live RPC read here would make this
+   * function async, which is this task's line to not cross — every current
+   * caller, including the `/report` route, calls it synchronously).
+   * Undefined by default — same behaviour as before this dep existed
+   * (`on_chain: null`, not fabricated, I-11).
+   */
+  resolveOnChain?: (corpusManifestHash: Hex) => { chain_id: number; registry: Hex; corpus_id: string; tx: Hex } | null;
 };
 
 type AnchorRow = ReturnType<ILogStore["anchors"]>[number];
@@ -287,12 +300,13 @@ export function buildReport(deps: BuildReportDeps, corpusId: string) {
     episode_count: corpusEntries.length,
     terms: { hash: manifest.terms_hash, uri: termsUri(manifest.terms_hash as Hex) },
     contains_revoked: containsRevoked,
-    // `onChainId` is only ever populated once `sealCorpus` runs from the
-    // supplier's wallet (a script, off this service's write path) and
-    // something records it back — no route currently writes `on_chain_id`
-    // (grep confirms), so this is always `null` today; not fabricated
-    // (I-11) rather than partially filled in.
-    on_chain: null as null,
+    // `deps.resolveOnChain` (added T-041d) lets a caller that already has a
+    // live `LicenceRegistry` scan (`GET /v1/corpora/{id}/onchain`'s own
+    // `corpusCount`/`corpusAt` loop) hand the match straight in; no current
+    // caller wires it yet (the `/report` route builds `deps` with only
+    // `logStore`/`operator`), so this stays `null` there today — not
+    // fabricated (I-11) rather than partially filled in.
+    on_chain: deps.resolveOnChain?.(row.corpusManifestHash) ?? null,
     draft,
   };
 

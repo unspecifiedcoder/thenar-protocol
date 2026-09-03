@@ -1,18 +1,18 @@
 /**
- * T-025 — `?format=pdf` rendering. Behind a small `PdfRenderer` interface
- * so `report.test.ts` never needs a real browser: the interface is what
- * `routes/corpora.ts` depends on, `PlaywrightPdfRenderer` is the only
- * production implementation, and the test suite exercises the HTML
- * template (`render.ts`) directly instead of rasterising it (per this
- * task's supervisor note — this checkout has Chromium fetched under
- * `~/.cache/ms-playwright` but the `playwright` npm package itself is not
- * installed, and installing dependencies is out of scope/forbidden here).
+ * T-025 / T-041d — `?format=pdf` rendering. Behind a small `PdfRenderer`
+ * interface so `report.test.ts` can run either way: `PlaywrightPdfRenderer`
+ * is the production implementation (as of T-041d, `playwright` is present
+ * in `node_modules` with a Chromium build fetched under
+ * `~/.cache/ms-playwright`, so the PDF path is real and exercised by the
+ * test suite when a browser launches), and `UnavailablePdfRenderer` is the
+ * explicit fallback for a deployment or checkout where no browser is
+ * available — never a silent no-op.
  *
  * `playwright` is imported dynamically (`import("playwright")`, not a
- * static import) specifically so this file — and every route that imports
- * it — loads cleanly whether or not the package is present; a missing
- * package or a missing browser both surface as `PdfUnavailableError`,
- * never a startup crash.
+ * static import) so this file — and every route that imports it — loads
+ * cleanly whether or not the package is present; a missing package or a
+ * missing browser both surface as `PdfUnavailableError`, never a startup
+ * crash.
  */
 
 export class PdfUnavailableError extends Error {}
@@ -42,16 +42,32 @@ export class PlaywrightPdfRenderer implements PdfRenderer {
 
     let browser;
     try {
-      browser = await chromium.launch();
+      // `--no-sandbox`/`--disable-gpu`/`--disable-dev-shm-usage` — the
+      // sandbox is unavailable on this WSL image; without these, Chromium
+      // launch hangs until Playwright's own timeout.
+      browser = await chromium.launch({ args: ["--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage"] });
     } catch (e) {
       throw new PdfUnavailableError(
         `no Chromium browser is available for Playwright to launch (${e instanceof Error ? e.message : String(e)})`,
       );
     }
     try {
-      const page = await browser.newPage();
+      const page = await browser.newPage() as {
+        setContent: (html: string, opts?: unknown) => Promise<void>;
+        evaluate: (fn: () => unknown) => Promise<unknown>;
+        pdf: (opts?: unknown) => Promise<Uint8Array>;
+      };
       await page.setContent(html, { waitUntil: "load" });
-      const pdf = (await page.pdf({ format: "A4", printBackground: true })) as Uint8Array;
+      // The template pulls IBM Plex from Google Fonts (render.ts file
+      // header) — `waitUntil: "load"` alone can race the webfont request,
+      // so give `document.fonts.ready` a few seconds; if the font never
+      // arrives (no network, slow CDN) the page still prints correctly on
+      // its declared system-font fallback rather than hanging forever.
+      await Promise.race([page.evaluate(() => (globalThis as any).document.fonts.ready), new Promise((r) => setTimeout(r, 4000))]);
+      // `preferCSSPageSize` — honour the template's own `@page { size: A4;
+      // margin: 18mm 16mm }` (docs/DESIGN.md §4) instead of Playwright's
+      // zero-margin default, which would collide with the running footer.
+      const pdf = await page.pdf({ format: "A4", printBackground: true, preferCSSPageSize: true });
       return pdf;
     } finally {
       await browser.close();

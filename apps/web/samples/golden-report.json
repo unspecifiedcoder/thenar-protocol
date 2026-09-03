@@ -14,10 +14,15 @@
     "episode_count": 4,
     "terms": {
       "hash": "0x66df2990b885bad73977e153625064e40c1e2af0d61b1d21410ac85f2aad57e1",
-      "uri": null
+      "uri": "https://thenar.io/terms/golden-demo"
     },
     "contains_revoked": false,
-    "on_chain": null,
+    "on_chain": {
+      "chain_id": 43113,
+      "registry": "0x1a89aB71F65E50B36Eae138268Dc8D8f44f23Ccd",
+      "corpus_id": "0",
+      "tx": "0x105d9ec3727be84441c21eacf6314299c607a1d68cd12ef9cc461fb9617386c1"
+    },
     "draft": false
   },
   "anchor": {
@@ -705,5 +710,5 @@
     "Consent onset is recorded; what a buyer may do after onset is governed by the terms document, not by this protocol.",
     "Anchors depend on the availability of at least one chain carrying the log; the same log is anchored on more than one."
   ],
-  "report_hash": "0xddb668f59319116cabbdbcbc4046d04ca786f4b130d494c26fec9bf5a055cd50"
+  "report_hash": "0x2a9c60eec7494c5251452327412a684d7b2d015e2c960c7159d8a18e95488563"
 }

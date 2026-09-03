@@ -1,83 +1,234 @@
-<!-- T-025 — Provenance Report HTML template (PLAN §9.6, §13).
-     Double-brace placeholders below are replaced by `services/api/src/
-     report/render.ts` with values already computed by `report/build.ts` —
-     nothing here computes or re-derives a proof; the template only
-     displays what the report object already carries (I-11: a render step
-     must not invent a value). Every placeholder is escaped as HTML text
-     except the episode rows and limitations list, which `render.ts` builds
-     itself from already-escaped pieces. Kept dependency-free (no external
-     stylesheet/script) so it can be rendered to PDF by a headless browser
-     with nothing else to fetch. -->
+<!-- T-041d — Provenance Report HTML template (PLAN §9.6, §13; docs/DESIGN.md
+     §4 "Provenance Report"). Double-brace placeholders are replaced by
+     `services/api/src/report/render.ts` with values already computed by
+     `report/build.ts` — nothing here computes or re-derives a proof; the
+     template only displays what the report object already carries (I-11).
+     Every placeholder is escaped as HTML text by render.ts except the
+     block-shaped placeholders (EPISODE_SECTIONS, SUMMARY_ROWS, …), which
+     render.ts builds itself from already-escaped pieces.
+
+     Self-contained on purpose, since a headless browser renders this to
+     PDF with nothing else to fetch except the Google Fonts stylesheet
+     (IBM Plex, with system fallbacks if that request fails or is
+     blocked — the page still reads correctly with the fallback stack).
+     The design tokens below are copied from `apps/web/design.css`
+     (docs/DESIGN.md §2) with the dark `--window` surfaces dropped: a
+     report is paper, print-safe, never a dark page. -->
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <title>Provenance Report {{REPORT_ID}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
-  :root { color-scheme: light; }
-  body { font-family: -apple-system, Segoe UI, Helvetica, Arial, sans-serif; margin: 0; padding: 2.5rem 3rem; color: #1a1a1a; background: #ffffff; font-size: 14px; line-height: 1.5; }
-  h1 { font-size: 1.4rem; margin: 0 0 0.25rem; }
-  h2 { font-size: 1.05rem; margin: 2rem 0 0.5rem; border-bottom: 1px solid #ddd; padding-bottom: 0.25rem; }
-  .meta { color: #555; font-size: 0.85rem; }
-  .badge { display: inline-block; padding: 0.05rem 0.4rem; border-radius: 3px; background: #eef; border: 1px solid #99a; font-size: 0.75rem; margin-right: 0.25rem; }
-  .draft { background: #ffe9b3; border-color: #cc9900; padding: 0.15rem 0.5rem; border-radius: 3px; font-size: 0.8rem; }
-  .revoked { color: #a30000; font-weight: 600; }
-  table { border-collapse: collapse; width: 100%; margin: 0.5rem 0; }
-  th, td { border: 1px solid #ddd; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; font-size: 0.82rem; }
-  th { background: #f6f6f6; }
-  code, .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.78rem; word-break: break-all; }
-  ul.limitations li { margin-bottom: 0.4rem; }
-  .hash { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.8rem; word-break: break-all; background: #f6f6f6; padding: 0.5rem; border-radius: 4px; }
-  a { color: #1a4fbf; }
+  :root{
+    color-scheme: light;
+    --paper:#F1F2F4; --paper-2:#E7E9ED; --ink:#0F1B2D; --ink-2:#4A5567;
+    --rule:#C7CCD4; --seal:#1F3A93; --ok:#157F6D; --warn:#B7791F; --fail:#B3261E;
+    --sans:"IBM Plex Sans",-apple-system,Segoe UI,Helvetica,Arial,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  @page { size: A4; margin: 18mm 16mm; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{background:#fff;color:var(--ink);font:400 13px/20px var(--sans);-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-weight:600;letter-spacing:-.01em}
+  h1{font-size:30px;line-height:36px}
+  h2{font-size:19px;line-height:26px;border-bottom:2px solid var(--ink);padding-bottom:6px;margin-bottom:12px}
+  h3{font-size:14px;line-height:20px;margin:16px 0 6px;color:var(--ink-2)}
+  p{margin:4px 0}
+  .small{font-size:11px;line-height:16px;color:var(--ink-2)}
+  a{color:var(--seal)}
+  code,.mono{font-family:var(--mono)}
+  .hash{font-family:var(--mono);overflow-wrap:anywhere;font-size:11px}
+
+  /* ---- pages ---- */
+  .page{position:relative;padding-bottom:26px;page-break-after:always}
+  .page:last-child{page-break-after:auto}
+  .episode-page{page-break-before:always}
+
+  /* ---- running footer: one div per page section (see render.ts) ---- */
+  .reg-footer-print{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;
+    border-top:1px solid var(--rule);padding-top:6px;font-family:var(--mono);font-size:10px;color:var(--ink-2)}
+
+  /* ---- cover ---- */
+  .cover{display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:48px}
+  .seal{width:88px;height:88px;border-radius:50%;border:3px solid var(--seal);position:relative;
+    display:inline-grid;place-items:center;color:var(--seal);flex:0 0 auto}
+  .seal svg{width:36px;height:36px}
+  .seal .ring-label{position:absolute;inset:-15px;font:500 9px/1 var(--mono);letter-spacing:.14em;
+    text-transform:uppercase;color:var(--seal)}
+  .seal .ring-label span{position:absolute;left:50%;top:0;transform:translateX(-50%)}
+  .cover h1{margin-top:20px}
+  .cover .subtitle{color:var(--ink-2);margin-top:4px;font-size:15px}
+  .cover-kv{margin-top:28px;width:100%;max-width:480px;text-align:left;border-top:2px solid var(--ink)}
+  .cover-kv tr{border-bottom:1px solid var(--rule)}
+  .cover-kv th{text-align:left;font:500 11px/16px var(--sans);color:var(--ink-2);padding:8px 12px 8px 0;
+    white-space:nowrap;vertical-align:top}
+  .cover-kv td{padding:8px 0;vertical-align:top;word-break:break-all}
+  .qrbox{margin-top:24px;border:2px solid var(--ink);padding:16px;max-width:340px}
+  .qrbox .label{font:600 12px/18px var(--sans);margin-bottom:6px}
+  .qrbox .url{font-family:var(--mono);font-size:11px;overflow-wrap:anywhere}
+  .qrbox .note{font-size:10px;color:var(--ink-2);margin-top:8px}
+  .draft{display:inline-block;margin-top:12px;padding:2px 10px;border:1px dashed var(--warn);color:var(--warn);
+    font:500 11px/18px var(--sans);border-radius:2px}
+
+  /* ---- summary register ---- */
+  .register{width:100%;border-collapse:collapse;border-top:2px solid var(--ink);margin-bottom:8px}
+  .register th{text-align:left;font:500 11px/16px var(--sans);color:var(--ink-2);padding:6px 8px 6px 0;
+    border-bottom:1px solid var(--rule)}
+  .register td{padding:6px 8px 6px 0;border-bottom:1px solid var(--rule);vertical-align:top;font-size:11px}
+  .register td.mono,.register td .mono{overflow-wrap:anywhere}
+  .register.claims td:first-child{white-space:nowrap}
+  .register .num{font-family:var(--mono);text-align:right}
+  .register tr.anchored td:first-child{box-shadow:inset 3px 0 0 var(--seal);padding-left:8px}
+  .sources-line{padding:10px 12px;background:var(--paper-2);font-size:12px;margin:8px 0 16px}
+
+  /* ---- badges ---- */
+  .badges{display:flex;flex-wrap:wrap;gap:6px}
+  .badge{display:inline-flex;align-items:stretch;border:2px solid var(--ink);border-radius:2px;
+    font:600 10px/18px var(--sans);color:var(--ink);height:20px}
+  .badge .lvl{font:500 9px/18px var(--mono);padding:0 6px;border-right:2px solid var(--ink);background:var(--ink);color:#fff}
+  .badge .lbl{padding:0 8px}
+  .badge.off{border-color:var(--rule);color:var(--rule)}
+  .badge.off .lvl{background:transparent;color:var(--rule);border-color:var(--rule)}
+  .badge.inline{height:16px}
+  .badge.inline .lvl{padding:0 4px;border-right:none}
+  .badge.inline .lbl{display:none}
+
+  /* ---- wording / source ---- */
+  .wording{margin-top:10px;color:var(--ink-2);font-size:12px;line-height:18px}
+  .source{display:flex;gap:8px;align-items:flex-start;color:var(--ink-2);font-size:12px;line-height:18px;margin-top:6px}
+  .source::before{content:"";flex:0 0 9px;width:9px;height:9px;margin-top:4px;background:var(--warn)}
+  .source[data-attested="1"]::before{background:var(--ok)}
+  .revoked{color:var(--fail);font-weight:600}
+  .result-pass{color:var(--ok)}
+  .result-fail{color:var(--fail)}
+  .result-inconclusive{color:var(--warn)}
+  .empty-note{color:var(--ink-2);font-size:11px;font-style:normal}
+
+  /* ---- episode kv ---- */
+  .kv{width:100%;border-collapse:collapse;margin-top:10px}
+  .kv th{text-align:left;font:500 11px/18px var(--sans);color:var(--ink-2);padding:3px 12px 3px 0;
+    white-space:nowrap;vertical-align:top;width:110px}
+  .kv td{padding:3px 0;font-size:11px}
+  .episode-head{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--ink);
+    padding-bottom:6px}
+  .episode-head h2{border:0;padding:0;margin:0}
+  .consent{font-size:12px}
+
+  /* ---- limitations / procedure ---- */
+  ul.limitations{margin:8px 0 0 18px}
+  ul.limitations li{margin-bottom:8px;font-size:12px;line-height:18px}
+  ol.procedure{margin:8px 0 0 18px}
+  ol.procedure li{margin-bottom:8px;font-size:12px;line-height:18px}
+
+  @media print{ a{color:var(--ink)} }
+
+  /* On screen (not print), give each `.page` the look of a sheet of paper
+     sitting on the browser chrome, rather than content running flush to
+     the viewport edge — `@page`'s own 18mm/16mm margin above is what the
+     PDF actually prints with and is untouched by this block. */
+  @media screen{
+    body{background:var(--paper-2)}
+    .page{max-width:210mm;min-height:297mm;margin:24px auto;padding:18mm 16mm 26px;
+      background:#fff;box-shadow:0 1px 3px rgba(15,27,45,.15);border:1px solid var(--rule)}
+  }
 </style>
 </head>
 <body>
-  <h1>Provenance Report</h1>
-  <div class="meta">
-    report id {{REPORT_ID}} &middot; generated {{GENERATED_AT}} &middot; operator {{OPERATOR_NAME}}
+
+  <!-- ============ page 1 — cover ============ -->
+  <section class="page cover">
+    <div class="seal" aria-hidden="true">
+      <span class="ring-label"><span>anchored</span></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="4 12 10 18 20 6"></polyline>
+      </svg>
+    </div>
+    <h1>Provenance Report</h1>
+    <div class="subtitle">Corpus <span class="mono">{{CORPUS_ID}}</span></div>
     {{DRAFT_BADGE}}
-  </div>
 
-  <h2>Corpus</h2>
-  <table>
-    <tr><th>Corpus id</th><td class="mono">{{CORPUS_ID}}</td></tr>
-    <tr><th>Manifest hash</th><td class="mono">{{CORPUS_MANIFEST_HASH}}</td></tr>
-    <tr><th>Corpus root</th><td class="mono">{{CORPUS_ROOT}}</td></tr>
-    <tr><th>Episode count</th><td>{{EPISODE_COUNT}}</td></tr>
-    <tr><th>Terms</th><td class="mono">{{TERMS_HASH}}</td></tr>
-    <tr><th>Contains revoked episodes</th><td>{{CONTAINS_REVOKED}}</td></tr>
-  </table>
+    <table class="cover-kv">
+      <tr><th>Corpus manifest hash</th><td class="hash">{{CORPUS_MANIFEST_HASH}}</td></tr>
+      <tr><th>Report hash</th><td class="hash">{{REPORT_HASH}}</td></tr>
+      <tr><th>Anchor</th><td class="hash">root {{ANCHOR_ROOT}}<br />size {{ANCHOR_SIZE}}</td></tr>
+      <tr><th>Anchor locators</th><td>{{ANCHOR_CHAINS}}</td></tr>
+      <tr><th>Generated</th><td>{{GENERATED_AT}}</td></tr>
+      <tr><th>Operator</th><td>{{OPERATOR_NAME}} <span class="small">({{REPORT_KIND}})</span></td></tr>
+      <tr><th>Verifier key</th><td class="hash">{{VERIFIER_KEY_ID}}</td></tr>
+    </table>
 
-  <h2>Anchor</h2>
-  <table>
-    <tr><th>Root</th><td class="mono">{{ANCHOR_ROOT}}</td></tr>
-    <tr><th>Size</th><td>{{ANCHOR_SIZE}}</td></tr>
-    <tr><th>Revocation root</th><td class="mono">{{ANCHOR_REVOCATION_ROOT}}</td></tr>
-  </table>
+    <div class="qrbox">
+      <div class="label">Verify this report</div>
+      <div class="url">{{VERIFY_URL}}</div>
+      <div class="note">Open this link, or run <code>scripts/verify-report.mjs</code> against the report JSON, to check every claim on this document yourself, without trusting THENAR — see the last page.</div>
+    </div>
 
-  <h2>Episodes</h2>
-  <table>
-    <thead><tr><th>#</th><th>Leaf</th><th>Badges</th><th>Wording</th><th>Consent</th></tr></thead>
-    <tbody>
-      {{EPISODES_ROWS}}
-    </tbody>
-  </table>
+    {{FOOTER_COVER}}
+  </section>
 
-  <h2>Checks run</h2>
-  <table>
-    <thead><tr><th>Check</th><th>Version</th><th>Thresholds</th></tr></thead>
-    <tbody>
-      {{CHECKS_ROWS}}
-    </tbody>
-  </table>
+  <!-- ============ page 2 — summary register ============ -->
+  <section class="page summary-page">
+    <h1 style="font-size:22px;margin-bottom:16px">Summary</h1>
 
-  <h2>Known limitations</h2>
-  <ul class="limitations">
-    {{LIMITATIONS_ITEMS}}
-  </ul>
+    <h2>Corpus</h2>
+    <table class="cover-kv" style="max-width:none">
+      <tr><th>Corpus root</th><td class="hash">{{CORPUS_ROOT}}</td></tr>
+      <tr><th>Episode count</th><td>{{EPISODE_COUNT}}</td></tr>
+      <tr><th>Terms hash</th><td class="hash">{{TERMS_HASH}}</td></tr>
+      <tr><th>Terms document</th><td>{{TERMS_URI}}</td></tr>
+      <tr><th>On-chain corpus</th><td>{{ON_CHAIN}}</td></tr>
+      <tr><th>Contains revoked episodes</th><td>{{CONTAINS_REVOKED}}</td></tr>
+    </table>
+    {{SEALING_NOTE}}
 
-  <h2>Verify</h2>
-  <p>This report can be checked independently: <a href="{{VERIFY_URL}}">{{VERIFY_URL}}</a></p>
-  <p class="hash">report_hash&nbsp;{{REPORT_HASH}}</p>
+    <h2>Episodes by badge set</h2>
+    <table class="register">
+      <thead><tr><th>Badges earned</th><th class="num">Episodes</th></tr></thead>
+      <tbody>{{SUMMARY_ROWS}}</tbody>
+    </table>
+
+    <div class="sources-line">{{SOURCES_LINE}}</div>
+
+    <h2>Episode index</h2>
+    <table class="register">
+      <thead><tr><th>#</th><th>Badges</th><th>Source</th><th>Consent</th><th>Leaf</th></tr></thead>
+      <tbody>{{EPISODE_INDEX_ROWS}}</tbody>
+    </table>
+
+    <h2>Checks run</h2>
+    <table class="register">
+      <thead><tr><th>Check</th><th>Version</th><th>Thresholds</th></tr></thead>
+      <tbody>{{CHECKS_ROWS}}</tbody>
+    </table>
+
+    <h2>Receipts</h2>
+    {{RECEIPTS_BLOCK}}
+
+    {{FOOTER_SUMMARY}}
+  </section>
+
+  <!-- ============ one register block per episode ============ -->
+  {{EPISODE_SECTIONS}}
+
+  <!-- ============ final page — limitations + verification procedure ============ -->
+  <section class="page final-page">
+    <h1 style="font-size:22px;margin-bottom:16px">What this report does not prove</h1>
+    <ul class="limitations">
+      {{LIMITATIONS_ITEMS}}
+    </ul>
+
+    <h2 style="margin-top:24px">How to check this report yourself</h2>
+    <p class="small">Run <code>scripts/verify-report.mjs</code> against the delivered files and this report's JSON, or perform these steps by hand (PLAN §10.10):</p>
+    <ol class="procedure">
+      {{VERIFICATION_STEPS}}
+    </ol>
+
+    {{FOOTER_FINAL}}
+  </section>
+
 </body>
 </html>

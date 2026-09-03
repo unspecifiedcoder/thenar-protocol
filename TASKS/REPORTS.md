@@ -2030,3 +2030,95 @@ the coordinator's explicit review items, not scope creep).
 Invariants touched: none newly. I-16/§1.1 unaffected (`episodeSourceWording` call site
 untouched).
 Open questions / conflicts filed: none.
+
+## T-041d — Provenance Report: rebuild HTML to the register design system, make the PDF path real — 2026-09-03 — STRONG
+
+Changed: `services/api/templates/report.html` (full rewrite — A4 `@page`, register design
+tokens/type inlined from `apps/web/design.css`, IBM Plex via Google Fonts `<link>` with
+system fallbacks, inline seal SVG, screen-only paper-sheet chrome for the on-screen sample);
+`services/api/src/report/render.ts` (full rewrite — builds cover/summary/per-episode/final
+pages from the Report v1 object, badge stamps, source line, claims/files tables, running
+footer, `corpusSourcesWording` reused verbatim from `packages/protocol/src/wording.ts`,
+exported `VERIFICATION_STEPS` = PLAN §10.10 verbatim); `services/api/src/report/pdf.ts`
+(`PlaywrightPdfRenderer` launch args `--no-sandbox --disable-gpu --disable-dev-shm-usage`,
+`waitUntil:"load"` + a bounded `document.fonts.ready` race so the webfont request can't hang
+rendering, `preferCSSPageSize` so the PDF honours the template's own `@page` margin);
+`services/api/src/report/build.ts` (added two backward-compatible optional `BuildReportDeps`
+fields — `resolveOnChain` and reused the pre-existing `termsUri` — so a caller that already
+holds a live `LicenceRegistry` scan can hand `corpus.on_chain`/`corpus.terms.uri` in as plain
+synchronous values; `buildReport` itself stays synchronous, so no out-of-scope caller
+(`routes/corpora.ts`) needed a signature change); `services/api/test/report.test.ts`
+(extended: §9.6 field coverage, §10.10 verbatim steps, forbidden-word/physical-line guards
+over the full rendered HTML, a real `PlaywrightPdfRenderer` render asserting `%PDF-` magic
+and >20 KB, skipping loudly — never failing — if no Chromium is available).
+Created: `scripts/render-report.mjs` (report.json → HTML [+ PDF] renderer; defaults the
+"verify this report" link to `${PUBLIC_BASE_URL:-https://thenar.io}/v1/corpora/{id}/report`,
+or the relative `/samples/golden-report.json` when the input is literally
+`golden-report.json`, so the committed sample never points at a `.example` placeholder host).
+
+QR code: rendered as a bordered box carrying the verify URL as text (PLAN/DESIGN call for a
+QR to `/verify?report=`) rather than a scannable symbol — a correct dependency-free QR
+encoder (Reed–Solomon ECC, mask/version selection) was judged too large a surface to add
+correctly with no new dependencies allowed; the task text names this bordered-box fallback
+as acceptable. Documented in `render.ts`'s file header as a deliberate, tested trade-off.
+
+Golden sample: `apps/web/samples/golden-report.html`/`.pdf` regenerated via
+`scripts/render-report.mjs` against the existing `apps/web/samples/golden-report.json`.
+Mid-task, a coordinator review of the first cover+summary render caught: (1) the verify link
+using a `.example` placeholder host — fixed via `render-report.mjs`'s new default described
+above; (2) "VERIFY THIS REPORT" in caps, and the same `text-transform:uppercase` rule also
+hitting the per-episode "Claims"/"Consent"/"Files" `<h3>`s — both fixed (`docs/DESIGN.md`
+§3: the seal ring text is "the only caps on the site"); (3) pages running flush to the
+browser viewport on screen — fixed with a `@media screen` rule giving `.page` paper-sheet
+chrome (max-width, shadow, margin), `@page`'s own 18mm/16mm print margin untouched; (4)
+`corpus.on_chain`/`terms.uri` reading "not recorded"/"not published" for a corpus the
+coordinator identified as actually sealed on Fuji. Independently confirmed against the live
+`LicenceRegistry` (`0x1a89aB71F65E50B36Eae138268Dc8D8f44f23Ccd`, chain 43113) via a direct
+`corpusCount`/`corpusAt` scan and a `CorpusSealed` event-log lookup: corpus id `0` really
+does carry `corpusManifestHash 0x731f38d8…` and was sealed in tx `0x105d9ec3…`, and
+`termsAt` on its `termsHash` really does resolve to `https://thenar.io/terms/golden-demo`.
+Did **not** regenerate the fixture through a fresh `buildReport()` call against the live
+(shared, still-growing) `.data/log.db` — that store had accumulated anchors/a revocation
+since the original `golden-report.json` was produced (this is a shared checkout; `.data/`
+is mutable, live state other sessions also write to), and a fresh build against current
+HEAD silently changed the story of the fixture itself (`contains_revoked` flipping to
+`true`, extra anchors) as an unintended side effect unrelated to this task. Instead: loaded
+the git-committed `golden-report.json` (`git show HEAD:…`, a read, not a working-tree
+mutation), patched only `corpus.terms.uri` and `corpus.on_chain` with the values confirmed
+above, recomputed `report_hash` with the same `hashObjectExcluding` `build.ts` uses, and
+re-verified the result with `apps/web/verify.js`'s `verifyReport()` (`allPassed: true`,
+`reportHashOk: true`) before regenerating the HTML/PDF from it. `services/api/src/report/
+build.ts`'s new `resolveOnChain`/`termsUri` hooks are the real, reusable version of this
+same fix for a live server — exercised once against `.data/log.db` during this same
+investigation (confirmed the resolver shape works and returns the identical values) — but
+that exact live-log invocation was not the one used to produce the committed fixture, for
+the reason above.
+
+Self-review: rendered `golden-report.html` to PNG at both print width (794×1123, A4 @ 96dpi)
+and browser width (900×1200) via a real Playwright Chromium instance (`dangerouslyDisableSandbox`
+was needed for Chromium's `--remote-debugging-pipe` transport to work inside this sandboxed
+shell — without it, `chromium.launch()` intermittently hung/timed out; documented in
+`pdf.ts`'s launch-arg comment). Iterated on: claims-table `Thresholds` JSON overflowing its
+column (fixed — `overflow-wrap:anywhere` scoped to `.mono` table cells, `white-space:nowrap`
+on the `Check` column so check names stop wrapping mid-word instead). Read every page of
+the 7-page golden sample at both widths; final read confirms: cover (seal, title, hashes,
+anchor locators, verify box), summary (corpus block incl. on-chain/terms, badge-set/episode-
+index/checks-run/receipts registers), one register block per episode (badge stamps — earned
+filled, unearned outlined — wording, source line with warn/ok square, claims table, consent,
+files), and the final page (PLAN §22 verbatim + the seven-step §10.10 procedure) all render
+correctly and read as a finished document, not a debug dump.
+
+Tests: `pnpm test:api` (full suite, all 11 files) → all ok, exit 0; `services/api/test/
+report.test.ts` run standalone → all ok, including a real Chromium PDF render (`%PDF-`
+magic, 211–213 KB, comfortably over the 20 KB floor).
+
+Deviations from PLAN.md: none. The QR-to-bordered-box fallback and the `resolveOnChain`
+opt-in dep are both additive/non-breaking; no leaf layout, hash rule, signature message,
+ABI, HTTP path or schema changed. `buildReport` stayed synchronous (adding a live on-chain
+read as a *required* step would have forced it async, breaking `routes/corpora.ts`'s call
+site — out of this task's edit scope, so the resolver is opt-in instead).
+Invariants touched: none. I-11 (never fabricate) is the operative one throughout — every
+value on the page, including the newly-added on-chain/terms fields, was read or independently
+re-derived from real data (the live `LicenceRegistry`, or the report object itself), never
+invented.
+Open questions / conflicts filed: none.
