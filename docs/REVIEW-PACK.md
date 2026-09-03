@@ -144,3 +144,16 @@ All tests must pass. The checked-in gas snapshot must match the current build.
 - **PLAN.md §7 (Threat Model):** Threats and their controls.
 - **PLAN.md §11 (Contracts):** Complete contract specs.
 - **PLAN.md §22 (Limitations):** Known limitations to report.
+
+## Deployment addresses
+
+| Contract | Address (Avalanche Fuji, 43113) |
+| --- | --- |
+| `GraspLog` | `0xDF1F8B068229C868be073eA4883186513AC059Fd` |
+| `LeafVerifier` | `0x46bb2769C3F55A4Ae0cdA0885F14d191b5D1E307` |
+| `LicenceRegistry` | `0xe4565B5Fd752A368DDbF90AB6ca4B321cb4df26D` |
+| Mock USDC (testnet only) | `0x23171590c14a13ead6f8407b22a522349efb588b` |
+| Deployer / relayer | `0x72db032c0dFB6E7502e16A73fabdab31712dc706` (relayer key; Safe handover pending) |
+| Deployed at block | 58151548 |
+
+Mirror (Ethereum Sepolia): pending a funded key.
