@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>THENAR — Provenance and rights for physical-AI data</title>
-<meta name="description" content="The neutral provenance and rights ledger for physical-AI training data. Prove what a dataset is, where it came from, who may train on it, and whether that is still true.">
+<meta name="description" content="A public register of what a robot dataset is, where it came from, who may train on it, and whether that is still true — checkable by anyone, without trusting THENAR.">
 <link rel="icon" href="./mark.svg" type="image/svg+xml">
 <meta property="og:title" content="THENAR — Provenance and rights for physical-AI data">
-<meta property="og:description" content="The neutral provenance and rights ledger for physical-AI training data. Prove what a dataset is, where it came from, who may train on it, and whether that is still true.">
+<meta property="og:description" content="A public register of what a robot dataset is, where it came from, who may train on it, and whether that is still true — checkable by anyone, without trusting THENAR.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://thenar.io/">
 <meta property="og:image" content="https://thenar.io/og.png">
@@ -19,634 +19,231 @@
 <meta name="twitter:image" content="https://thenar.io/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./site.css">
-<style>
-/* Thenar runs on Hotaru's design system so the parent and the product read as
-   one house. Same tokens, same curve, same palette. Only the argument changes. */
-/* The header is fixed, so an anchor jump would otherwise park the section
-   heading underneath it. */
-section[id]{scroll-margin-top:80px}
-.chero{padding-top:var(--s-900);padding-bottom:var(--s-700)}
-/* The hero heading now runs on the .fh1 scale (64px / 1.03 / -2px at weight
-   500). Only the gradient stays, which is the one background gradient the
-   design system permits. */
-.fh1{background:linear-gradient(90deg,#FFFFFF 0%,#9B9B9B 100%);
-  -webkit-background-clip:text;background-clip:text;color:transparent}
-
-.big{font-size:48px;line-height:1;font-weight:500;letter-spacing:-1px;
-  text-align:center;text-wrap:balance}
-@media(min-width:768px){ .big{font-size:96px;line-height:1} }
-.big .dim{color:var(--fg-mute)}
-
-/* stat strip: only numbers we can actually stand behind */
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-  gap:var(--s-200);margin-top:var(--s-700);border-top:1px solid var(--line);
-  padding-top:var(--s-400)}
-.stats b{display:block;font-size:36px;line-height:40px;letter-spacing:-0.02em}
-.stats span{display:block;margin-top:var(--s-50);font-size:14px;line-height:20px;
-  color:var(--fg-mute)}
-
-.loop{counter-reset:s}
-.loop .card{position:relative;padding-top:var(--s-500)}
-.loop .card::before{counter-increment:s;content:"0" counter(s);
-  position:absolute;top:var(--s-300);left:var(--s-300);
-  font-size:14px;line-height:20px;font-weight:700;color:var(--blue)}
-
-.tagbar{display:flex;gap:var(--s-75);flex-wrap:wrap;margin-top:var(--s-200)}
-.tg{font-size:12px;line-height:16px;font-weight:600;color:var(--fg-mute);
-  border:1px solid var(--line-2);border-radius:9999px;padding:2px 12px}
-.tg.live{color:var(--fg);border-color:var(--blue);background:rgba(77,23,245,.16)}
-.prod .card{display:flex;flex-direction:column}
-/* Only the tag row drops to the card floor. space-between on the whole
-   card pushed a gap under the heading of the card with no button. */
-.prod .card .tagbar{margin-top:auto;padding-top:var(--s-200)}
-/* Two cards span half the container each, which is wide enough that an
-   uncapped paragraph runs past a comfortable measure. */
-.prod .card p{max-width:52ch}
-
-.rail{border-left:1px solid var(--line);padding-left:var(--s-300);
-  display:grid;gap:var(--s-400);max-width:760px}
-.rail h3{font-size:20px;line-height:28px}
-.rail p{color:var(--fg-dim);margin-top:var(--s-75)}
-
-.note{border:1px solid var(--line-2);border-radius:16px;padding:var(--s-300);
-  color:var(--fg-dim);max-width:760px;margin-top:var(--s-500)}
-.note b{color:var(--fg)}
-
-/* comparison: wide content scrolls in its own box, never the page body */
-.tscroll{overflow-x:auto;margin-top:var(--s-600);border:1px solid var(--line);
-  border-radius:16px}
-table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px;
-  line-height:20px}
-th,td{text-align:left;padding:var(--s-200) var(--s-300);
-  border-bottom:1px solid var(--line);vertical-align:top}
-th{font-weight:600;color:var(--fg-mute);font-size:12px;line-height:16px;
-  letter-spacing:.04em;text-transform:uppercase}
-tbody tr:last-child td{border-bottom:0}
-tr.us{background:rgba(77,23,245,.10)}
-tr.us td{color:var(--fg)}
-td.what{color:var(--fg-dim)}
-
-.namebox{display:flex;gap:var(--s-300);align-items:flex-start;flex-wrap:wrap;
-  border:1px solid var(--line);border-radius:16px;padding:var(--s-300);
-  max-width:760px;margin-top:var(--s-600);background:var(--surface)}
-.namebox svg{flex:none;width:64px;height:64px}
-.namebox p{color:var(--fg-dim);flex:1;min-width:240px}
-.namebox b{color:var(--fg)}
-/* ---- the demo: one grasp, two recordings ---- */
-.demo{border:1px solid var(--line);border-radius:20px;background:var(--surface);
-  padding:var(--s-300);margin-top:var(--s-600)}
-@media(min-width:900px){ .demo{padding:var(--s-400)} }
-.demo .stage{display:grid;grid-template-columns:1fr;gap:var(--s-400);
-  align-items:center}
-@media(min-width:900px){ .demo .stage{grid-template-columns:250px 1fr} }
-.hand{width:100%;max-width:250px;margin:0 auto;display:block}
-.hand .skin{fill:#313131}
-.hand .emin{fill:rgba(77,23,245,.22);stroke:var(--blue);stroke-width:1.5;
-  stroke-dasharray:3 3}
-.hand .lbl{fill:var(--fg-mute);font-size:12px;font-weight:600;
-  font-family:Manrope,sans-serif;letter-spacing:.06em}
-#trace{width:100%;height:300px;display:block;cursor:ew-resize;touch-action:none}
-@media(min-width:900px){ #trace{height:330px} }
-.demo .foot{display:flex;gap:var(--s-200);flex-wrap:wrap;align-items:center;
-  justify-content:space-between;margin-top:var(--s-300);
-  padding-top:var(--s-300);border-top:1px solid var(--line)}
-.tagline .dim w.lit{color:var(--fg-mute)}
-.demo .foot p{color:var(--fg-mute);font-size:12px;line-height:16px;max-width:64ch}
-.demo .ctrl{display:flex;gap:var(--s-75);flex:none}
-.readout{display:flex;gap:var(--s-300);flex-wrap:wrap;margin-top:var(--s-200)}
-.readout div{font-size:12px;line-height:16px;color:var(--fg-mute)}
-.readout b{color:var(--fg);font-weight:700}
-
-/* ---- the shipped robot, in the proof card ---- */
-.viz{position:relative;border-radius:12px;overflow:hidden;background:var(--surface-2);
-  aspect-ratio:4/3;margin-bottom:var(--s-200)}
-.viz canvas{width:100%;height:100%;display:block;opacity:0;
-  transition:opacity 700ms var(--ease)}
-.viz.ready canvas{opacity:1}
-.viz.band::after{content:"ONE CLOCK \00b7 RATES ARE A DESIGN TARGET"}
-.viz.band canvas{opacity:1}
-.viz::after{content:"LIVE MODEL, NOT A RENDER";position:absolute;left:10px;
-  bottom:8px;font-size:12px;font-weight:700;letter-spacing:.08em;
-  color:var(--fg-mute)}
-</style>
+<link rel="stylesheet" href="./design.css">
+<link rel="stylesheet" href="./home.css">
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
+<a class="skip-link" href="#main">Skip to content</a>
 
-<!-- NAV:START -->
-<header class="top solid">
-  <a class="brand" href="./index.html" aria-label="Thenar home"><svg viewBox="0 0 340 92" aria-hidden="true" style="height:24px"><text x="0" y="70" font-family="Manrope,sans-serif" font-size="72" font-weight="700" letter-spacing="-2" fill="currentColor">THENAR</text></svg></a>
-  <nav class="topnav" aria-label="Primary">
-    <a href="./products.html">Products</a>
-    <a href="./protocol.html">Protocol</a>
-    <a href="./market.html">Market</a>
-    <a href="./faq.html">FAQ</a>
-    <a href="./company.html">Company</a>
-    <a href="./corpus.html">Corpora</a>
-    <a href="./verify.html">Verify</a>
+<div class="wrap">
+<header class="reg-nav">
+  <a class="wordmark" href="/">THENAR</a>
+  <nav aria-label="Primary">
+    <a href="/verify">Verify</a>
+    <a href="/corpus">Corpora</a>
+    <a href="/protocol">Protocol</a>
+    <a href="/company">Company</a>
   </nav>
-  <a class="btn primary" href="./index.html#contact">Talk to us</a>
+  <span class="spacer"></span>
+  <span class="chip-chain" id="chain-chip" data-state="loading">connecting…</span>
 </header>
-<!-- NAV:END -->
+</div>
 
 <main id="main">
 
-  <section class="fwrap chero" style="padding-bottom:var(--s-600)">
-    <p class="feyebrow">Provenance and rights for physical-AI data</p>
-    <h1 class="fh1">Prove what a dataset is,<br>where it came from,<br>who may train on it,<br>and whether that is still true.</h1>
-    <p class="flede" style="margin-top:var(--s-300)">
-      A neutral log that suppliers and buyers trust. Not a marketplace, not a network, not a company capture programme.
-      The ledger holds hashes only — payload, manifest, consent, terms. Verifiable by anyone. Revocation is signed and provable.
-      Settlement is USDC.</p>
-    <div class="actions" style="justify-content:center;display:flex;
-      gap:var(--s-100);flex-wrap:wrap;margin-top:var(--s-400)">
-      <a class="btn primary" href="./products.html">The four products</a>
-      <a class="btn ghost" href="./protocol.html">How it works</a>
+<div class="wrap">
+  <section class="hero">
+    <h1>Provenance and rights for physical-AI data.</h1>
+    <p class="lead">A public register of what a robot dataset is, where it
+      came from, who may train on it, and whether that is still true —
+      checkable by anyone, without trusting THENAR.</p>
+    <div class="actions">
+      <a class="btn btn-seal" href="/verify">Check a record</a>
+      <a class="btn btn-quiet" href="/corpus">Read a report</a>
     </div>
   </section>
+</div>
 
-  <section class="fwrap" id="answers" style="padding-top:var(--s-700)">
-    <p class="feyebrow">What a report answers</p>
-    <h2 class="fh2">Four questions<br>counsel asks</h2>
-    <p class="flede" style="margin-top:var(--s-300)">
-      A Provenance Report answers the questions a buyer's legal team asks before licensing a dataset.
-      Every answer is checkable without trusting THENAR.</p>
-
-    <div class="grid g4 loop" style="margin-top:var(--s-600)">
-      <article class="card"><h3>What is it?</h3>
-        <p>A dataset of episodes: the files, their hashes, metadata, and the range of episodes included. Verifiable against the corpus root.</p></article>
-      <article class="card"><h3>Where did it come from?</h3>
-        <p>Who captured each episode, when, under what terms and consent status. Signatures prove identity at submission. Revocation is provable if consent was withdrawn later.</p></article>
-      <article class="card"><h3>Who may train on it?</h3>
-        <p>The license terms are recorded with the dataset and anchored on chain. Supplier and terms are immutable. Buyers get a receipt naming the root, terms, and amount paid.</p></article>
-      <article class="card"><h3>Is that still true?</h3>
-        <p>The log is append-only. Consistency proofs show nothing was rewritten since the anchor. Revocation status is proven at the moment of purchase or delivery.</p></article>
+<div class="wrap tape-wrap">
+  <div class="window">
+    <span class="tape-label">Live anchors, Avalanche Fuji</span>
+    <div class="tape" id="tape" aria-label="Anchors read live from GraspLog">
+      <p class="muted">Reading the log…</p>
     </div>
-  </section>
+    <p class="tape-readout mono muted" id="tape-readout"></p>
+  </div>
+</div>
 
-  <section class="fwrap" id="claims">
-    <p class="feyebrow">Claim levels (PLAN §1)</p>
-    <h2 class="fh2">Every surface shows<br>what each badge proves</h2>
-    <p class="flede" style="margin-top:var(--s-300)">
-      Levels are badges over an L0 base, not a cumulative ladder. Each episode carries the set of badges it holds.
-      Wording is verbatim and never weakened.</p>
+<div class="wrap">
+  <div class="grid">
+    <div class="main">
 
-    <div class="rail" style="margin-top:var(--s-600);margin-left:auto;margin-right:auto">
-      <div>
-        <h3>L0 Committed</h3>
-        <p style="color:var(--fg-dim);margin-top:var(--s-75)">Existed by block {block} on {chain}; log unchanged since; consent {live | revoked at block {onset}} as of anchor (size {size}).</p>
-      </div>
-      <div>
-        <h3>L1 Signed</h3>
-        <p style="color:var(--fg-dim);margin-top:var(--s-75)">{org} signed this record before it was logged; unchanged since.</p>
-      </div>
-      <div>
-        <h3>L2 Attested</h3>
-        <p style="color:var(--fg-dim);margin-top:var(--s-75)">Signing key held in hardware attested by {manufacturer} ({model}); this proves which device signed, not what its sensors saw.</p>
-      </div>
-      <div>
-        <h3>L3 Checked</h3>
-        <p style="color:var(--fg-dim);margin-top:var(--s-75)">Checked by {operator} — {n} checks run: {list}. Heuristic; see details.</p>
-      </div>
-    </div>
-  </section>
+      <section id="answers">
+        <h2>What a report answers</h2>
+        <dl class="questions">
+          <div class="q">
+            <dt>What is it?</dt>
+            <dd>A dataset of episodes, each hashed to a leaf in the log — the corpus root fixes exactly which episodes are included.</dd>
+          </div>
+          <div class="q">
+            <dt>Where did it come from?</dt>
+            <dd>Who captured it, when, and under what terms — signed before it was logged, so the leaf itself is the evidence.</dd>
+          </div>
+          <div class="q">
+            <dt>Who may train on it?</dt>
+            <dd>The terms hash is anchored with the corpus, and a licence receipt on chain names the root, the terms and the amount paid.</dd>
+          </div>
+          <div class="q">
+            <dt>Is that still true?</dt>
+            <dd>Consent status is proven against a revocation root committed the same way as the data, checkable at the moment you read it.</dd>
+          </div>
+        </dl>
+      </section>
 
-  <section class="fwrap" id="limitations">
-    <p class="feyebrow">Known limitations (PLAN §22)</p>
-    <h2 class="fh2">What it does not prove</h2>
-    <p class="flede" style="margin-top:var(--s-300)">
-      The following is stated in every report and never weakened:</p>
+      <section id="badges">
+        <h2>The four badges</h2>
+        <p class="lead">Badges over an L0 base, not a cumulative ladder. Every
+          surface shows the set an episode holds, worded exactly like this.</p>
 
-    <ul class="rail" style="margin-top:var(--s-600);margin-left:auto;margin-right:auto;list-style:disc;padding-left:var(--s-400)">
-      <li>The operator (THENAR) can decline to log or anchor a record; append receipts and public audit make this detectable, not impossible.</li>
-      <li>Checks are heuristics with recorded thresholds; they can be evaded and can err; they are evidence, not proof.</li>
-      <li>A signature proves which key signed, not what a sensor measured; captured_at, source and embodiment are claims by the signer.</li>
-      <li>Consent onset is recorded; what a buyer may do after onset is governed by the terms document, not by this protocol.</li>
-      <li>Anchors depend on the availability of at least one chain carrying the log; the same log is anchored on more than one.</li>
-    </ul>
-  </section>
+        <div class="badge-row">
+          <span class="badge badge-l0"><span class="lvl">L0</span><span class="lbl">Committed</span></span>
+          <p class="wording">Committed — existed by block {block} on {chain}; log unchanged since; consent {live | revoked at block {onset}} as of anchor (size {size}).</p>
+        </div>
+        <div class="badge-row">
+          <span class="badge badge-l1"><span class="lvl">L1</span><span class="lbl">Signed</span></span>
+          <p class="wording">Signed — {org} signed this record before it was logged; unchanged since.</p>
+        </div>
+        <div class="badge-row">
+          <span class="badge badge-l2"><span class="lvl">L2</span><span class="lbl">Attested</span></span>
+          <p class="wording">Attested — signing key held in hardware attested by {manufacturer} ({model}); this proves which device signed, not what its sensors saw.</p>
+        </div>
+        <div class="badge-row">
+          <span class="badge badge-l3"><span class="lvl">L3</span><span class="lbl">Checked</span></span>
+          <p class="wording">Checked by {operator} — {n} checks run: {list}. Heuristic; see details.</p>
+        </div>
+      </section>
 
-  <section class="fwrap" id="lab">
-    <p class="feyebrow">Research, not products</p>
-    <div class="note" style="margin:0 auto">
-      <b>Browser arm and hardware research.</b> The Thenar Band and Hotaru live under <code>/lab</code>.
-      Both are declared simulation and research, not products you can buy.
-      The Band is in design; nobody has worn one. Hotaru is a desk robot, open CAD and shipping,
-      evidence we take a device from parameters to a shipped object. Research code and CAD are public;
-      they do not carry product claims and are not part of the wedge.</p>
-    </div>
-  </section>
+      <section id="source">
+        <h2>Source: declared or attested</h2>
+        <p class="lead">Badges answer whether the bytes are what the signer
+          says. Source is a separate claim: what kind of thing produced them.</p>
+        <div class="source-lines evidence-box">
+          <p class="small source-caption">How the two lines read</p>
+          <div class="source-example">
+            <p class="small">Example —</p>
+            <div class="source" data-attested="0">Source — declared by the signer: human-driven physical robot. Not attested.</div>
+          </div>
+          <div class="source-example">
+            <p class="small">Example —</p>
+            <div class="source" data-attested="1">Source — attested physical capture: controller key attested by {manufacturer} ({model}); simulation-signature check passed.</div>
+          </div>
+        </div>
+      </section>
 
-  <section class="fwrap" id="chain">
-    <p class="feyebrow">Physical AI and settlement</p>
-    <h2 class="fh2">Provenance you can check<br>without trusting us</h2>
-    <p class="flede" style="margin-top:var(--s-300)">
-      Contact data is only worth licensing if a buyer's legal team can trace
-      where it came from and on what terms. This is the mechanism, including
-      the part a ledger does not solve.</p>
+      <section id="episode">
+        <h2>One episode, end to end</h2>
+        <p class="lead">Row 24 of the log, from a sealed corpus, exactly as
+          the report states it.</p>
+        <div class="register-wrap">
+        <table class="register episode-register">
+          <tbody>
+            <tr><th scope="row">Leaf</th><td class="hash" id="ep-leaf">reading…</td></tr>
+            <tr><th scope="row">Log index</th><td class="num">24</td></tr>
+            <tr><th scope="row">Badges</th><td>
+              <span class="badge badge-l0"><span class="lvl">L0</span><span class="lbl">Committed</span></span>
+              <p class="wording">Committed — existed by block 6 on chain 31338; log unchanged since; consent live as of anchor (size 55).</p>
+            </td></tr>
+            <tr><th scope="row">Source</th><td>
+              <div class="source" data-attested="0">Source — declared by the signer: human-driven physical robot. Not attested.</div>
+            </td></tr>
+            <tr><th scope="row">Claims</th><td>
+              <ul class="claims">
+                <li><span class="mark mark-pass" aria-hidden="true"></span>timing.v1 <span class="result">— pass</span></li>
+                <li><span class="mark mark-inconclusive" aria-hidden="true"></span>kinematics.v1 <span class="result">— inconclusive</span></li>
+                <li><span class="mark mark-inconclusive" aria-hidden="true"></span>sensor_consistency.v1 <span class="result">— inconclusive</span></li>
+                <li><span class="mark mark-pass" aria-hidden="true"></span>sim_signature.v1 <span class="result">— pass</span></li>
+                <li><span class="mark mark-inconclusive" aria-hidden="true"></span>dedup.v1 <span class="result">— inconclusive</span></li>
+              </ul>
+            </td></tr>
+            <tr><th scope="row">Consent</th><td>live</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p class="episode-cta"><a class="btn btn-quiet" href="/verify?report=/samples/golden-report.json">Check this record</a></p>
+      </section>
 
-    <div class="stage3d" id="chainbox" style="aspect-ratio:auto;height:236px">
-      <canvas id="chainc"></canvas>
-    </div>
+      <section id="limitations">
+        <h2>What this does not prove</h2>
+        <ul class="limits">
+          <li>The operator (THENAR) can decline to log or anchor a record; append receipts and public audit make this detectable, not impossible.</li>
+          <li>Checks are heuristics with recorded thresholds; they can be evaded and can err; they are evidence, not proof.</li>
+          <li>A signature proves which key signed, not what a sensor measured; captured_at, source and embodiment are claims by the signer.</li>
+          <li>Consent onset is recorded; what a buyer may do after onset is governed by the terms document, not by this protocol.</li>
+          <li>Anchors depend on the availability of at least one chain carrying the log; the same log is anchored on more than one.</li>
+        </ul>
+      </section>
 
-    <div class="bento" style="margin-top:16px">
-      <article class="tile">
-        <h3>Only hashes go on chain</h3>
-        <p>The recording and the contributor's identity never touch it. What
-          gets written is a hash of the payload and the licence terms agreed at
-          capture. That is what keeps erasure possible: delete the payload and
-          the record still proves what the terms were, while holding nothing
-          personal. An immutable public log of who recorded what in their own
-          kitchen would be the opposite of handling consent well.</p>
-      </article>
-      <article class="tile">
-        <h3>Payment and provenance, one entry</h3>
-        <p>Each accepted clip settles against the same record that carries its
-          terms. Not because paying people needs a chain, because it does not:
-          Wise and Stripe Connect pay large populations small amounts every day
-          and would not ask a contributor to hold a wallet. The reason is that
-          it collapses the receipt and the provenance into a single auditable
-          thing instead of two systems somebody has to reconcile.</p>
-      </article>
-      <article class="tile" style="border-color:var(--blue)">
-        <h3>What a ledger does not do</h3>
-        <p>It attests record integrity after submission, not the truth of content at
-          capture. Nothing written on chain proves a stream came from a hardware-captured source
-          rather than a replay, and a device key can be extracted. Solving
-          that needs attestation in the hardware, which is a secure element and
-          a remote attestation path we have not built. We would rather say so
-          here than be asked in diligence.</p>
-      </article>
-      <article class="tile">
-        <h3>If a plainer rail does it, we use it</h3>
-        <p>Signed capture manifests in a public append only log give an auditor
-          the same tamper evidence, with tooling they already know from
-          certificate transparency. We are not attached to the word. We are
-          attached to a buyer being able to verify a slice without taking our
-          internal records on faith, and to a contributor being able to check
-          their own terms without asking us.</p>
-      </article>
-    </div>
-  </section>
-
-
-  <section class="fwrap" id="stands">
-    <p class="feyebrow">Honest status</p>
-    <h2 class="fh2">Where this<br>actually stands</h2>
-    <div class="rail" style="margin-top:var(--s-600);margin-left:auto;margin-right:auto">
-      <div>
-        <h3>Shipped</h3>
-        <p>Hotaru is open hardware with CAD, printable STLs, and interface
-          audits anyone can run.</p>
-      </div>
-      <div>
-        <h3>In design</h3>
-        <p>The Thenar Band is a specification and a sensor selection, not a
-          product you can buy. We are building it around the first dataset we
-          sell rather than guessing at a spec first.</p>
-      </div>
-      <div>
-        <h3>Not yet</h3>
-        <p>The contributor network is the model we are building toward, not
-          something you can join this week. We would rather say that here than
-          have you find it out after signing something.</p>
-      </div>
     </div>
 
-    <div class="note" style="margin-left:auto;margin-right:auto">
-      <b>What we are looking for.</b> Robotics teams training manipulation
-      policies who will tell us which twenty tasks are failing, and hardware
-      people who have shipped a sensor at volume. If either is you, the fastest
-      route is a direct email.
+    <div class="margin">
+      <div class="marginalia">
+        <h4>What this proves</h4>
+        <p>Every leaf in this register was committed to an append-only log
+          before it was anchored, and the anchor is public and checkable
+          against the chain.</p>
+      </div>
+      <div class="marginalia">
+        <h4>What it does not</h4>
+        <p>A badge proves the record, not the sensor. Source is a claim by
+          the signer unless the attested-physical conditions hold.</p>
+      </div>
+      <div class="marginalia">
+        <h4>How to check it yourself: three commands</h4>
+        <ol>
+          <li>Read the anchor from GraspLog on Avalanche Fuji.</li>
+          <li>Recompute the leaf and walk the inclusion proof to that root.</li>
+          <li>Recompute the consent leaf and walk it to the revocation root.</li>
+        </ol>
+      </div>
     </div>
+  </div>
+</div>
 
-
-  </section>
-
-  <section class="fwrap" id="contact">
-    <p class="feyebrow">Talk to us</p>
-    <h2 class="fh2">Tell us which<br>tasks are failing</h2>
-    <p class="flede" style="margin-top:var(--s-300)">
-      If you train manipulation policies, the twenty tasks your robot fails at
-      are worth more to us than any pitch we could make. Sending them costs you
-      nothing and changes what we instrument first.</p>
-
-    <!-- method and action matter even though JS handles the submit: without
-         them the default is a GET to this URL, which puts a name and an
-         email address into the query string, the history and the referrer.
-         With them, a submit that outruns the script still posts safely. -->
-    <form class="join" id="join" method="post" action="/api/join" novalidate>
-      <div class="row">
-        <label class="fld">
-          <span>Name</span>
-          <input id="f-name" name="name" type="text" autocomplete="name"
-                 required maxlength="120" placeholder="Your name">
-          <em class="fe" id="e-name" aria-live="polite"></em>
-        </label>
-        <label class="fld">
-          <span>Email</span>
-          <input id="f-email" name="email" type="email" autocomplete="email"
-                 required maxlength="200" placeholder="you@lab.org">
-          <em class="fe" id="e-email" aria-live="polite"></em>
-        </label>
-      </div>
-      <label class="fld">
-        <span>What you do</span>
-        <select id="f-role" name="role">
-          <option value="">Choose one</option>
-          <option>Training manipulation policies</option>
-          <option>Robotics hardware</option>
-          <option>Research lab</option>
-          <option>Investor</option>
-          <option>Would wear a Band</option>
-          <option>Something else</option>
-        </select>
-      </label>
-      <label class="fld">
-        <span>Which tasks fail, and on what hardware</span>
-        <textarea id="f-note" name="note" rows="4" maxlength="2000"
-                  placeholder="Opening jars. Anything deformable. A parallel gripper on a Franka."></textarea>
-      </label>
-      <div class="submit">
-        <button class="btn primary" id="f-go" type="submit">Send it</button>
-        <p class="fstatus" id="f-status" role="status" aria-live="polite"></p>
-      </div>
-      <p class="fnote">We reply from a person, not a sequence. No list, no
-        newsletter. Or write to
-        <a href="mailto:hello@thenar.io">hello@thenar.io</a> directly.</p>
-    </form>
-  </section>
 </main>
 
-<!-- FOOT:START -->
-<footer><div class="fwrap">
-  <div class="fcols">
-    <div><h4>Products</h4>
-      <a href="./products.html">Overview</a>
-      <a href="./index.html#band">Thenar Band</a>
-      <a href="./index.html#capture">Quest capture</a>
-      <a href="https://aibo.loompad.tech">Hotaru</a>
+<footer class="reg-footer">
+  <div class="wrap">
+    <div class="addrs">
+      <span class="hash" id="addr-log"></span>
+      <span class="hash" id="addr-verifier"></span>
+      <span class="hash" id="addr-registry"></span>
     </div>
-    <div><h4>Protocol</h4>
-      <a href="./protocol.html">Architecture</a>
-      <a href="./index.html#chain">What goes on chain</a>
-      <a href="./faq.html">FAQ</a>
-    </div>
-    <div><h4>Company</h4>
-      <a href="./company.html">Status</a>
-      <a href="./market.html">Go to market</a>
+    <nav aria-label="Footer">
+      <a href="/lab">Lab</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
       <a href="https://github.com/nickthelegend/aibo-pet">Source</a>
-    </div>
-    <div><h4>Legal</h4>
-      <a href="./privacy.html">Privacy</a>
-      <a href="./terms.html">Terms</a>
-    </div>
+    </nav>
   </div>
-  <div class="fbase">
-    <span>THENAR — Provenance and rights for physical-AI data.</span>
-    <span>Built in the open. Quest and Meta are trade marks of Meta Platforms, Inc. Thenar is not affiliated with Meta.</span>
-  </div>
-</div></footer>
-<!-- FOOT:END -->
+</footer>
 
 <script type="module">
-import { makeGrasp } from "./grasp.js";
-import { mountHotaru } from "./hotaru.js";
-import { mountBand } from "./band.js";
-import { mountChain } from "./grasp-chain.js";
-import { mountBandView } from "./bandview.js";
+import { mountTape } from "./tape.js";
 
-/* Reveal is added by script, never in the markup, so a JS failure leaves the
-   page fully readable instead of blank. */
-if ("IntersectionObserver" in window) {
-  const els = document.querySelectorAll(
-    ".card, .rail > div, .stats > div, .namebox, .tscroll, .demo");
-  els.forEach(el => el.classList.add("reveal"));
-  const io = new IntersectionObserver(es => {
-    es.forEach(e => {
-      if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
-    });
-  }, { rootMargin: "0px 0px -10% 0px" });
-  els.forEach(el => io.observe(el));
-}
+mountTape({
+  tape: document.querySelector("#tape"),
+  chip: document.querySelector("#chain-chip"),
+  readout: document.querySelector("#tape-readout"),
+  footer: {
+    log: document.querySelector("#addr-log"),
+    verifier: document.querySelector("#addr-verifier"),
+    registry: document.querySelector("#addr-registry"),
+  },
+});
 
-/* The headline statement lights word by word as it crosses the viewport. Words
-   are wrapped here rather than in the markup so the sentence stays one
-   selectable, translatable string in the HTML. */
-(function () {
-  const root = document.querySelector("#bigline");
-  if (!root) return;
-  const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  const texts = []; let n;
-  while ((n = walk.nextNode())) texts.push(n);
-  for (const t of texts) {
-    const frag = document.createDocumentFragment();
-    for (const tok of t.textContent.split(/(\s+)/)) {
-      if (!tok) continue;
-      if (/^\s+$/.test(tok)) { frag.appendChild(document.createTextNode(tok)); continue; }
-      const w = document.createElement("w");
-      w.textContent = tok;
-      frag.appendChild(w);
-    }
-    t.parentNode.replaceChild(frag, t);
-  }
-  const words = [...root.querySelectorAll("w")];
-  let queued = false;
-  function lite() {
-    queued = false;
-    const r = root.getBoundingClientRect();
-    const p = (innerHeight * 0.82 - r.top) / (r.height + innerHeight * 0.30);
-    const k = Math.round(Math.max(0, Math.min(1, p)) * words.length);
-    words.forEach((w, i) => w.classList.toggle("lit", i < k));
-  }
-  addEventListener("scroll", () => {
-    if (!queued) { queued = true; requestAnimationFrame(lite); }
-  }, { passive: true });
-  addEventListener("resize", lite, { passive: true });
-  lite();
-})();
-
-/* The grasp demo drives both the trace and the pressure on the hand from one
-   clock, so the mound lights at exactly the frame the force spikes. */
-(function () {
-  const cv = document.querySelector("#trace");
-  if (!cv) return;
-  const pads = [...document.querySelectorAll(".pp")];
-  const g = makeGrasp(cv, (t, f) => {
-    const p = Math.min(f / 16, 1);
-    for (const el of pads) {
-      const w = parseFloat(el.dataset.w);
-      el.setAttribute("r", (5 + p * 27 * w).toFixed(1));
-      el.style.opacity = (0.12 + p * 0.88).toFixed(2);
-    }
-  });
-  const play = document.querySelector("#play");
-  play.addEventListener("click", () => {
-    const on = g.toggle();
-    play.textContent = on ? "Pause" : "Play";
-    play.setAttribute("aria-pressed", String(on));
-  });
-  document.querySelector("#replay").addEventListener("click", () => {
-    g.replay();
-    play.textContent = "Pause";
-    play.setAttribute("aria-pressed", "true");
-  });
-  if (!g.playing) { play.textContent = "Play"; play.setAttribute("aria-pressed", "false"); }
-})();
-
-mountHotaru(document.querySelector("#hot"));
-mountBand(document.querySelector("#bandc"));
-mountChain(document.querySelector("#chainc"));
-
-/* The one conversion on the page. Validation runs here as a courtesy and
-   again on the server, because the browser copy is not a control. Every
-   failure says what went wrong and what to do instead; a form that fails
-   silently loses the person it was built for. */
-(function () {
-  const f = document.querySelector("#join");
-  if (!f) return;
-  const $ = id => document.querySelector(id);
-  const go = $("#f-go"), status = $("#f-status");
-  const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
-  // Disabling the button is not enough: Enter pressed twice, or a submit
-  // dispatched before the click lands, both re-enter the handler and send a
-  // second request. The second one also captures "Sending" as the label to
-  // restore, which is how the button ended up stuck reading Sending.
-  let inFlight = false;
-
-  function fieldError(input, slot, msg) {
-    slot.textContent = msg || "";
-    input.setAttribute("aria-invalid", msg ? "true" : "false");
-    return !msg;
-  }
-
-  f.addEventListener("submit", async e => {
-    e.preventDefault();
-    if (inFlight) return;
-    const name = $("#f-name").value.trim();
-    const email = $("#f-email").value.trim();
-    const okName = fieldError($("#f-name"), $("#e-name"),
-      name ? "" : "We need a name to reply to.");
-    const okMail = fieldError($("#f-email"), $("#e-email"),
-      !email ? "We need an email to reply to."
-             : EMAIL.test(email) ? "" : "That does not look like an email address.");
-    if (!okName || !okMail) {
-      (okName ? $("#f-email") : $("#f-name")).focus();
-      return;
-    }
-
-    inFlight = true;
-    go.disabled = true;
-    const label = "Send it";
-    go.textContent = "Sending";
-    status.textContent = "";
-    status.className = "fstatus";
-
-    try {
-      const r = await fetch("/api/join", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name, email,
-          role: $("#f-role").value,
-          note: $("#f-note").value.trim(),
-        }),
-      });
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(data.error || "That did not go through.");
-      f.querySelector(".row").remove();
-      f.querySelectorAll(".fld, .submit .btn").forEach(el => el.remove());
-      status.className = "fstatus ok";
-      status.textContent = "Sent. We read everything and reply ourselves, "
-        + "usually within a couple of days.";
-    } catch (err) {
-      status.className = "fstatus bad";
-      status.textContent = err.message;
-      // On success the button is removed with the rest of the form, so only
-      // the failure path has anything left to restore.
-      go.disabled = false;
-      go.textContent = label;
-    } finally {
-      inFlight = false;
-    }
-  });
-})();
-
-/* Two views of the same 100 kB file. The hero is the product shot and comes
-   apart as you scroll past it; the band section pins an exploded copy that
-   the parts list drives. The browser fetches band.glb once. */
+/* The leaf hash for "one episode, end to end" is read from the same sample
+   report `/verify?report=` links to, not typed into the page — so the two
+   never drift and the copy guard's no-hardcoded-hash rule holds. */
 (async function () {
-  const stage = document.querySelector("#stage");
-  const badge = document.querySelector("#state3d");
+  const el = document.querySelector("#ep-leaf");
+  if (!el) return;
   try {
-    const hero = await mountBandView(document.querySelector("#bandc3d"));
-    let queued = false;
-    const onScroll = () => {
-      queued = false;
-      const r = stage.getBoundingClientRect();
-      const p = Math.max(0, Math.min(1,
-        (innerHeight * 0.62 - r.top) / Math.max(r.height * 0.85, 1)));
-      hero.explode(p);
-      badge.textContent = p > 0.55 ? "EXPLODED" : p > 0.08 ? "OPENING" : "ASSEMBLED";
-    };
-    addEventListener("scroll", () => {
-      if (!queued) { queued = true; requestAnimationFrame(onScroll); }
-    }, { passive: true });
-    onScroll();
-  } catch (e) {
-    // A dead canvas looks broken; drop the block and let the copy carry it.
-    console.error("band hero:", e);
-    stage?.remove();
-  }
-
-  try {
-    const q = await mountBandView(document.querySelector("#questc"),
-      { glb: "./quest.glb", json: "./quest.json", az: -0.55 });
-    const st3 = document.querySelector("#stage3");
-    let qq = false;
-    const onQ = () => {
-      qq = false;
-      const r = st3.getBoundingClientRect();
-      q.explode(Math.max(0, Math.min(1,
-        (innerHeight * 0.55 - r.top) / Math.max(r.height * 0.9, 1))));
-    };
-    addEventListener("scroll", () => {
-      if (!qq) { qq = true; requestAnimationFrame(onQ); }
-    }, { passive: true });
-    onQ();
-  } catch (e) {
-    console.error("quest:", e);
-    document.querySelector("#stage3")?.remove();
-  }
-
-  const list = document.querySelector("#bandlist");
-  const badge2 = document.querySelector("#state3d2");
-  try {
-    const bv = await mountBandView(document.querySelector("#bandc3d2"));
-    bv.explode(1);
-    const tiles = [...list.querySelectorAll(".tile")];
-    const pick = t => {
-      tiles.forEach(x => x.classList.toggle("on", x === t));
-      bv.highlight(t.dataset.part);
-      badge2.textContent = t.dataset.part.replace("band-", "").toUpperCase();
-    };
-    const clear = () => {
-      tiles.forEach(x => x.classList.remove("on"));
-      bv.highlight(null);
-      badge2.textContent = "EXPLODED";
-    };
-    tiles.forEach(t => {
-      t.addEventListener("pointerenter", () => pick(t));
-      t.addEventListener("focusin", () => pick(t));
-      t.tabIndex = 0;
-    });
-    list.addEventListener("pointerleave", clear);
-  } catch (e) {
-    console.error("band list:", e);
-    document.querySelector("#stage2")?.remove();
+    const r = await fetch("./samples/golden-report.json");
+    const report = await r.json();
+    const episode = report.episodes.find((e) => e.log_index === 24) || report.episodes[0];
+    el.textContent = episode.leaf;
+  } catch {
+    el.textContent = "could not read the sample report";
   }
 })();
 </script>

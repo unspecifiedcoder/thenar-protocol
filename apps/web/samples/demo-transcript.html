@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Golden demo transcript — THENAR</title>
+<link rel="stylesheet" href="/design.css">
+<style>
+  .transcript{max-width:var(--w);margin:32px auto;padding:0 var(--gutter)}
+  .window.term{padding:24px 28px;font-family:var(--mono);font-size:15px;line-height:26px;min-height:70vh}
+  .term .cmd{color:#fff;margin-bottom:16px}
+  .term .cmd::before{content:"$ ";color:rgba(220,227,240,.5)}
+  .term .step{margin-top:14px;color:#fff}
+  .term .ok{color:#7FD1B9}
+  .term .tx{color:rgba(220,227,240,.75);padding-left:24px;overflow-wrap:anywhere}
+  .term .dim{color:rgba(220,227,240,.5)}
+  .term .pass{margin-top:20px;padding-top:12px;border-top:1px solid var(--window-line);color:#fff;font-weight:500}
+  .term section:target .step{background:rgba(31,58,147,.35);outline:1px solid var(--seal);margin-left:-8px;padding-left:8px}
+  .head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px}
+  .head p{color:var(--ink-2);font-size:13px;line-height:20px}
+</style>
+</head>
+<body>
+<div class="transcript">
+  <div class="head">
+    <h2>Golden demo — live run, Avalanche Fuji</h2>
+    <p>Transcript of <code>pnpm demo:golden --live</code>, 2026-09-03. Keys are never printed.</p>
+  </div>
+  <div class="window term">
+    <div class="cmd">pnpm demo:golden --live</div>
+    <div class="dim">step 0/8 — chain head check: Fuji 0xde2E34b8A97774807842470b2619dC8BB099EaF1 anchorCount=1, head=(root 0xadb5b70d…, size 24); local store size=24</div>
+    <div class="dim">step 0/8 — chain head check ... <span class="ok">ok</span> (store is at or ahead of the chain head)</div>
+
+    <section id="step-1">
+      <div class="step">step 1/8 Ingest ... <span class="ok">ok</span> — 3 real episodes + 1 jittered episode (leaf 0x7d6ce97c…)</div>
+    </section>
+    <section id="step-2">
+      <div class="step">step 2/8 Check ... <span class="ok">ok</span> — dedup.v1 on the jittered episode: inconclusive (FD-1: never fail while emit_fail=false)</div>
+    </section>
+    <section id="step-3">
+      <div class="tx">chain 43113: tx 0x39c2b268d729db01c1379605d8e78c8e8dcd8240b393563f61748833bdf9da51 block 58154513 root 0x85f602f2… size 48</div>
+      <div class="tx">chain 31338: tx 0x1b2bcd3e854d2ca4d1c63c3332f14b33621b2b955a035e216bd88aa60beb8f56 block 4 root 0x85f602f2… size 48</div>
+      <div class="step">step 3/8 Anchor ... <span class="ok">ok</span> — (root,size) = (0x85f602f2…, 48) on 2 chain(s)</div>
+    </section>
+    <section id="step-4">
+      <div class="step">step 4/8 Corpus ... <span class="ok">ok</span> — corpus corpus_golden_801e90399da9 logged, terms published</div>
+      <div class="tx">seal-corpus.mjs: tx 0x105d9ec3727be84441c21eacf6314299c607a1d68cd12ef9cc461fb9617386c1, on-chain corpus id 0</div>
+    </section>
+    <section id="step-5">
+      <div class="tx">minted mock USDC to buyer: tx 0xb0fd86d6a25e521c71831c1122eb5bcb4bdc013c17bb047db7705c871ab446a4</div>
+      <div class="tx">license.mjs: tx 0x3da6528751d84c2ae4943fb1c8f6dd0365e3963518ad136673930fe98cbe7d66, receipt id 0</div>
+      <div class="step">step 5/8 Licence ... <span class="ok">ok</span> — receipt 0 names corpusManifestHash 0x731f38d8e69db40f88d5b560a4d513cbe51170d4b1c464b69ec6a4f524250532</div>
+    </section>
+    <section id="step-6">
+      <div class="step">step 6/8 Deliver + verify offline ... <span class="ok">ok</span> — offline verifier passes against the delivered files</div>
+    </section>
+    <section id="step-7">
+      <div class="tx">chain 43113: revocation-only anchor tx 0xee87898f69f5760ca283720ea2f8a05fa86afd3a72daa34c538a8a62d37d394d, size unchanged at 55, new revocationRoot 0xb8ebbbca…</div>
+      <div class="tx">chain 31338: revocation-only anchor tx 0xb0a5dbaf38a191cb27ccae1a149b8752181190e5e9e5072531db8120e1d519bb, size unchanged at 55, new revocationRoot 0xb8ebbbca…</div>
+      <div class="step">step 7/8 Revoke ... <span class="ok">ok</span> — revocation-only head anchored (equal size); buyer's earlier report still verifies</div>
+    </section>
+    <section id="step-8">
+      <div class="step">step 8/8 Tamper ... <span class="ok">ok</span> — verifier named file "data/chunk-000/file-000.parquet" and leaf 0x8f783d87…</div>
+    </section>
+    <div class="pass">8/8 steps passed</div>
+  </div>
+</div>
+</body>
+</html>

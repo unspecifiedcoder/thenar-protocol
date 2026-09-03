@@ -1,0 +1,87 @@
+/* home.css — page-scoped rules for `/`, the register's cover (docs/DESIGN.md
+   §4). design.css supplies every token and shared component; nothing here
+   redefines one. */
+
+.skip-link{position:absolute;left:-9999px;top:0;background:var(--ink);color:var(--paper);
+  padding:10px 16px;z-index:100}
+.skip-link:focus{left:16px;top:16px}
+
+/* ---- hero ---- */
+.hero{padding:56px 0 40px}
+.hero h1{max-width:18ch}
+.hero .lead{margin-top:16px}
+.hero .actions{display:flex;gap:16px;flex-wrap:wrap;margin-top:32px}
+
+/* ---- the window sits between the hero and the register grid ---- */
+.tape-wrap{padding-bottom:40px}
+.window{min-height:220px;display:flex;flex-direction:column}
+.window .tape-label{font:500 13px/20px var(--sans);color:rgba(220,227,240,.6);
+  margin-bottom:16px;display:block}
+.window .tape{flex:1;align-items:center}
+.window .tape-readout{margin-top:16px;padding-top:16px;border-top:1px solid var(--window-line);
+  font-size:13px;line-height:20px}
+
+/* stubs are the tape's whole point at this size, so they run larger than the
+   design-system minimum; the head stub reserves top padding so its seal (36px,
+   inset from the corner) never clips against the window edge. */
+.stub{min-width:168px;padding:16px}
+.stub .n{font-size:30px;line-height:34px}
+.stub.head{padding-top:48px}
+.stub .seal{position:absolute;top:8px;right:8px;width:36px;height:36px;border-width:2px}
+.stub .seal::after{font-size:14px}
+.stub .seal[data-label]::before{inset:-11px;font-size:7px}
+
+/* ---- register grid: stacked subsections in .main ---- */
+.main section + section{margin-top:56px}
+.main h2{margin-bottom:16px}
+.main .lead{margin-bottom:24px}
+
+.questions{display:grid;gap:20px}
+.questions .q dt{font:600 15px/24px var(--sans);color:var(--ink)}
+.questions .q dd{margin-top:4px;color:var(--ink-2);font-size:15px;line-height:24px;max-width:60ch}
+
+.badge-row{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.badge-row + .badge-row{margin-top:20px}
+.badge-row .badge{flex:0 0 auto}
+.badge-row .wording{margin-top:2px;flex:1 1 320px}
+
+.evidence-box{background:var(--paper-2);border:1px solid var(--rule);padding:16px 20px}
+.source-caption{color:var(--ink-2);margin-bottom:12px}
+.source-example + .source-example{margin-top:16px}
+.source-example .small{color:var(--ink-2);margin-bottom:4px}
+
+/* ---- episode register (key/value) ---- */
+.episode-register th{white-space:nowrap;width:1%}
+.episode-register .claims{list-style:none}
+.episode-register .claims li{display:flex;gap:8px;align-items:baseline;font-family:var(--mono);font-size:13px;line-height:22px}
+.episode-register .claims .mark{width:8px;height:8px;flex:0 0 auto;border-radius:50%}
+.mark-pass{background:var(--ok)}
+.mark-inconclusive{background:var(--warn)}
+.mark-fail{background:var(--fail)}
+.episode-register .result{color:var(--ink-2)}
+.episode-cta{margin-top:20px}
+
+.limits{list-style:none;display:grid;gap:12px;max-width:68ch}
+.limits li{position:relative;padding-left:18px;color:var(--ink-2);font-size:15px;line-height:24px}
+.limits li::before{content:"";position:absolute;left:0;top:9px;width:8px;height:8px;background:var(--ink)}
+
+.marginalia p{margin-top:4px}
+.marginalia ol{margin:4px 0 0 16px}
+.marginalia li{margin-top:4px}
+
+/* ---- footer ---- */
+.reg-footer .addrs{display:grid;gap:2px;margin-bottom:16px}
+.reg-footer nav{display:flex;gap:16px;flex-wrap:wrap}
+.reg-footer nav a{color:var(--ink-2)}
+
+@media (max-width:640px){
+  .hero h1{max-width:none}
+  .episode-register{font-size:13px}
+  /* the label column stops fighting the value column for width on a phone;
+     each row becomes a stacked label-then-value pair instead of scrolling. */
+  .episode-register,.episode-register tbody,.episode-register tr,
+  .episode-register th,.episode-register td{display:block;width:auto}
+  .episode-register tr{padding:10px 0;border-bottom:1px solid var(--rule)}
+  .episode-register th,.episode-register td{border-bottom:0;padding:2px 0}
+  .episode-register th{color:var(--ink-2);font-weight:500}
+}

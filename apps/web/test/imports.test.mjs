@@ -58,6 +58,17 @@ for (const f of files) {
 }
 ok(checked > 0, "found imports to check", `${checked}`);
 
+// A module a page never imports can still be a real, live module if a test
+// exercises it directly (grasp.js / grasp.test.mjs): that is a consumer, not
+// dead weight, so it counts as a reference too.
+for (const f of readdirSync(join(web, "test"))) {
+  if (!f.endsWith(".mjs")) continue;
+  const src = readFileSync(join(web, "test", f), "utf8");
+  for (const m of src.matchAll(/from\s+"(\.\.?\/[a-zA-Z0-9._\-/]+\.js)"/g)) {
+    referenced.add(m[1].split("/").pop());
+  }
+}
+
 // A module nothing reaches is dead weight — but only report it, because
 // deleting on that signal alone is what caused the outage.
 // Only check top-level modules; subdirectory modules (like lab/) can be intentionally unreferenced.

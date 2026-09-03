@@ -22,7 +22,8 @@
     "deploy:sepolia": "bash scripts/deploy-chain.sh \"${SEPOLIA_RPC:-https://ethereum-sepolia-rpc.publicnode.com}\" mirror sepolia",
     "deploy:anvil": "bash scripts/deploy-chain.sh http://127.0.0.1:8545 primary none 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
     "demo:golden": "tsx scripts/golden.mjs",
-    "verify:report": "tsx scripts/verify-report.mjs"
+    "verify:report": "tsx scripts/verify-report.mjs",
+    "demo:record": "node scripts/record-demo.mjs"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
