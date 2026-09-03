@@ -31,11 +31,11 @@ const host = document.querySelector("#corpora");
 
 render(host, []);
 ok(/No corpus has been sealed yet/.test(host.textContent), "empty state says no corpus has been sealed");
-ok(host.querySelector('.cempty[data-state="empty"]'), "and marks itself as the empty state");
-ok(host.querySelectorAll(".card").length === 0, "and renders no cards");
+ok(host.querySelector('.empty[data-state="empty"]'), "and marks itself as the empty state (design.css .empty)");
+ok(host.querySelectorAll(".register tbody tr").length === 0, "and renders no rows");
 
 renderError(host, "boom");
-ok(host.querySelector('.cempty[data-state="error"]'), "error state is marked");
+ok(host.querySelector('.notice[data-kind="fail"]'), "error state is marked (design.css .notice[data-kind=fail])");
 ok(/nothing is shown rather than guessed/.test(host.textContent), "and says nothing is guessed");
 ok(!/Corpus #/.test(host.textContent), "and shows no corpus");
 
@@ -46,8 +46,10 @@ const corpus = {
   open: true, sealedAt: 1756900000, anchorRoot: "0x" + "ee".repeat(32), anchorSize: 41,
 };
 render(host, [corpus]);
-ok(host.querySelectorAll(".card").length === 1, "a corpus renders one card");
-ok(host.querySelector('a[href="./corpus.html?id=0"]'), "the card links to the detail view by on-chain id");
+ok(host.querySelectorAll(".register tbody tr").length === 1, "a corpus renders one register row");
+ok(host.querySelector("tr.anchored"), "a sealed-and-anchored corpus gets the .anchored row rule");
+ok(host.querySelector('.register tr .seal'), "and shows the .seal mark in its status cell");
+ok(host.querySelector('a[href="./corpus.html?id=0"]'), "the row links to the detail view by on-chain id");
 
 // ============================================================ detail view
 
@@ -108,9 +110,10 @@ ok(record.onChain && record.onChain.id === "0", "loadCorpus carries the embedded
 
 const detailHost = document.createElement("div");
 await loadDetail(detailHost, "corpus_1");
-ok(detailHost.querySelectorAll(".card").length === 1, "detail view renders one card");
+ok(detailHost.querySelectorAll(".record").length === 1, "detail view renders one record card");
+ok(detailHost.querySelector('.notice[data-kind="warn"]'), "the contains_revoked warning uses design.css .notice[data-kind=warn]");
 ok(/Contains a revoked episode/.test(detailHost.textContent), "detail view shows the contains_revoked warning");
-ok(/Sources — unknown \(pre-v2\.2 corpus\)/.test(detailHost.textContent), "a manifest with no sources[] renders the pre-v2.2 fallback line");
+ok(/Sources — not recorded for this corpus\./.test(detailHost.textContent), "a manifest with no sources[] renders the not-recorded fallback line");
 ok(detailHost.innerHTML.includes(apiCorpus.corpus_manifest_hash), "detail view shows the corpus manifest hash (in the copy button's title/data-copy)");
 
 // The purchase calldata is hidden until the "terms read" checkbox is ticked.

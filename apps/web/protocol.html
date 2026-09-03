@@ -20,56 +20,65 @@
 <meta name="twitter:image" content="https://thenar.io/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./site.css">
+<link rel="stylesheet" href="./design.css">
+<link rel="stylesheet" href="./pages.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <!-- NAV:START -->
-<header class="top solid">
-  <a class="brand" href="./index.html" aria-label="Thenar home"><svg viewBox="0 0 340 92" aria-hidden="true" style="height:24px"><text x="0" y="70" font-family="Manrope,sans-serif" font-size="72" font-weight="700" letter-spacing="-2" fill="currentColor">THENAR</text></svg></a>
-  <nav class="topnav" aria-label="Primary">
-    <a href="./products.html">Products</a>
-    <a href="./protocol.html" aria-current="page">Protocol</a>
-    <a href="./market.html">Market</a>
-    <a href="./faq.html">FAQ</a>
-    <a href="./company.html">Company</a>
-    <a href="./corpus.html">Corpora</a>
+<header class="reg-nav wrap">
+  <a class="wordmark" href="./index.html">THENAR</a>
+  <nav aria-label="Primary">
     <a href="./verify.html">Verify</a>
+    <a href="./corpus.html">Corpora</a>
+    <a href="./protocol.html" aria-current="page">Protocol</a>
+    <a href="./company.html">Company</a>
   </nav>
-  <a class="btn primary" href="./index.html#contact">Talk to us</a>
+  <span class="spacer"></span>
+  <span class="chip-chain" data-chain-chip data-state="loading">reading…</span>
 </header>
 <!-- NAV:END -->
 <main id="main">
-  <section class="fwrap">
-    <p class="feyebrow">The claim ladder</p>
-    <h2 class="fh2">Five levels of evidence,<br>each with fixed wording</h2>
-    <p class="flede" style="margin-top:var(--s-300)">Levels are badges, not a cumulative ladder. The only implication is L2 ⇒ L1. Every surface shows the set of badges an episode holds and uses this wording verbatim.</p>
-    <div class="tscroll" style="margin-top:var(--s-600)">
-      <table>
-        <thead><tr>
-          <th scope="col">Level</th>
-          <th scope="col">Name</th>
-          <th scope="col">Wording (verbatim)</th>
-        </tr></thead>
-        <tbody>
-          <tr><td><b>L0</b></td><td><b>Committed</b></td><td>Committed — existed by block {block} on {chain}; log unchanged since; consent {live | revoked at block {onset}} as of anchor (size {size}).</td></tr>
-          <tr><td><b>L1</b></td><td><b>Signed</b></td><td>Signed — {org} signed this record before it was logged; unchanged since.</td></tr>
-          <tr><td><b>L2</b></td><td><b>Attested</b></td><td>Attested — signing key held in hardware attested by {manufacturer} ({model}); this proves which device signed, not what its sensors saw.</td></tr>
-          <tr><td><b>L3</b></td><td><b>Checked</b></td><td>Checked by {operator} — {n} checks run: {list}. Heuristic; see details.</td></tr>
-          <tr><td>—</td><td>Pending</td><td>Pending — received, not yet anchored. (not a level)</td></tr>
-          <tr><td>—</td><td>Check failed</td><td>Check {name} failed: {summary}. (appended whenever any claim is fail)</td></tr>
-        </tbody>
-      </table>
+<div class="wrap">
+  <section class="section" style="border-top:0">
+    <p class="small" style="color:var(--ink-2)">The claim ladder</p>
+    <h2>Five levels of evidence, each with fixed wording</h2>
+    <p class="lead" style="margin-top:12px">Levels are badges, not a cumulative ladder. The only implication is L2 ⇒ L1. Every surface shows the set of badges an episode holds and uses this wording verbatim.</p>
+
+    <div style="margin-top:32px;display:grid;gap:20px">
+      <div>
+        <span class="badge"><span class="lvl">L0</span><span class="lbl">Committed</span></span>
+        <p class="wording">Committed — existed by block {block} on {chain}; log unchanged since; consent {live | revoked at block {onset}} as of anchor (size {size}).</p>
+      </div>
+      <div>
+        <span class="badge"><span class="lvl">L1</span><span class="lbl">Signed</span></span>
+        <p class="wording">Signed — {org} signed this record before it was logged; unchanged since.</p>
+      </div>
+      <div>
+        <span class="badge"><span class="lvl">L2</span><span class="lbl">Attested</span></span>
+        <p class="wording">Attested — signing key held in hardware attested by {manufacturer} ({model}); this proves which device signed, not what its sensors saw.</p>
+      </div>
+      <div>
+        <span class="badge"><span class="lvl">L3</span><span class="lbl">Checked</span></span>
+        <p class="wording">Checked by {operator} — {n} checks run: {list}. Heuristic; see details.</p>
+      </div>
+      <div>
+        <span class="badge off"><span class="lvl">—</span><span class="lbl">Pending</span></span>
+        <p class="wording">Pending — received, not yet anchored. (not a level)</p>
+      </div>
+      <div>
+        <span class="badge off"><span class="lvl">—</span><span class="lbl">Check failed</span></span>
+        <p class="wording">Check {name} failed: {summary}. (appended whenever any claim is fail)</p>
+      </div>
     </div>
-    <p class="flede" style="margin-top:var(--s-400)">Every badge wording is fixed and never weakened. The protocol never claims authenticity at capture, and every surface avoids ambiguous language about what each level proves.</p>
+    <p class="lead" style="margin-top:32px">Every badge wording is fixed and never weakened. The protocol never claims authenticity at capture, and every surface avoids ambiguous language about what each level proves.</p>
   </section>
 
-  <section class="fwrap">
-    <p class="feyebrow">What is on chain</p>
-    <h2 class="fh2">Hashes only.<br>Everything else off chain.</h2>
-    <p class="flede" style="margin-top:var(--s-300)">A buyer needs to verify a slice without trusting our records. A contributor needs to revoke without us able to deny it. That is the whole job.</p>
-    <div class="bento" style="margin-top:var(--s-600)">
+  <section class="section">
+    <p class="small" style="color:var(--ink-2)">What is on chain</p>
+    <h2>Hashes only. Everything else off chain.</h2>
+    <p class="lead" style="margin-top:12px">A buyer needs to verify a slice without trusting our records. A contributor needs to revoke without us able to deny it. That is the whole job.</p>
+    <div class="tiles">
       <article class="tile">
         <h3>One leaf per episode</h3>
         <p>A 197-byte preimage: payload hash, manifest hash, consent commitment, terms hash, capture and submission timestamps, duration, scope bits, channels, task ID, world seed (if sim), success flag, quality score. No identity, no payload, no free text. The consent commitment is salted fresh on every submission so episodes cannot be linked.</p>
@@ -82,76 +91,52 @@
         <h3>Revocation via non-membership</h3>
         <p>Consent withdrawal needs a non-membership proof — an inclusion list cannot express absence. Revocations live in a sparse Merkle tree anchored in the same call. One extra word per anchor. The verifier reports the block at which a withdrawal became public, which is the fact a buyer's counsel needs.</p>
       </article>
-      <article class="tile" style="border-color:var(--blue)">
+      <article class="tile accent">
         <h3>Payment and terms, one transaction</h3>
         <p>The only place a chain beats alternatives. Off chain: "the buyer paid under these terms" is our word. On chain: a USDC transfer and terms hash in one call, immutable afterwards. A receipt three years later is checkable against a head that provably existed.</p>
       </article>
     </div>
   </section>
 
-  <section class="fwrap">
-    <p class="feyebrow">Chain strategy</p>
-    <h2 class="fh2">Primary anchor on<br>Avalanche C-Chain</h2>
-    <p class="flede" style="margin-top:var(--s-300)">The protocol is chain-agnostic; no chain ID appears in any record. Avalanche C-Chain is a good primary because USDC settlement is native and embedded. A mirror anchor on Ethereum ensures the log survives if any single chain or its RPCs disappear. Any EVM chain can carry the log; no chain is privileged in the protocol itself.</p>
+  <section class="section">
+    <p class="small" style="color:var(--ink-2)">Chain strategy</p>
+    <h2>Primary anchor on Avalanche C-Chain</h2>
+    <p class="lead" style="margin-top:12px">The protocol is chain-agnostic; no chain ID appears in any record. Avalanche C-Chain is a good primary because USDC settlement is native and embedded. A mirror anchor on Ethereum ensures the log survives if any single chain or its RPCs disappear. Any EVM chain can carry the log; no chain is privileged in the protocol itself.</p>
   </section>
 
-  <section class="fwrap">
-    <p class="feyebrow">Known limitations</p>
-    <h2 class="fh2">What the protocol<br>does not prove</h2>
-    <div class="rail" style="margin:var(--s-600) auto 0;max-width:880px">
+  <section class="section">
+    <p class="small" style="color:var(--ink-2)">Known limitations</p>
+    <h2>What the protocol does not prove</h2>
+    <div class="rail" style="max-width:880px">
       <div>
-        <h3 style="font-size:16px;line-height:24px;margin-bottom:var(--s-100)">The operator can omit or refuse to anchor</h3>
+        <h3>The operator can omit or refuse to anchor</h3>
         <p>Append receipts and public audit make this detectable, not impossible.</p>
       </div>
       <div>
-        <h3 style="font-size:16px;line-height:24px;margin-bottom:var(--s-100)">Checks are heuristics, not proof</h3>
+        <h3>Checks are heuristics, not proof</h3>
         <p>They have recorded thresholds; they can be evaded and can err; they are evidence, not certainty.</p>
       </div>
       <div>
-        <h3 style="font-size:16px;line-height:24px;margin-bottom:var(--s-100)">Signatures prove authorship, not measurement</h3>
-        <p>A signature proves which key signed, not what a sensor measured. <code>captured_at</code>, <code>source</code>, and <code>embodiment</code> are claims by the signer, not the chain.</p>
+        <h3>Signatures prove authorship, not measurement</h3>
+        <p>A signature proves which key signed, not what a sensor measured. <code class="hash">captured_at</code>, <code class="hash">source</code>, and <code class="hash">embodiment</code> are claims by the signer, not the chain.</p>
       </div>
       <div>
-        <h3 style="font-size:16px;line-height:24px;margin-bottom:var(--s-100)">Revocation onset is recorded; rights are not</h3>
+        <h3>Revocation onset is recorded; rights are not</h3>
         <p>The protocol records when consent was withdrawn. What a buyer may do after that onset is governed by the terms document, not by this protocol.</p>
       </div>
       <div>
-        <h3 style="font-size:16px;line-height:24px;margin-bottom:var(--s-100)">Anchors depend on chain availability</h3>
+        <h3>Anchors depend on chain availability</h3>
         <p>The log is verifiable only if at least one chain carrying it is reachable. The same log is anchored on more than one for redundancy.</p>
       </div>
     </div>
   </section>
-
+</div>
 </main>
 <!-- FOOT:START -->
-<footer><div class="fwrap">
-  <div class="fcols">
-    <div><h4>Products</h4>
-      <a href="./products.html">Overview</a>
-      <a href="./index.html#band">Thenar Band</a>
-      <a href="./index.html#capture">Quest capture</a>
-      <a href="https://aibo.loompad.tech">Hotaru</a>
-    </div>
-    <div><h4>Protocol</h4>
-      <a href="./protocol.html">Architecture</a>
-      <a href="./index.html#chain">What goes on chain</a>
-      <a href="./faq.html">FAQ</a>
-    </div>
-    <div><h4>Company</h4>
-      <a href="./company.html">Status</a>
-      <a href="./market.html">Go to market</a>
-      <a href="https://github.com/nickthelegend/aibo-pet">Source</a>
-    </div>
-    <div><h4>Legal</h4>
-      <a href="./privacy.html">Privacy</a>
-      <a href="./terms.html">Terms</a>
-    </div>
-  </div>
-  <div class="fbase">
-    <span>THENAR — Provenance and rights for physical-AI data.</span>
-    <span>Built in the open. Quest and Meta are trade marks of Meta Platforms, Inc. Thenar is not affiliated with Meta.</span>
-  </div>
-</div></footer>
+<footer class="reg-footer">
+  <div class="wrap" data-reg-footer></div>
+</footer>
 <!-- FOOT:END -->
+<script type="module" src="./reg-footer.js"></script>
 </body>
 </html>

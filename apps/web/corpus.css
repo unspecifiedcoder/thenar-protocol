@@ -1,0 +1,34 @@
+/* corpus.css — page rules for /corpus, the register and the record card
+   (T-041c, DESIGN.md §4). Tokens and shared components live in design.css. */
+
+/* ---- skip link: visually hidden until keyboard focus ---- */
+.skip{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+.skip:focus{position:fixed;left:16px;top:16px;width:auto;height:auto;z-index:999;
+  background:var(--paper);color:var(--ink);padding:8px 16px;border:2px solid var(--ink);
+  border-radius:2px}
+
+/* ---- nav wordmark as a link, footer link row (shared with pages.css) ---- */
+.reg-nav .wordmark{text-decoration:none}
+.reg-footer nav{font-size:13px;line-height:20px;margin-bottom:16px}
+.reg-footer nav a{color:var(--ink-2)}
+.reg-footer .addrs{display:grid;gap:4px}
+
+/* ---- the record card ---- */
+.record{max-width:68ch}
+.record h2{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.record .status{font-size:13px;color:var(--ink-2);font-weight:400}
+
+.deflist{display:grid;grid-template-columns:max-content 1fr;gap:10px 24px;margin:24px 0}
+.deflist dt{font:500 13px/20px var(--sans);color:var(--ink-2)}
+.deflist dd{font-family:var(--mono);font-size:13px;line-height:20px;overflow-wrap:anywhere}
+
+.report-actions{display:flex;gap:12px;margin:20px 0;flex-wrap:wrap}
+
+.terms-gate{display:flex;align-items:center;gap:8px;margin-top:20px;
+  font:400 15px/24px var(--sans);color:var(--ink)}
+.terms-gate input{width:auto;flex:0 0 auto}
+
+.calldata-host{margin-top:16px;display:grid;gap:16px}
+.calldata-host .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:4px}
+.calldata-host .evidence .k{margin-bottom:8px;color:var(--ink-2)}
+.calldata-host .calldata{white-space:pre-wrap}

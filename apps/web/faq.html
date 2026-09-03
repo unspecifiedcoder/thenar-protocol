@@ -20,109 +20,84 @@
 <meta name="twitter:image" content="https://thenar.io/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./site.css">
+<link rel="stylesheet" href="./design.css">
+<link rel="stylesheet" href="./pages.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <!-- NAV:START -->
-<header class="top solid">
-  <a class="brand" href="./index.html" aria-label="Thenar home"><svg viewBox="0 0 340 92" aria-hidden="true" style="height:24px"><text x="0" y="70" font-family="Manrope,sans-serif" font-size="72" font-weight="700" letter-spacing="-2" fill="currentColor">THENAR</text></svg></a>
-  <nav class="topnav" aria-label="Primary">
-    <a href="./products.html">Products</a>
-    <a href="./protocol.html">Protocol</a>
-    <a href="./market.html">Market</a>
-    <a href="./faq.html" aria-current="page">FAQ</a>
-    <a href="./company.html">Company</a>
-    <a href="./corpus.html">Corpora</a>
+<header class="reg-nav wrap">
+  <a class="wordmark" href="./index.html">THENAR</a>
+  <nav aria-label="Primary">
     <a href="./verify.html">Verify</a>
+    <a href="./corpus.html">Corpora</a>
+    <a href="./protocol.html">Protocol</a>
+    <a href="./company.html">Company</a>
   </nav>
-  <a class="btn primary" href="./index.html#contact">Talk to us</a>
+  <span class="spacer"></span>
+  <span class="chip-chain" data-chain-chip data-state="loading">reading…</span>
 </header>
 <!-- NAV:END -->
 <main id="main">
-  <section class="fwrap">
-    <p class="feyebrow">Objections</p>
-    <h2 class="fh2">The questions<br>we get asked</h2>
-    <p class="flede" style="margin-top:var(--s-300)">Including the hostile ones. If an answer here is weaker than you expected, that is deliberate.</p>
-<div class="qalist">
-        <details class="qa">
-          <summary>What do you actually have today?</summary>
-          <p>Three things, and no more than three. Hotaru is shipping open source hardware: a desk robot of 22 printed parts with public CAD in Python and interface audits anyone can run. Teleoperation capture on a Quest 3S is running now, which gives 6DoF on both hands at 90 Hz and no force at all. The Thenar Band exists as watertight CAD and printable STLs; nobody has worn one, and no user data has been recorded with it.</p>
-        </details>
-        <details class="qa">
-          <summary>Why not just use simulation? It scales and costs almost nothing.</summary>
-          <p>We do use simulation, and it is the right way to get trajectories and task structure at volume. But contact is the least accurate part of every physics engine, so friction, deformation and slip are approximated, and a policy trained only in simulation learns to correct against numbers the solver invented. The sim-to-hardware gap in manipulation is a contact gap. Hardware-captured recordings are how you find out which of your simulated grasps were fiction.</p>
-        </details>
-        <details class="qa">
-          <summary>Why can a better model not estimate force from video?</summary>
-          <p>Because at the instant that matters the picture barely changes. The grip literature reports that a slip is answered by a corrective squeeze within roughly a tenth of a second, while the hand itself moves about a millimetre, which is at or under the resolution hand trackers report. We have not measured those numbers ourselves and we do not present them as ours. A vision model can learn a useful prior over what a grasp normally needs, but a prior is not a measurement, and it degrades on exactly the unfamiliar object you wanted the robot to handle.</p>
-        </details>
-        <details class="qa">
-          <summary>Why would force recorded on a human hand transfer to a robot gripper?</summary>
-          <p>This is the question that decides whether the company works, so we will not dress it up. Contact force does not transfer as a joint command, it transfers as a target: how much normal force a given material needs before it stops slipping, and how fast a correction has to arrive. That is a property of the object and the task rather than of the hand holding it, which is why we record material and contact area alongside the force. Instrumenting the robot instead is cheaper and in domain, and teams should do it. It only tells you about grasps the robot already attempts, which is why it does not replace watching a person succeed at something the robot currently fails.</p>
-        </details>
-        <details class="qa">
-          <summary>The Band is not built. What stops it staying CAD forever?</summary>
-          <p>Nothing but us building it, which is why we publish what state it is in instead of a launch date. The geometry is watertight, every part fits a 180 mm bed, and the snap fit and bayonet are toleranced with audits that must be proven to fail on a bad build before they count as checks. The next milestone is a printed unit recording contact, vision and inertial against one clock. Until that exists we keep calling it in design.</p>
-        </details>
-        <details class="qa">
-          <summary>Why blockchain at all? This sounds like a database.</summary>
-          <p>For our own bookkeeping a database is fine and we use one. Paying people is not the reason either: Wise and Stripe Connect move small amounts to large populations every day, and asking a contributor to hold a wallet is a barrier, not a feature. The reason is narrower. A buyer wants to verify a slice without trusting our internal records, and a contributor wants to check their own terms without asking us. Writing only a payload hash and the agreed terms makes the receipt and the provenance one entry. A signed manifest in a public append only log gives most of the same property, and if that suits a buyer better we will use it.</p>
-        </details>
-        <details class="qa">
-          <summary>Why would any buyer trust your provenance?</summary>
-          <p>They should not trust it, they should be able to check it. Terms and consent are recorded with the contribution at capture rather than asserted about it later. Be clear about the limit: that proves what was submitted and under what terms, not that the stream came from a hardware-captured source. Hardware attestation is what closes that gap and we have not built it. The honest offer is that you audit the first paid slice rather than take our word about a network that does not exist yet.</p>
-        </details>
-        <details class="qa">
-          <summary>What stops Meta, or a funded competitor, from doing this?</summary>
-          <p>Nothing stops them, and if measured contact matters as much as we think, somebody with more money will build a version. We expect it to be closed and pointed at their own models, which is what a platform does with hand data. That is not a moat, it is a bet on being early and open in a business with hardware and operations attached, which is genuinely less attractive than software and is why large teams have stayed on cameras.</p>
-        </details>
-        <details class="qa">
-          <summary>Why believe a small team can ship a wearable sensor?</summary>
-          <p>Partly, and only partly. Hotaru is evidence we take a device from parameters to a shipped object in public: 22 printed parts, CAD in pure Python, published STLs and audits anyone can rerun. That is evidence about geometry, tolerancing and release discipline. It is not evidence about transduction, drift, calibration across different hands, or yield, which is the part that actually kills force sensing wearables. Those are ahead of us and we have not solved them.</p>
-        </details>
-        <details class="qa">
-          <summary>Who buys contact data, and has anyone paid you?</summary>
-          <p>Nobody has paid us and no licences are signed. The buyer we build for is a team training manipulation policies that already knows which of its tasks fail, because we would rather record twenty named failures than a generic corpus nobody asked for. If that is you, telling us the failing tasks costs nothing and changes what we instrument first.</p>
-        </details>
-        <details class="qa">
-          <summary>What would prove you wrong?</summary>
-          <p>The weak version is a manipulation benchmark where adding measured contact force to pose and video does not improve success on unfamiliar objects. That is a soft test, because an extra informative channel rarely hurts. The rigorous one has a denominator: whether a dollar spent on measured force beats the same dollar spent on more simulation, more demonstrations, or tactile sensors mounted on the robot. We can run the weak version on our own tasks as soon as a Band records, and we should, before asking anybody to fund the strong one.</p>
-        </details>
+<div class="wrap">
+  <section class="section" style="border-top:0">
+    <p class="small" style="color:var(--ink-2)">Objections</p>
+    <h2>The questions we get asked</h2>
+    <p class="lead" style="margin-top:12px">Including the hostile ones. If an answer here is weaker than you expected, that is deliberate.</p>
+    <div class="qalist">
+      <details class="qa">
+        <summary>What do you actually have today?</summary>
+        <p>Three things, and no more than three. Hotaru is shipping open source hardware: a desk robot of 22 printed parts with public CAD in Python and interface audits anyone can run. Teleoperation capture on a Quest 3S is running now, which gives 6DoF on both hands at 90 Hz and no force at all. The Thenar Band exists as watertight CAD and printable STLs; nobody has worn one, and no user data has been recorded with it.</p>
+      </details>
+      <details class="qa">
+        <summary>Why not just use simulation? It scales and costs almost nothing.</summary>
+        <p>We do use simulation, and it is the right way to get trajectories and task structure at volume. But contact is the least accurate part of every physics engine, so friction, deformation and slip are approximated, and a policy trained only in simulation learns to correct against numbers the solver invented. The sim-to-hardware gap in manipulation is a contact gap. Hardware-captured recordings are how you find out which of your simulated grasps were fiction.</p>
+      </details>
+      <details class="qa">
+        <summary>Why can a better model not estimate force from video?</summary>
+        <p>Because at the instant that matters the picture barely changes. The grip literature reports that a slip is answered by a corrective squeeze within roughly a tenth of a second, while the hand itself moves about a millimetre, which is at or under the resolution hand trackers report. We have not measured those numbers ourselves and we do not present them as ours. A vision model can learn a useful prior over what a grasp normally needs, but a prior is not a measurement, and it degrades on exactly the unfamiliar object you wanted the robot to handle.</p>
+      </details>
+      <details class="qa">
+        <summary>Why would force recorded on a human hand transfer to a robot gripper?</summary>
+        <p>This is the question that decides whether the company works, so we will not dress it up. Contact force does not transfer as a joint command, it transfers as a target: how much normal force a given material needs before it stops slipping, and how fast a correction has to arrive. That is a property of the object and the task rather than of the hand holding it, which is why we record material and contact area alongside the force. Instrumenting the robot instead is cheaper and in domain, and teams should do it. It only tells you about grasps the robot already attempts, which is why it does not replace watching a person succeed at something the robot currently fails.</p>
+      </details>
+      <details class="qa">
+        <summary>The Band is not built. What stops it staying CAD forever?</summary>
+        <p>Nothing but us building it, which is why we publish what state it is in instead of a launch date. The geometry is watertight, every part fits a 180 mm bed, and the snap fit and bayonet are toleranced with audits that must be proven to fail on a bad build before they count as checks. The next milestone is a printed unit recording contact, vision and inertial against one clock. Until that exists we keep calling it in design.</p>
+      </details>
+      <details class="qa">
+        <summary>Why blockchain at all? This sounds like a database.</summary>
+        <p>For our own bookkeeping a database is fine and we use one. Paying people is not the reason either: Wise and Stripe Connect move small amounts to large populations every day, and asking a contributor to hold a wallet is a barrier, not a feature. The reason is narrower. A buyer wants to verify a slice without trusting our internal records, and a contributor wants to check their own terms without asking us. Writing only a payload hash and the agreed terms makes the receipt and the provenance one entry. A signed manifest in a public append only log gives most of the same property, and if that suits a buyer better we will use it.</p>
+      </details>
+      <details class="qa">
+        <summary>Why would any buyer trust your provenance?</summary>
+        <p>They should not trust it, they should be able to check it. Terms and consent are recorded with the contribution at capture rather than asserted about it later. Be clear about the limit: that proves what was submitted and under what terms, not that the stream came from a hardware-captured source. Hardware attestation is what closes that gap and we have not built it. The honest offer is that you audit the first paid slice rather than take our word about a network that does not exist yet.</p>
+      </details>
+      <details class="qa">
+        <summary>What stops Meta, or a funded competitor, from doing this?</summary>
+        <p>Nothing stops them, and if measured contact matters as much as we think, somebody with more money will build a version. We expect it to be closed and pointed at their own models, which is what a platform does with hand data. That is not a moat, it is a bet on being early and open in a business with hardware and operations attached, which is genuinely less attractive than software and is why large teams have stayed on cameras.</p>
+      </details>
+      <details class="qa">
+        <summary>Why believe a small team can ship a wearable sensor?</summary>
+        <p>Partly, and only partly. Hotaru is evidence we take a device from parameters to a shipped object in public: 22 printed parts, CAD in pure Python, published STLs and audits anyone can rerun. That is evidence about geometry, tolerancing and release discipline. It is not evidence about transduction, drift, calibration across different hands, or yield, which is the part that actually kills force sensing wearables. Those are ahead of us and we have not solved them.</p>
+      </details>
+      <details class="qa">
+        <summary>Who buys contact data, and has anyone paid you?</summary>
+        <p>Nobody has paid us and no licences are signed. The buyer we build for is a team training manipulation policies that already knows which of its tasks fail, because we would rather record twenty named failures than a generic corpus nobody asked for. If that is you, telling us the failing tasks costs nothing and changes what we instrument first.</p>
+      </details>
+      <details class="qa">
+        <summary>What would prove you wrong?</summary>
+        <p>The weak version is a manipulation benchmark where adding measured contact force to pose and video does not improve success on unfamiliar objects. That is a soft test, because an extra informative channel rarely hurts. The rigorous one has a denominator: whether a dollar spent on measured force beats the same dollar spent on more simulation, more demonstrations, or tactile sensors mounted on the robot. We can run the weak version on our own tasks as soon as a Band records, and we should, before asking anybody to fund the strong one.</p>
+      </details>
     </div>
   </section>
-
+</div>
 </main>
 <!-- FOOT:START -->
-<footer><div class="fwrap">
-  <div class="fcols">
-    <div><h4>Products</h4>
-      <a href="./products.html">Overview</a>
-      <a href="./index.html#band">Thenar Band</a>
-      <a href="./index.html#capture">Quest capture</a>
-      <a href="https://aibo.loompad.tech">Hotaru</a>
-    </div>
-    <div><h4>Protocol</h4>
-      <a href="./protocol.html">Architecture</a>
-      <a href="./index.html#chain">What goes on chain</a>
-      <a href="./faq.html">FAQ</a>
-    </div>
-    <div><h4>Company</h4>
-      <a href="./company.html">Status</a>
-      <a href="./market.html">Go to market</a>
-      <a href="https://github.com/nickthelegend/aibo-pet">Source</a>
-    </div>
-    <div><h4>Legal</h4>
-      <a href="./privacy.html">Privacy</a>
-      <a href="./terms.html">Terms</a>
-    </div>
-  </div>
-  <div class="fbase">
-    <span>THENAR — Provenance and rights for physical-AI data.</span>
-    <span>Built in the open. Quest and Meta are trade marks of Meta Platforms, Inc. Thenar is not affiliated with Meta.</span>
-  </div>
-</div></footer>
+<footer class="reg-footer">
+  <div class="wrap" data-reg-footer></div>
+</footer>
 <!-- FOOT:END -->
+<script type="module" src="./reg-footer.js"></script>
 </body>
 </html>

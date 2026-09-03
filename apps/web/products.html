@@ -20,98 +20,77 @@
 <meta name="twitter:image" content="https://thenar.io/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./site.css">
+<link rel="stylesheet" href="./design.css">
+<link rel="stylesheet" href="./pages.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <!-- NAV:START -->
-<header class="top solid">
-  <a class="brand" href="./index.html" aria-label="Thenar home"><svg viewBox="0 0 340 92" aria-hidden="true" style="height:24px"><text x="0" y="70" font-family="Manrope,sans-serif" font-size="72" font-weight="700" letter-spacing="-2" fill="currentColor">THENAR</text></svg></a>
-  <nav class="topnav" aria-label="Primary">
-    <a href="./products.html" aria-current="page">Products</a>
-    <a href="./protocol.html">Protocol</a>
-    <a href="./market.html">Market</a>
-    <a href="./faq.html">FAQ</a>
-    <a href="./company.html">Company</a>
-    <a href="./corpus.html">Corpora</a>
+<header class="reg-nav wrap">
+  <a class="wordmark" href="./index.html">THENAR</a>
+  <nav aria-label="Primary">
     <a href="./verify.html">Verify</a>
+    <a href="./corpus.html">Corpora</a>
+    <a href="./protocol.html">Protocol</a>
+    <a href="./company.html">Company</a>
   </nav>
-  <a class="btn primary" href="./index.html#contact">Talk to us</a>
+  <span class="spacer"></span>
+  <span class="chip-chain" data-chain-chip data-state="loading">reading…</span>
 </header>
 <!-- NAV:END -->
 <main id="main">
-  <section class="fwrap">
-    <p class="feyebrow">Provenance and rights ledger</p>
-    <h2 class="fh2">Four products for<br>physical-AI data</h2>
-    <p class="flede" style="margin-top:var(--s-300)">The provenance log is the centre. Capture attestation and rights management are the layers below and above it. Each is labelled with its honest state.</p>
-    <div class="bento" style="margin-top:var(--s-600)">
+<div class="wrap">
+  <section class="section" style="border-top:0">
+    <p class="small" style="color:var(--ink-2)">Provenance and rights ledger</p>
+    <h2>Four products for physical-AI data</h2>
+    <p class="lead" style="margin-top:12px">The provenance log is the centre. Capture attestation and rights management are the layers below and above it. Each is labelled with its honest state.</p>
+    <div class="tiles">
       <article class="tile">
         <h3>Provenance Report</h3>
         <p>Ingest an existing LeRobot v3 corpus, commit every episode to the log, run L3 checks (deduplication, jitter detection, plausibility), anchor, and deliver a counsel-readable report with proofs and an on-chain receipt. Needs no hardware, SDK, or contributors. First customer: a buyer or supplier closing a transaction and needing diligence.</p>
-          <div class="spec"><div>FORMAT<b>LeRobot v3</b></div><div>CHECKS<b>L3 heuristic</b></div><div>DELIVERY<b>JSON + PDF + receipt</b></div></div>
-        <div class="tagbar"><span class="tg ">Building</span></div>
+        <div class="spec"><div>Format<b>LeRobot v3</b></div><div>Checks<b>L3 heuristic</b></div><div>Delivery<b>JSON + PDF + receipt</b></div></div>
+        <p style="margin-top:12px"><span class="tag">Building</span></p>
       </article>
       <article class="tile">
         <h3>Recorder SDK</h3>
         <p>A plugin for lerobot recorders that generates a session key, signs each episode's manifest at capture, and streams leaves to the log. Suppliers use this to be pre-checked so buyers skip the report stage. Optional device attestation (Android Key Attestation for Quest, TPM for NUC/Jetson). Where L1 signed claims and L2 attested claims originate.</p>
-          <div class="spec"><div>PLATFORMS<b>Android, Linux, iOS later</b></div><div>ATTESTATION<b>Optional, Phase D</b></div><div>DELIVERY<b>npm package</b></div></div>
-        <div class="tagbar"><span class="tg ">Planned</span></div>
+        <div class="spec"><div>Platforms<b>Android, Linux, iOS later</b></div><div>Attestation<b>Optional, Phase D</b></div><div>Delivery<b>npm package</b></div></div>
+        <p style="margin-top:12px"><span class="tag">Planned</span></p>
       </article>
       <article class="tile">
         <h3>Licence Registry</h3>
         <p>On-chain corpus sealing, terms publication, and USDC settlement that binds payment to a specific corpus root and licence version in one transaction. Buyer approval starts delivery. Revocation tracking happens off chain; the API shows which corpora contain revoked episodes. No token, no token incentives.</p>
-          <div class="spec"><div>CHAIN<b>Avalanche C-Chain primary</b></div><div>SETTLEMENT<b>USDC, 2.5% take</b></div><div>VERIFIER<b>Public, stateless</b></div></div>
-        <div class="tagbar"><span class="tg ">Building</span></div>
+        <div class="spec"><div>Chain<b>Avalanche C-Chain primary</b></div><div>Settlement<b>USDC, 2.5% take</b></div><div>Verifier<b>Public, stateless</b></div></div>
+        <p style="margin-top:12px"><span class="tag">Building</span></p>
       </article>
       <article class="tile">
         <h3>Consent Service</h3>
         <p>For suppliers whose data comes from people: consent records, re-salted commitments per episode, signed revocation with on-chain onset proof, and erasure trails. GDPR-ready. Integrated with the Recorder SDK; optional for W1 suppliers.</p>
-          <div class="spec"><div>SCOPE<b>Per-episode consent</b></div><div>REVOCATION<b>Signed, onset proven</b></div><div>ERASURE<b>Verifiable trail</b></div></div>
-        <div class="tagbar"><span class="tg ">Building</span></div>
+        <div class="spec"><div>Scope<b>Per-episode consent</b></div><div>Revocation<b>Signed, onset proven</b></div><div>Erasure<b>Verifiable trail</b></div></div>
+        <p style="margin-top:12px"><span class="tag">Building</span></p>
       </article>
     </div>
   </section>
-  <section class="fwrap">
-    <p class="feyebrow">Hardware research (not data products)</p>
-    <div class="note" style="margin:0 auto">
-      <b>Thenar Band.</b> A wrist unit for force/contact capture: watertight CAD, audited tolerances, printable today. Nobody has worn one; no data has been recorded with it. When force sensing wearables work, this design can be a reference L2 attestation device.
-    </div>
-    <div class="note" style="margin:0 auto;margin-top:var(--s-300)">
-      <b>Hotaru.</b> A desk robot: 22 printed parts, CAD in pure Python, open STLs, shipped. Proof of geometry and tolerancing discipline. Not a data product and not presented as one.
+  <section class="section">
+    <p class="small" style="color:var(--ink-2)">Hardware research (not data products)</p>
+    <div class="rail" style="max-width:68ch">
+      <div>
+        <h3>Thenar Band</h3>
+        <p>A wrist unit for force/contact capture: watertight CAD, audited tolerances, printable today. Nobody has worn one; no data has been recorded with it. When force sensing wearables work, this design can be a reference L2 attestation device.</p>
+      </div>
+      <div>
+        <h3>Hotaru</h3>
+        <p>A desk robot: 22 printed parts, CAD in pure Python, open STLs, shipped. Proof of geometry and tolerancing discipline. Not a data product and not presented as one.</p>
+      </div>
     </div>
   </section>
-
+</div>
 </main>
 <!-- FOOT:START -->
-<footer><div class="fwrap">
-  <div class="fcols">
-    <div><h4>Products</h4>
-      <a href="./products.html">Overview</a>
-      <a href="./index.html#band">Thenar Band</a>
-      <a href="./index.html#capture">Quest capture</a>
-      <a href="https://aibo.loompad.tech">Hotaru</a>
-    </div>
-    <div><h4>Protocol</h4>
-      <a href="./protocol.html">Architecture</a>
-      <a href="./index.html#chain">What goes on chain</a>
-      <a href="./faq.html">FAQ</a>
-    </div>
-    <div><h4>Company</h4>
-      <a href="./company.html">Status</a>
-      <a href="./market.html">Go to market</a>
-      <a href="https://github.com/nickthelegend/aibo-pet">Source</a>
-    </div>
-    <div><h4>Legal</h4>
-      <a href="./privacy.html">Privacy</a>
-      <a href="./terms.html">Terms</a>
-    </div>
-  </div>
-  <div class="fbase">
-    <span>THENAR — Provenance and rights for physical-AI data.</span>
-    <span>Built in the open. Quest and Meta are trade marks of Meta Platforms, Inc. Thenar is not affiliated with Meta.</span>
-  </div>
-</div></footer>
+<footer class="reg-footer">
+  <div class="wrap" data-reg-footer></div>
+</footer>
 <!-- FOOT:END -->
+<script type="module" src="./reg-footer.js"></script>
 </body>
 </html>

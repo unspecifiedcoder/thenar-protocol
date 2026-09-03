@@ -1,0 +1,62 @@
+/* pages.css — page-scoped rules for the secondary register pages (T-041c):
+   /protocol, /company, /products, /market, /faq, /terms, /privacy, /404.
+   Tokens and shared components (`.reg-nav`, `.register`, `.badge`, `.hash`,
+   `.notice`, buttons…) live in design.css; nothing here redefines a token. */
+
+/* ---- skip link: visually hidden until keyboard focus ---- */
+.skip{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+.skip:focus{position:fixed;left:16px;top:16px;width:auto;height:auto;z-index:999;
+  background:var(--paper);color:var(--ink);padding:8px 16px;border:2px solid var(--ink);
+  border-radius:2px}
+
+/* ---- nav wordmark as a link, footer link row (both pages share the shell) ---- */
+.reg-nav .wordmark{text-decoration:none}
+.reg-footer nav{font-size:13px;line-height:20px;margin-bottom:16px}
+.reg-footer nav a{color:var(--ink-2)}
+.reg-footer .addrs{display:grid;gap:4px}
+
+/* ---- tiles: a grid of bordered notes, used where the old site had "bento"
+   feature cards. Border and radius follow the register's own rules (1px
+   --rule, 2px radius); no shadow, no hover lift. ---- */
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--gutter);margin-top:24px}
+.tile{border:1px solid var(--rule);border-radius:2px;padding:20px}
+.tile h3{margin-bottom:8px}
+.tile p{color:var(--ink-2);font-size:15px;line-height:24px}
+.tile.accent{border-color:var(--seal)}
+@media (max-width:860px){.tiles{grid-template-columns:1fr}}
+
+/* ---- spec list: small key/value pairs under a tile (format, checks, delivery) ---- */
+.spec{display:flex;flex-wrap:wrap;gap:16px;margin-top:12px}
+.spec div{font-size:13px;line-height:20px;color:var(--ink-2)}
+.spec b{display:block;color:var(--ink);font-weight:500;font-size:13px}
+
+/* ---- status tag: a neutral, non-claim label ("Building", "Planned") — kept
+   visually distinct from `.badge`, which is reserved for the L0-L3 claim
+   levels (DESIGN §5: badge wording is verbatim and never reused for other
+   status). ---- */
+.tag{display:inline-block;border:1px solid var(--rule);border-radius:2px;
+  padding:2px 8px;font:500 12px/18px var(--mono);color:var(--ink-2)}
+
+/* ---- rail: a left-ruled stack of short notes (limitations, "where this
+   stands"), reusing the marginalia idiom at body scale. ---- */
+.rail{display:grid;gap:24px;margin-top:24px}
+.rail > div{border-left:1px solid var(--rule);padding-left:16px}
+.rail h3{font-size:17px;line-height:26px;margin-bottom:4px}
+.rail p{color:var(--ink-2)}
+
+/* ---- FAQ accordion ---- */
+.qalist{border-top:2px solid var(--ink);margin-top:24px}
+.qa{border-bottom:1px solid var(--rule);padding:16px 0}
+.qa summary{cursor:pointer;font:500 17px/26px var(--sans);color:var(--ink);list-style:none}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary::before{content:"+";display:inline-block;width:20px;color:var(--seal);font-weight:600}
+.qa[open] summary::before{content:"–"}
+.qa p{margin-top:12px;padding-left:20px;color:var(--ink-2)}
+
+/* ---- legal / doc pages (terms, privacy, 404) ---- */
+.doc{max-width:68ch}
+.doc h1{margin-bottom:8px}
+.doc h2{margin-top:32px;margin-bottom:8px}
+.doc .upd{color:var(--ink-2);margin-bottom:24px}
+.doc ul{padding-left:20px;margin-top:8px}
+.doc li{color:var(--ink-2);margin-top:4px}

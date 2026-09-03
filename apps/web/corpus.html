@@ -17,77 +17,51 @@
 <meta name="twitter:image" content="https://thenar.io/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./site.css">
-<link rel="stylesheet" href="./chainui.css">
+<link rel="stylesheet" href="./design.css">
+<link rel="stylesheet" href="./corpus.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <!-- NAV:START -->
-<header class="top solid">
-  <a class="brand" href="./index.html" aria-label="Thenar home"><svg viewBox="0 0 340 92" aria-hidden="true" style="height:24px"><text x="0" y="70" font-family="Manrope,sans-serif" font-size="72" font-weight="700" letter-spacing="-2" fill="currentColor">THENAR</text></svg></a>
-  <nav class="topnav" aria-label="Primary">
-    <a href="./products.html">Products</a>
-    <a href="./protocol.html">Protocol</a>
-    <a href="./market.html">Market</a>
-    <a href="./faq.html">FAQ</a>
-    <a href="./company.html">Company</a>
-    <a href="./corpus.html" aria-current="page">Corpora</a>
+<header class="reg-nav wrap">
+  <a class="wordmark" href="./index.html">THENAR</a>
+  <nav aria-label="Primary">
     <a href="./verify.html">Verify</a>
+    <a href="./corpus.html" aria-current="page">Corpora</a>
+    <a href="./protocol.html">Protocol</a>
+    <a href="./company.html">Company</a>
   </nav>
-  <a class="btn primary" href="./index.html#contact">Talk to us</a>
+  <span class="spacer"></span>
+  <span class="chip-chain" data-chain-chip data-state="loading">reading…</span>
 </header>
 <!-- NAV:END -->
 <main id="main">
-<section class="wrap" style="padding-top:96px;padding-bottom:16px">
-  <h1 style="margin:0 0 18px">Corpora</h1>
-  <p style="max-width:64ch;font-size:17px;line-height:1.55;color:var(--fg-dim)">
+<div class="wrap">
+<section class="section" style="padding-bottom:24px">
+  <h1>Corpora</h1>
+  <p class="lead" style="margin-top:12px">
     A corpus is a set of episodes committed to the log, manifest-leafed,
-    anchored, and sealed for sale by <code>LicenceRegistry.sealCorpus</code>.
-    The list below reads sealed corpora straight off the contract; open one
-    for its report summary, terms, price, and the exact calldata a buyer
-    wallet sends — no private key ever asked for here.
+    anchored, and sealed for sale by <code class="hash">LicenceRegistry.sealCorpus</code>.
+    The register below reads sealed corpora straight off the contract; open
+    one for its record card — terms, price, and the exact calldata a buyer
+    wallet sends. No private key is ever asked for here.
   </p>
+  <p class="small" id="corpus-stats" style="color:var(--ink-2);margin-top:8px"></p>
 </section>
 
-<section class="wrap" style="padding-bottom:64px">
-  <div id="corpora" class="cstack">
-    <div class="cempty" data-state="loading">
-      <span class="spin" aria-hidden="true"></span> Reading corpora…
-    </div>
+<section class="section" style="padding-top:0">
+  <div id="corpora">
+    <div class="empty" data-state="loading">Reading corpora…</div>
   </div>
 </section>
+</div>
 </main>
 <!-- FOOT:START -->
-<footer><div class="fwrap">
-  <div class="fcols">
-    <div><h4>Products</h4>
-      <a href="./products.html">Overview</a>
-      <a href="./index.html#band">Thenar Band</a>
-      <a href="./index.html#capture">Quest capture</a>
-      <a href="https://aibo.loompad.tech">Hotaru</a>
-    </div>
-    <div><h4>Protocol</h4>
-      <a href="./protocol.html">Architecture</a>
-      <a href="./index.html#chain">What goes on chain</a>
-      <a href="./faq.html">FAQ</a>
-    </div>
-    <div><h4>Company</h4>
-      <a href="./company.html">Status</a>
-      <a href="./market.html">Go to market</a>
-      <a href="https://github.com/nickthelegend/aibo-pet">Source</a>
-    </div>
-    <div><h4>Legal</h4>
-      <a href="./privacy.html">Privacy</a>
-      <a href="./terms.html">Terms</a>
-    </div>
-  </div>
-  <div class="fbase">
-    <span>THENAR — contact data for physical AI.</span>
-    <span>Built in the open. Quest and Meta are trade marks of Meta Platforms, Inc. Thenar is not affiliated with Meta.</span>
-  </div>
-</div></footer>
+<footer class="reg-footer">
+  <div class="wrap" data-reg-footer></div>
+</footer>
 <!-- FOOT:END -->
+<script type="module" src="./reg-footer.js"></script>
 <script type="module" src="./corpus.js"></script>
 </body>
 </html>

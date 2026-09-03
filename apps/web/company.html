@@ -20,103 +20,77 @@
 <meta name="twitter:image" content="https://thenar.io/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./site.css">
+<link rel="stylesheet" href="./design.css">
+<link rel="stylesheet" href="./pages.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <!-- NAV:START -->
-<header class="top solid">
-  <a class="brand" href="./index.html" aria-label="Thenar home"><svg viewBox="0 0 340 92" aria-hidden="true" style="height:24px"><text x="0" y="70" font-family="Manrope,sans-serif" font-size="72" font-weight="700" letter-spacing="-2" fill="currentColor">THENAR</text></svg></a>
-  <nav class="topnav" aria-label="Primary">
-    <a href="./products.html">Products</a>
+<header class="reg-nav wrap">
+  <a class="wordmark" href="./index.html">THENAR</a>
+  <nav aria-label="Primary">
+    <a href="./verify.html">Verify</a>
+    <a href="./corpus.html">Corpora</a>
     <a href="./protocol.html">Protocol</a>
-    <a href="./market.html">Market</a>
-    <a href="./faq.html">FAQ</a>
     <a href="./company.html" aria-current="page">Company</a>
   </nav>
-  <a class="btn primary" href="./index.html#contact">Talk to us</a>
+  <span class="spacer"></span>
+  <span class="chip-chain" data-chain-chip data-state="loading">reading…</span>
 </header>
 <!-- NAV:END -->
 <main id="main">
-  <section class="fwrap">
-    <p class="feyebrow">Company</p>
-    <h2 class="fh2">Where this<br>actually stands</h2>
-    <p class="flede" style="margin-top:var(--s-300)">Written plainly. Every number here is checkable.</p>
-    <div class="tscroll" style="margin-top:var(--s-600)">
-      <table>
+<div class="wrap">
+  <section class="section" style="border-top:0">
+    <p class="small" style="color:var(--ink-2)">Company</p>
+    <h2>Where this actually stands</h2>
+    <p class="lead" style="margin-top:12px">Written plainly. Every number here is checkable.</p>
+    <div class="register-wrap" style="margin-top:32px">
+      <table class="register">
         <thead><tr>
-          <th scope="col">Item</th>
-          <th scope="col">Status</th>
-          <th scope="col">Note</th>
+          <th>Item</th>
+          <th>Status</th>
+          <th>Note</th>
         </tr></thead>
         <tbody>
-          <tr><td><b>Provenance Report</b></td><td>Building</td><td>Ingest, checks, report generation</td></tr>
-          <tr><td><b>Recorder SDK</b></td><td>Planned</td><td>Phase D, post-wedge</td></tr>
-          <tr><td><b>Licence Registry</b></td><td>Building</td><td>Contracts, USDC settlement</td></tr>
-          <tr><td><b>Consent Service</b></td><td>Building</td><td>Revocation, GDPR readiness</td></tr>
-          <tr><td><b>Contracts</b></td><td>151 tests passing</td><td>forge test, source published on Sourcify</td></tr>
-          <tr><td><b>Live deployment</b></td><td>Pending</td><td>Fuji testnet, Sepolia mirror</td></tr>
-          <tr><td><b>Revenue</b></td><td>Zero</td><td>First customer in Q4 2026</td></tr>
-          <tr><td><b>Contributors</b></td><td>Zero</td><td>W1 uses existing corpora</td></tr>
-          <tr><td><b>Buyers</b></td><td>Zero</td><td>In conversations</td></tr>
+          <tr><td>Provenance Report</td><td>Building</td><td>Ingest, checks, report generation</td></tr>
+          <tr><td>Recorder SDK</td><td>Planned</td><td>Phase D, post-wedge</td></tr>
+          <tr><td>Licence Registry</td><td>Building</td><td>Contracts, USDC settlement</td></tr>
+          <tr><td>Consent Service</td><td>Building</td><td>Revocation, GDPR readiness</td></tr>
+          <tr><td>Contracts</td><td>151 tests passing</td><td>forge test, source published on Sourcify</td></tr>
+          <tr><td>Live deployment</td><td>Pending</td><td>Fuji testnet, Sepolia mirror</td></tr>
+          <tr><td>Revenue</td><td>Zero</td><td>First customer in Q4 2026</td></tr>
+          <tr><td>Contributors</td><td>Zero</td><td>W1 uses existing corpora</td></tr>
+          <tr><td>Buyers</td><td>Zero</td><td>In conversations</td></tr>
         </tbody>
       </table>
     </div>
   </section>
-  <section class="fwrap">
-    <p class="feyebrow">Method</p>
-    <h2 class="fh2">A check that has not<br>failed is not a check</h2>
-    <p class="flede" style="margin-top:var(--s-300)">The discipline that runs through everything here: an audit only counts once it has been shown to fail on geometry that is wrong. Our bayonet checks are run against a build that is not twisted home, and if they pass there, they are reported as worthless. It is mutation testing pointed at CAD, and it is the reason we publish audits alongside the STLs instead of asking to be trusted.</p>
-    <div class="bento" style="margin-top:var(--s-600)">
+  <section class="section">
+    <p class="small" style="color:var(--ink-2)">Method</p>
+    <h2>A check that has not failed is not a check</h2>
+    <p class="lead" style="margin-top:12px">The discipline that runs through everything here: an audit only counts once it has been shown to fail on geometry that is wrong. Our bayonet checks are run against a build that is not twisted home, and if they pass there, they are reported as worthless. It is mutation testing pointed at CAD, and it is the reason we publish audits alongside the STLs instead of asking to be trusted.</p>
+    <div class="tiles">
       <article class="tile">
         <h3>Open by default</h3>
         <p>CAD in pure Python, STLs published, audits anyone can rerun. If a claim on this site is checkable, the way to check it is public.</p>
-        
       </article>
       <article class="tile">
         <h3>Status on every claim</h3>
         <p>Every product on this site carries what state it is in. Shipping, in design, running, or zero. No exceptions, including the uncomfortable ones.</p>
-        
       </article>
       <article class="tile">
         <h3>We name the gaps</h3>
         <p>Hardware attestation is missing. Hotaru proves geometry and not transduction. A ledger does not prove authenticity at capture. All three are on the site because a reviewer finds them anyway.</p>
-        
       </article>
     </div>
   </section>
-
+</div>
 </main>
 <!-- FOOT:START -->
-<footer><div class="fwrap">
-  <div class="fcols">
-    <div><h4>Products</h4>
-      <a href="./products.html">Overview</a>
-      <a href="./index.html#band">Thenar Band</a>
-      <a href="./index.html#capture">Quest capture</a>
-      <a href="https://aibo.loompad.tech">Hotaru</a>
-    </div>
-    <div><h4>Protocol</h4>
-      <a href="./protocol.html">Architecture</a>
-      <a href="./index.html#chain">What goes on chain</a>
-      <a href="./faq.html">FAQ</a>
-    </div>
-    <div><h4>Company</h4>
-      <a href="./company.html">Status</a>
-      <a href="./market.html">Go to market</a>
-      <a href="https://github.com/nickthelegend/aibo-pet">Source</a>
-    </div>
-    <div><h4>Legal</h4>
-      <a href="./privacy.html">Privacy</a>
-      <a href="./terms.html">Terms</a>
-    </div>
-  </div>
-  <div class="fbase">
-    <span>THENAR — Provenance and rights for physical-AI data.</span>
-    <span>Built in the open. Quest and Meta are trade marks of Meta Platforms, Inc. Thenar is not affiliated with Meta.</span>
-  </div>
-</div></footer>
+<footer class="reg-footer">
+  <div class="wrap" data-reg-footer></div>
+</footer>
 <!-- FOOT:END -->
+<script type="module" src="./reg-footer.js"></script>
 </body>
 </html>

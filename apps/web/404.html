@@ -9,55 +9,46 @@
 <link rel="icon" href="./mark.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./site.css">
-<style>
-.doc{max-width:720px;margin:0 auto;text-align:left}
-.doc h1{font-size:36px;line-height:40px;font-weight:500;letter-spacing:-1px}
-.doc h2{font-size:20px;line-height:28px;font-weight:600;letter-spacing:0;
-  margin-top:var(--s-600);text-align:left}
-.doc p,.doc li{color:var(--fg-dim);font-size:16px;line-height:24px;
-  margin-top:var(--s-200)}
-.doc ul{padding-left:var(--s-300)}
-.doc a{color:var(--fg);text-decoration:underline;text-underline-offset:2px}
-.doc .upd{font-size:12px;line-height:16px;color:var(--fg-mute);
-  margin-top:var(--s-200)}
-</style>
+<link rel="stylesheet" href="./design.css">
+<link rel="stylesheet" href="./pages.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<header class="top solid">
-  <a class="brand" href="./" aria-label="Thenar home">
-    <svg viewBox="0 0 340 92" aria-hidden="true" style="height:24px">
-      <text x="0" y="70" font-family="Manrope,sans-serif" font-size="72"
-            font-weight="700" letter-spacing="-2" fill="currentColor">THENAR</text>
-    </svg>
-  </a>
-  <a class="btn primary" href="./#contact">Talk to us</a>
+<header class="reg-nav wrap">
+  <a class="wordmark" href="./index.html">THENAR</a>
+  <nav aria-label="Primary">
+    <a href="./verify.html">Verify</a>
+    <a href="./corpus.html">Corpora</a>
+    <a href="./protocol.html">Protocol</a>
+    <a href="./company.html">Company</a>
+  </nav>
+  <span class="spacer"></span>
+  <span class="chip-chain" data-chain-chip data-state="loading">reading…</span>
 </header>
-<main id="main"><section class="fwrap"><div class="doc">
+<main id="main">
+<div class="wrap">
+<section class="section" style="border-top:0">
+<div class="doc">
 <h1>That page does not exist</h1>
 <p>The link was probably wrong, or something moved. Nothing is broken on your
 end.</p>
-<p style="margin-top:var(--s-500)">
-  <a class="btn primary" href="./" style="text-decoration:none">Back to the start</a>
+<p style="margin-top:24px">
+  <a class="btn" href="./index.html">Back to the start</a>
 </p>
 <h2>Or go straight to</h2>
 <ul>
-  <li><a href="./#band">The Thenar Band</a>, the instrument we are building</li>
-  <li><a href="./#demo">One grasp, two recordings</a>, why force matters</li>
-  <li><a href="./#faq">The FAQ</a>, including the hostile questions</li>
-  <li><a href="./#contact">Contact</a></li>
+  <li><a href="./corpus.html">Corpora</a>, the sealed corpora register</li>
+  <li><a href="./verify.html">Verify</a>, check a record against the chain</li>
+  <li><a href="./faq.html">The FAQ</a>, including the hostile questions</li>
+  <li><a href="./index.html#contact">Contact</a></li>
 </ul>
-</div></section></main>
-<footer><div class="fwrap" style="display:flex;gap:var(--s-300);flex-wrap:wrap;
-  justify-content:space-between">
-  <span>THENAR — contact data for physical AI.</span>
-  <span style="display:flex;gap:var(--s-300);flex-wrap:wrap">
-    <a href="./">Home</a>
-    <a href="./privacy.html">Privacy</a>
-    <a href="./terms.html">Terms</a>
-  </span>
-</div></footer>
+</div>
+</section>
+</div>
+</main>
+<footer class="reg-footer">
+  <div class="wrap" data-reg-footer></div>
+</footer>
+<script type="module" src="./reg-footer.js"></script>
 </body>
 </html>

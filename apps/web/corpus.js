@@ -11,7 +11,19 @@
  * service ever learned its on-chain id back — T-027's supervisor note).
  * Numbers are shown or absent, never guessed (I-11).
  */
-import { CHAIN, readCorpusCount, readCorpusAt, readTerms, LICENCE_SELECTORS } from "./grasp-chain.js";
+import { CHAIN, readCorpusCount, readCorpusAt, readTerms, readTokenSymbol, LICENCE_SELECTORS } from "./grasp-chain.js";
+
+/** True for every chain this page is likely to run against today (T-041c:
+ * a resolved token symbol is annotated "(mock, testnet)" rather than shown
+ * as if it settled real value). */
+const IS_TESTNET = /test|fuji|sepolia|goerli/i.test(CHAIN?.name || "");
+
+/** `{amount} {symbol}` for a price cell — resolves the ERC-20 symbol via
+ * `readTokenSymbol`, falling back to the short address if the call fails. */
+async function tokenLabel(token) {
+  const symbol = await readTokenSymbol(token).catch(() => null);
+  return symbol ? `${symbol}${IS_TESTNET ? " (mock, testnet)" : ""}` : short(token);
+}
 
 const $ = (s, r = document) => r.querySelector(s);
 const short = (h) => (h.length > 18 ? h.slice(0, 10) + "…" + h.slice(-6) : h);
@@ -21,19 +33,23 @@ export const API_BASE =
   (typeof window !== "undefined" && (new URLSearchParams(location.search).get("api") || window.THENAR_API_BASE))
   || "https://api.thenar.io";
 
+/** Wires every `.copy-btn` under `root` (design.css `.copy`): click copies
+ * its `data-copy` value, shows "Copied" for 1.2 s (`data-done="1"` per
+ * design.css), falls back to a selectable span when the clipboard API is
+ * unavailable or blocked. */
 function wireCopy(root) {
-  for (const b of root.querySelectorAll(".copy")) {
+  for (const b of root.querySelectorAll(".copy-btn")) {
     b.addEventListener("click", async () => {
       const v = b.dataset.copy;
       try {
         await navigator.clipboard.writeText(v);
         const was = b.textContent;
-        b.textContent = "copied";
-        b.classList.add("ok");
-        setTimeout(() => { b.textContent = was; b.classList.remove("ok"); }, 1200);
+        b.textContent = "Copied";
+        b.dataset.done = "1";
+        setTimeout(() => { b.textContent = was; delete b.dataset.done; }, 1200);
       } catch {
         const holder = document.createElement("span");
-        holder.className = "mono";
+        holder.className = "hash";
         holder.textContent = v;
         holder.style.cssText = "user-select:all;word-break:break-all";
         b.replaceWith(holder);
@@ -48,7 +64,9 @@ function wireCopy(root) {
   }
 }
 
-const copyBtn = (v) => `<button class="copy mono" data-copy="${v}" title="${v}">${short(v)}</button>`;
+/** A `.hash-short` value with a "Copy" affordance (design.css `.copy`). */
+const copyBtn = (v, label = "Copy") =>
+  `<span class="copy"><span class="hash-short" title="${v}">${short(v)}</span><button class="copy-btn" data-copy="${v}">${label}</button></span>`;
 
 const fmtAmount = (amount, decimals = 6) => {
   const n = BigInt(amount);
@@ -60,51 +78,79 @@ const fmtAmount = (amount, decimals = 6) => {
 
 // ============================================================ list view
 
-function card(c) {
-  const el = document.createElement("article");
-  el.className = "card";
-  el.innerHTML = `
-    <div class="chead">
-      <h2 class="ctitle"><a href="./corpus.html?id=${c.id}">Corpus #${c.id}</a></h2>
-      <span class="cmeta">${c.open ? "open to licence" : "closed"}</span>
-    </div>
-    <div class="figs">
-      <div class="fig"><div class="k">Episodes</div><div class="v">${c.episodeCount}</div></div>
-      <div class="fig"><div class="k">Price</div><div class="v small">${fmtAmount(c.price)} <span class="mono">${short(c.token)}</span></div></div>
-      <div class="fig"><div class="k">Supplier</div><div class="v small">${copyBtn(c.supplier)}</div></div>
-    </div>
-    <div class="fig" style="margin-top:6px">
-      <div class="k">Corpus root</div>
-      <div class="v small">${copyBtn(c.corpusRoot)}</div>
-    </div>`;
-  wireCopy(el);
-  return el;
+/** The list's `Sources —` cell: the chain-only enumeration (`corpusAt`) carries
+ * no manifest, so every row shows the short, pre-v2.2 form of `sourcesLine`
+ * (PLAN §1.1) rather than one fetch per row against the log service. */
+function listSourcesLine() {
+  return sourcesLine(null);
+}
+
+function row(c) {
+  const sealed = c.anchorSize > 0;
+  const tr = document.createElement("tr");
+  if (sealed) tr.className = "anchored";
+  tr.innerHTML = `
+    <td><a href="./corpus.html?id=${c.id}">Corpus #${c.id}</a>
+      <div class="small" style="color:var(--ink-2)">${c.open ? "open to licence" : "closed"}</div></td>
+    <td class="num">${c.episodeCount}</td>
+    <td class="small">${listSourcesLine()}</td>
+    <td class="num">${fmtAmount(c.price)} <span class="token-label">${short(c.token)}</span></td>
+    <td>${sealed ? '<span class="seal" title="sealed and anchored"></span> sealed' : "logged"}</td>`;
+  // The token symbol needs a chain read; the row shows the short address
+  // until it resolves (or forever, if the token does not answer `symbol()`).
+  tokenLabel(c.token).then((label) => {
+    const el = tr.querySelector(".token-label");
+    if (el) el.textContent = label;
+  }).catch(() => {});
+  return tr;
 }
 
 /** Exported so the empty and populated list states can be tested without a chain. */
 export function render(host, corpora) {
   host.innerHTML = "";
   if (corpora.length === 0) {
-    host.innerHTML = `<div class="cempty" data-state="empty">No corpus has been sealed yet.
-      A corpus appears here once its manifest leaf is logged, anchored, and <code>sealCorpus</code> runs.</div>`;
+    host.innerHTML = `<div class="empty" data-state="empty">No corpus has been sealed yet — a
+      corpus appears here once its manifest leaf is logged, anchored, and
+      <code class="hash">sealCorpus</code> runs. Seal one with
+      <code class="hash">scripts/seal-corpus.mjs</code>.</div>`;
     return;
   }
-  for (const c of corpora) host.appendChild(card(c));
+  const wrap = document.createElement("div");
+  wrap.className = "register-wrap";
+  const table = document.createElement("table");
+  table.className = "register";
+  table.innerHTML = `<thead><tr>
+      <th>Corpus</th><th class="num">Episodes</th><th>Sources</th><th class="num">Price</th><th>Status</th>
+    </tr></thead><tbody></tbody>`;
+  const tbody = table.querySelector("tbody");
+  for (const c of corpora) tbody.appendChild(row(c));
+  wrap.appendChild(table);
+  host.appendChild(wrap);
 }
 
 export function renderError(host, message) {
-  host.innerHTML = `<div class="cempty" data-state="error">
+  host.innerHTML = `<div class="notice" data-kind="fail">
     Could not reach the chain, so nothing is shown rather than guessed. ${message}</div>`;
 }
 
-export async function loadList(host) {
+/** `statsHost` (optional) gets the live-read summary line DESIGN §4 calls
+ * for — "{n} corpora sealed on {chain}, read {t}s ago" — set once the read
+ * that filled the register has completed. */
+export async function loadList(host, statsHost) {
+  const t0 = Date.now();
   try {
     const n = await readCorpusCount();
     const corpora = [];
     for (let i = 0; i < n; i++) corpora.push(await readCorpusAt(i));
     render(host, corpora);
+    if (statsHost) {
+      const t = Math.max(0, Math.round((Date.now() - t0) / 1000));
+      const chainName = CHAIN?.name ?? "this chain";
+      statsHost.textContent = `${n} ${n === 1 ? "corpus" : "corpora"} sealed on ${chainName}, read ${t}s ago.`;
+    }
   } catch (e) {
     renderError(host, e.message);
+    if (statsHost) statsHost.textContent = "";
   }
 }
 
@@ -170,7 +216,7 @@ export async function loadCorpus(id) {
 /** PLAN §1.1: the corpus `Sources —` line, verbatim; a manifest logged before the source axis shipped carries no `sources` field. */
 function sourcesLine(manifest) {
   if (!manifest || !Array.isArray(manifest.sources) || manifest.sources.length === 0) {
-    return "Sources — unknown (pre-v2.2 corpus).";
+    return "Sources — not recorded for this corpus.";
   }
   return `Sources — ${manifest.sources.join(", ")}.`;
 }
@@ -198,64 +244,81 @@ async function sendViaWallet(to, data) {
   return window.ethereum.request({ method: "eth_sendTransaction", params: [{ from, to, data }] });
 }
 
-function calldataBlock(label, target, data) {
-  return `<div class="calldata-row">
-    <div class="k">${label} — target ${copyBtn(target)}, selector <span class="mono">${data.slice(0, 10)}</span></div>
-    <pre class="mono calldata">${data}</pre>
+/** One `.evidence` block (design.css): the calldata itself in `.calldata`
+ * (its `textContent` is exactly the hex string — nothing else — since a
+ * buyer or a test may copy/compare it verbatim), a "Copy calldata" button. */
+function evidenceBlock(label, target, data) {
+  return `<div class="evidence">
+    <div class="k small">${label} — target ${copyBtn(target)}, selector <span class="hash-short">${data.slice(0, 10)}</span></div>
+    <pre class="hash calldata">${data}</pre>
+    <span class="copy" style="margin-top:8px"><button class="copy-btn" data-copy="${data}">Copy calldata</button></span>
   </div>`;
 }
 
-function renderDetail(host, record) {
+function renderDetail(host, record, requestedId) {
   host.innerHTML = "";
   const el = document.createElement("article");
-  el.className = "card";
+  el.className = "record";
 
   const idLabel = record.offChainId ? `Corpus ${record.offChainId}` : `Corpus #${record.onChain?.id ?? "?"}`;
+  const statusLabel = record.onChain ? (record.onChain.open ? "open to licence" : "closed") : "not sealed on chain yet";
   const revokedNote = record.containsRevoked === true
-    ? `<p class="cmeta" style="color:#FA9DCD">Contains a revoked episode — see §6.1: existing receipts still verify against their sealing anchor, but a new buyer is shown this before paying.</p>`
+    ? `<div class="notice" data-kind="warn">Contains a revoked episode — see §6.1: existing receipts still verify against their sealing anchor, but a new buyer is shown this before paying.</div>`
     : record.containsRevoked === false
-      ? `<p class="cmeta">No revoked episode in this corpus, as of the last check.</p>`
-      : `<p class="cmeta">Revocation status unknown — the log service has no off-chain row for this id.</p>`;
+      ? `<p class="small" style="color:var(--ink-2)">No revoked episode in this corpus, as of the last check.</p>`
+      : `<p class="small" style="color:var(--ink-2)">Revocation status unknown — the log service has no off-chain row for this id.</p>`;
+
+  const reportId = record.offChainId ?? requestedId;
+  const reportBase = `${API_BASE.replace(/\/$/, "")}/v1/corpora/${encodeURIComponent(reportId)}/report`;
+  const reportActions = record.offChainId
+    ? `<div class="report-actions">
+        <a class="btn" href="${reportBase}" target="_blank" rel="noreferrer">Read the report</a>
+        <a class="btn btn-quiet" href="${reportBase}?format=pdf" target="_blank" rel="noreferrer">Download report (PDF)</a>
+      </div>`
+    : "";
 
   el.innerHTML = `
-    <div class="chead"><h1 class="ctitle">${idLabel}</h1>
-      <span class="cmeta">${record.onChain ? (record.onChain.open ? "open to licence" : "closed") : "not sealed on chain yet"}</span>
-    </div>
-    <div class="fig" style="margin-top:10px"><div class="k">Corpus manifest hash</div><div class="v small">${copyBtn(record.corpusManifestHash)}</div></div>
-    <div class="fig" style="margin-top:6px"><div class="k">Corpus root</div><div class="v small">${copyBtn(record.corpusRoot)}</div></div>
+    <h2>${idLabel} <span class="status">${statusLabel}</span></h2>
+    <dl class="deflist" id="deflist"></dl>
     ${revokedNote}
-    <p class="cmeta">${sourcesLine(record.manifest)}</p>
-    <div id="onchain-section"></div>
-    <div id="terms-section"></div>
+    <p class="source" data-attested="0">${sourcesLine(record.manifest)}</p>
+    ${reportActions}
     <div id="purchase-section"></div>`;
 
-  const onchainSection = $("#onchain-section", el);
+  const deflist = $("#deflist", el);
+  deflist.innerHTML =
+    `<dt>Corpus manifest hash</dt><dd>${copyBtn(record.corpusManifestHash)}</dd>` +
+    `<dt>Corpus root</dt><dd>${copyBtn(record.corpusRoot)}</dd>`;
   if (record.onChain) {
-    onchainSection.innerHTML = `
-      <div class="figs" style="margin-top:14px">
-        <div class="fig"><div class="k">Terms hash</div><div class="v small">${copyBtn(record.onChain.termsHash)}</div></div>
-        <div class="fig"><div class="k">Price</div><div class="v small">${fmtAmount(record.onChain.price)} <span class="mono">${short(record.onChain.token)}</span></div></div>
-        <div class="fig"><div class="k">Episodes</div><div class="v">${record.onChain.episodeCount}</div></div>
-      </div>`;
-  } else {
-    onchainSection.innerHTML = `<p class="cmeta" style="margin-top:14px">Not yet sealed on chain — no price, token or purchase calldata to show yet.</p>`;
+    deflist.innerHTML +=
+      `<dt>Terms hash</dt><dd>${copyBtn(record.onChain.termsHash)}</dd>` +
+      `<dt>Price</dt><dd>${fmtAmount(record.onChain.price)} <span class="token-label">${short(record.onChain.token)}</span> — ${copyBtn(record.onChain.token)}</dd>` +
+      `<dt>Episodes</dt><dd>${record.onChain.episodeCount}</dd>` +
+      `<dt>On-chain id</dt><dd>${record.onChain.id}</dd>` +
+      `<dt>Sealing anchor</dt><dd>(${copyBtn(record.onChain.anchorRoot ?? record.corpusRoot)}, size ${record.onChain.anchorSize ?? "—"})</dd>`;
+    tokenLabel(record.onChain.token).then((label) => {
+      const el2 = $(".token-label", deflist);
+      if (el2) el2.textContent = label;
+    }).catch(() => {});
   }
 
-  const termsSection = $("#terms-section", el);
   const purchaseSection = $("#purchase-section", el);
 
   if (record.onChain) {
     (async () => {
       let terms = null;
       try { terms = await readTerms(record.onChain.termsHash); } catch { /* rendered as "not published" below */ }
-      termsSection.innerHTML = terms
-        ? `<p class="cmeta" style="margin-top:14px">Terms <span class="mono">${short(record.onChain.termsHash)}</span> — <a href="${terms.uri}" rel="noreferrer">${terms.uri}</a>${terms.retired ? " (retired)" : ""}</p>`
-        : `<p class="cmeta" style="margin-top:14px">These terms are not published on this chain yet.</p>`;
+      const termsNote = document.createElement("p");
+      termsNote.className = "small";
+      termsNote.style.cssText = "color:var(--ink-2);margin-bottom:16px";
+      termsNote.innerHTML = terms
+        ? `Terms ${copyBtn(record.onChain.termsHash)} — <a href="${terms.uri}" rel="noreferrer">${terms.uri}</a>${terms.retired ? " (retired)" : ""}`
+        : "These terms are not published on this chain yet.";
+      purchaseSection.appendChild(termsNote);
 
       const gate = document.createElement("label");
-      gate.className = "cmeta";
-      gate.style.cssText = "display:flex;align-items:center;gap:8px;margin-top:16px";
-      gate.innerHTML = `<input type="checkbox" id="terms-read"> I have read terms ${record.onChain.termsHash}`;
+      gate.className = "terms-gate";
+      gate.innerHTML = `<input type="checkbox" id="terms-read"> I have read terms <span class="hash-short">${short(record.onChain.termsHash)}</span>`;
       purchaseSection.appendChild(gate);
 
       const calldataHost = document.createElement("div");
@@ -269,20 +332,20 @@ function renderDetail(host, record) {
         calldataHost.dataset.rendered = "1";
         const registry = CHAIN?.registry;
         if (!registry) {
-          calldataHost.innerHTML = `<p class="cmeta">No LicenceRegistry address configured for the primary chain — cannot compute purchase calldata.</p>`;
+          calldataHost.innerHTML = `<div class="notice" data-kind="warn">No LicenceRegistry address configured for the primary chain — cannot compute purchase calldata.</div>`;
           return;
         }
         const approveData = approveCalldata(registry, record.onChain.price);
         const licenseData = licenseCalldata(record.onChain.id);
         calldataHost.innerHTML =
-          calldataBlock("approve", record.onChain.token, approveData) +
-          calldataBlock("license", registry, licenseData) +
+          evidenceBlock("approve", record.onChain.token, approveData) +
+          evidenceBlock("license", registry, licenseData) +
           `<div class="actions">
-            <button class="btn sm" id="send-approve">Send approve via wallet</button>
-            <button class="btn sm ghost" id="send-license">Send license via wallet</button>
+            <button class="btn btn-quiet" id="send-approve">Send approve via wallet</button>
+            <button class="btn btn-seal" id="send-license">License with wallet</button>
           </div>
-          <p class="cmeta" id="wallet-status" style="margin-top:8px"></p>
-          <p class="cmeta" style="margin-top:8px">No private key is ever asked for on this page — every send goes through your own injected wallet.</p>`;
+          <p class="small" id="wallet-status" style="margin-top:8px;color:var(--ink-2)"></p>
+          <p class="small" style="margin-top:8px;color:var(--ink-2)">No private key is ever asked for on this page — every send goes through your own injected wallet.</p>`;
         wireCopy(calldataHost);
         const status = $("#wallet-status", calldataHost);
         $("#send-approve", calldataHost).addEventListener("click", async () => {
@@ -295,8 +358,6 @@ function renderDetail(host, record) {
         });
       });
     })();
-  } else {
-    termsSection.innerHTML = "";
   }
 
   wireCopy(el);
@@ -306,7 +367,7 @@ function renderDetail(host, record) {
 export async function loadDetail(host, id) {
   try {
     const record = await loadCorpus(id);
-    renderDetail(host, record);
+    renderDetail(host, record, id);
   } catch (e) {
     renderError(host, e.message);
   }
@@ -318,5 +379,5 @@ const host = $("#corpora");
 if (host) {
   const id = new URLSearchParams(location.search).get("id");
   if (id) loadDetail(host, id);
-  else loadList(host);
+  else loadList(host, $("#corpus-stats"));
 }

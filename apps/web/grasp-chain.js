@@ -27,6 +27,7 @@ const SEL = {
   corpusCount: "0x60d0f933",  // corpusCount()
   corpusAt: "0x2a1b631d",     // corpusAt(uint256)
   termsAt: "0xff7485bc",      // termsAt(bytes32)
+  symbol: "0x95d89b41",       // ERC-20 symbol()
 };
 
 /** ERC-20's `approve` and `LicenceRegistry.license` — T-027's calldata the
@@ -120,6 +121,31 @@ export async function readTerms(termsHash) {
   const strHex = body.slice(strOffsetWords * 64 + 64, strOffsetWords * 64 + 64 + len * 2);
   const uri = new TextDecoder().decode(hexToBytes("0x" + strHex));
   return { uri, publishedAt, retired, exists };
+}
+
+const tokenSymbolCache = new Map();
+
+/** ERC-20 `symbol()`, cached per token address (T-041c: the corpus register
+ * shows "1 USDC" rather than a raw token address). `null` on any failure —
+ * a non-standard or unreachable token falls back to showing its address. */
+export async function readTokenSymbol(token) {
+  const key = token.toLowerCase();
+  if (tokenSymbolCache.has(key)) return tokenSymbolCache.get(key);
+  const promise = (async () => {
+    try {
+      const raw = await ethCall(token, SEL.symbol);
+      const body = raw.slice(2);
+      const strOffsetWords = Number(BigInt("0x" + body.slice(0, 64)) / 32n);
+      const len = Number(BigInt("0x" + body.slice(strOffsetWords * 64, strOffsetWords * 64 + 64)));
+      const strHex = body.slice(strOffsetWords * 64 + 64, strOffsetWords * 64 + 64 + len * 2);
+      const sym = new TextDecoder().decode(hexToBytes("0x" + strHex)).trim();
+      return sym || null;
+    } catch {
+      return null;
+    }
+  })();
+  tokenSymbolCache.set(key, promise);
+  return promise;
 }
 
 /** Read the anchors the chain actually holds, newest last. */
