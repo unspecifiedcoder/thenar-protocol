@@ -1008,3 +1008,75 @@ first GraspLog reads with mirror fallback; LicenceRegistry primary-only,
 no fallback attempted). D-29 (15 s cache, `stale_at` on every live value).
 
 Open questions / conflicts filed: none.
+
+## T-019 — L3 checks `sensor_consistency.v1` and `sim_signature.v1` (indicative; FD-2) — 2026-09-03 — STRONG
+
+Changed: `config/checks.json` (already had `sensor_consistency.v1`/
+`sim_signature.v1` entries — no change needed, both `blocking: false,
+emit_fail: false`), `services/verify/src/run.ts` (adapter additions for
+both checks + `computeMotion`), `docs/VERIFICATION.md` (replaced the
+FD-2-open placeholder section with both checks' algorithms, parameter
+classes, known evasions), `package.json` (`test:verify` registers the two
+new test files).
+
+Created: `services/verify/src/video/motion.ts`
+(`MotionEnergyProvider`, `FfmpegMotionEnergy`, `FfmpegUnavailable`),
+`services/verify/src/checks/sensor_consistency.ts`,
+`services/verify/src/checks/sim_signature.ts`,
+`services/verify/test/sensor_consistency.test.ts`,
+`services/verify/test/sim_signature.test.ts`.
+
+Deleted: none.
+
+Tests: `pnpm test:verify` → pass (timing.v1, kinematics.v1, dedup.v1,
+sensor_consistency.v1 [17 assertions], sim_signature.v1 [21 assertions]).
+`npx tsc --noEmit -p .` → no errors in `services/verify/src/**` (repo has
+pre-existing unrelated errors elsewhere, untouched by this task).
+
+Deviations from PLAN.md: none. Supervisor adjustments followed:
+1. T-020 doesn't exist yet — both checks are pure functions returning
+   `types.ts`'s `CheckOutcome`, exactly as T-018's `timing.v1`/
+   `kinematics.v1` already established.
+2. `ffmpeg` is not installed here. `MotionEnergyProvider` is the
+   injectable seam (`src/video/motion.ts`); both checks take a
+   pre-computed `motion: number[] | null` and never call `ffmpeg`
+   themselves — `sensor_consistency.test.ts`/`sim_signature.test.ts` use
+   an in-memory fake provider exclusively. `FfmpegMotionEnergy` (the real
+   `ffmpeg -ss t0 -to t1 -i file -vf "fps=5,format=gray,scale=160:-2,
+   tblend=all_mode=difference" -f rawvideo -` implementation, with
+   `ffprobe`-derived dimensions to know the headerless rawvideo frame
+   stride) is present and exercised by one test that confirms it throws a
+   typed `FfmpegUnavailable` when the binary can't be spawned — this
+   passed in this environment precisely because `ffmpeg`/`ffprobe` are
+   absent. `src/run.ts`'s `computeMotion` catches `FfmpegUnavailable` and
+   turns it into the required loud skip: `sensor_consistency.v1` comes
+   back `inconclusive` with `detail.reason = "ffmpeg unavailable"`;
+   `sim_signature.v1` keeps its other three features' verdict, annotated
+   with `detail.ffmpeg_error = "ffmpeg unavailable"`.
+3. FD-2 is open: both checks unconditionally downgrade a would-be `fail`
+   to `inconclusive` with `detail.downgraded_from: "fail"` — a code-level
+   guard inside each check function (mirroring `dedup.v1`'s FD-1
+   downgrade), not merely `config/checks.json`'s `emit_fail: false`.
+   `sim_signature.v1`'s downgrade is unconditional/permanent per
+   `TASKS/CONFLICTS.md`'s FD-2 note ("stays indicative … in v2
+   regardless"), not contingent on FD-2 closing.
+
+One documented implementation limitation (not a deviation from the task,
+which left this feature's mechanism unspecified beyond "spectral power >
+5Hz < 1e-6 of total"): `sim_signature.v1`'s feature 3 uses a direct,
+rectangular-window DFT of the joint-speed-norm signal resampled at 20Hz.
+Window leakage from a non-integer-cycle window means this feature reliably
+trips only for near-static or exactly window-periodic signals, not
+arbitrary smooth sub-5Hz motion — documented in the check's header comment
+and in `docs/VERIFICATION.md`'s known-evasions list; the check's overall
+`score`/`score_fail` logic does not depend on this feature alone (the
+fixture ROC-style sim-like test clears `score_fail` via the other three
+features).
+
+Invariants touched: I-15 (every `CheckOutcome.detail` carries
+`check_version` + `thresholds`, verified by dedicated assertions in both
+new test files). I-11 (neither check invents a value: `motion === null` or
+missing frames always route to a named `inconclusive` reason, never a
+fabricated result). §10.9 check ids `0x0004`/`0x0005` — no ADR change.
+
+Open questions / conflicts filed: none.
