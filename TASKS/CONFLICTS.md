@@ -25,6 +25,8 @@ Format: `C-<n>: <task> — <what> — <options> — <status>`
   Needs counsel. Status: OPEN, blocks mainnet USDC (not testnets).
 - **FD-5 — Pricing** (report fee, per-episode logging, SaaS). Status: OPEN,
   commercial, not blocking code.
+- **FD-5 — T-039 task_compliance.v1 weights/thresholds** (port of the live
+  scorer: placement 55 % / smoothness 25 % / time 20 %). Status: OPEN, Phase D.
 - **FD-6 — Consortium / Avalanche L1.** Status: not before year 2.
 - **FD-7 — Any change to `PLAN.md §10` (crypto), §11 (ABIs), §12 (paths),
   §9 (schemas).** Always FRONTIER.
@@ -32,5 +34,3 @@ Format: `C-<n>: <task> — <what> — <options> — <status>`
 ## Conflicts filed by agents
 
 (none yet)
-- **FD-5 — T-039 task_compliance.v1 weights/thresholds** (port of the live
-  scorer: placement 55 % / smoothness 25 % / time 20 %). Status: OPEN, Phase D.
