@@ -32,10 +32,10 @@ export interface ILogStore {
     chainId: number, idx: number, root: Hex, size: number, revocationRoot: Hex, txHash: string, blockNumber: number,
   ): void;
   anchorsForChain(chainId?: number): {
-    chainId: number; idx: number; root: Hex; size: number; revocationRoot: Hex | null; txHash: string; blockNumber: number;
+    chainId: number; idx: number; root: Hex; size: number; revocationRoot: Hex | null; txHash: string; blockNumber: number; at: number;
   }[];
   anchorChains(root: Hex, size: number): {
-    chainId: number; idx: number; root: Hex; size: number; revocationRoot: Hex | null; txHash: string; blockNumber: number;
+    chainId: number; idx: number; root: Hex; size: number; revocationRoot: Hex | null; txHash: string; blockNumber: number; at: number;
   }[];
   lastAnchored(chainId: number): { size: number; revocationRoot: Hex } | null;
 
@@ -107,6 +107,21 @@ export type SigningKeyRow = {
   validTo: number | null;
   attestation: string | null;
   status: "active" | "expired" | "revoked";
+};
+
+/** PLAN §8 Corpus row (`corpus` table, `schema.sql` — written by the not-yet-built `POST /corpora` pipeline; T-016 only reads it). */
+export type CorpusRow = {
+  corpusId: string;
+  orgId: string;
+  manifest: string;
+  corpusManifestHash: Hex;
+  corpusRoot: Hex;
+  manifestLeafHash: Hex | null;
+  manifestLeafIdx: number | null;
+  onChainId: string | null;
+  status: "draft" | "logged" | "sealed" | "closed";
+  containsRevoked: boolean;
+  createdAt: number;
 };
 
 export type ClaimRow = {

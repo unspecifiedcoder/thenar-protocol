@@ -6,7 +6,7 @@ import type { Hex } from "viem";
 import * as tree from "./tree.ts";
 import { recordHash, consentKey as deriveConsentKey, revocationValue, type ConsentRecord } from "../../../packages/protocol/src/consent.ts";
 import { verify as verifySignature } from "../../../packages/protocol/src/sign.ts";
-import type { ILogStore, EpisodeMeta, ClaimRow, OrgRow, ApiKeyRow, SigningKeyRow } from "./store-interface.ts";
+import type { ILogStore, EpisodeMeta, ClaimRow, OrgRow, ApiKeyRow, SigningKeyRow, CorpusRow } from "./store-interface.ts";
 
 /**
  * The log itself — one append-only tree, persisted.
@@ -222,7 +222,7 @@ export class LogStore implements ILogStore {
 
   /** Anchors recorded for one chain (or every chain, when `chainId` is omitted), oldest first. */
   anchorsForChain(chainId?: number): {
-    chainId: number; idx: number; root: Hex; size: number; revocationRoot: Hex | null; txHash: string; blockNumber: number;
+    chainId: number; idx: number; root: Hex; size: number; revocationRoot: Hex | null; txHash: string; blockNumber: number; at: number;
   }[] {
     const rows = (
       chainId === undefined
@@ -231,18 +231,18 @@ export class LogStore implements ILogStore {
     ) as any[];
     return rows.map((r) => ({
       chainId: r.chain_id, idx: r.idx, root: r.root, size: r.size, revocationRoot: r.revocation_root,
-      txHash: r.tx_hash, blockNumber: r.block_number,
+      txHash: r.tx_hash, blockNumber: r.block_number, at: r.at,
     }));
   }
 
   /** Every chain's anchor row for an exact `(root, size)`. */
   anchorChains(root: Hex, size: number): {
-    chainId: number; idx: number; root: Hex; size: number; revocationRoot: Hex | null; txHash: string; blockNumber: number;
+    chainId: number; idx: number; root: Hex; size: number; revocationRoot: Hex | null; txHash: string; blockNumber: number; at: number;
   }[] {
     const rows = this.db.prepare("SELECT * FROM anchor_chain WHERE root = ? AND size = ? ORDER BY chain_id ASC").all(root, size) as any[];
     return rows.map((r) => ({
       chainId: r.chain_id, idx: r.idx, root: r.root, size: r.size, revocationRoot: r.revocation_root,
-      txHash: r.tx_hash, blockNumber: r.block_number,
+      txHash: r.tx_hash, blockNumber: r.block_number, at: r.at,
     }));
   }
 
@@ -251,6 +251,57 @@ export class LogStore implements ILogStore {
     const r = this.db.prepare("SELECT size, revocation_root FROM anchor_chain WHERE chain_id = ? ORDER BY idx DESC LIMIT 1").get(chainId) as any;
     if (!r) return null;
     return { size: r.size, revocationRoot: r.revocation_root };
+  }
+
+  // -------------------------------------------------------------------- corpus
+
+  /**
+   * The `corpus` row for `corpusId`, or `null`. Written by `POST /corpora`'s
+   * pipeline (not yet built); T-016 only reads this table for `GET
+   * /corpora/{id}` (PLAN §12), so until that pipeline lands the only rows
+   * here are the ones a caller writes directly with `_insertCorpusUnchecked`.
+   */
+  corpusById(corpusId: string): CorpusRow | null {
+    const r = this.db.prepare("SELECT * FROM corpus WHERE corpus_id = ?").get(corpusId) as any;
+    if (!r) return null;
+    return {
+      corpusId: r.corpus_id, orgId: r.org_id, manifest: r.manifest,
+      corpusManifestHash: r.corpus_manifest_hash, corpusRoot: r.corpus_root,
+      manifestLeafHash: r.manifest_leaf_hash ?? null, manifestLeafIdx: r.manifest_leaf_idx ?? null,
+      onChainId: r.on_chain_id ?? null, status: r.status, containsRevoked: !!r.contains_revoked,
+      createdAt: r.created_at,
+    };
+  }
+
+  /** `corpus_episode` rows for `corpusId`, `corpus_index` order — the episode leaves `contains_revoked` is computed over. */
+  corpusEpisodeLeaves(corpusId: string): { leafHash: Hex; corpusIndex: number }[] {
+    const rows = this.db.prepare(
+      "SELECT leaf_hash, corpus_index FROM corpus_episode WHERE corpus_id = ? ORDER BY corpus_index ASC",
+    ).all(corpusId) as any[];
+    return rows.map((r) => ({ leafHash: r.leaf_hash as Hex, corpusIndex: r.corpus_index }));
+  }
+
+  /**
+   * Test-only escape hatch: writes a `corpus` row directly, bypassing the
+   * not-yet-built `POST /corpora` pipeline. Never called from production
+   * code paths.
+   */
+  _insertCorpusUnchecked(row: CorpusRow): void {
+    this.db.prepare(
+      `INSERT OR REPLACE INTO corpus (corpus_id, org_id, manifest, corpus_manifest_hash, corpus_root,
+                                       manifest_leaf_hash, manifest_leaf_idx, on_chain_id, status, contains_revoked, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      row.corpusId, row.orgId, row.manifest, row.corpusManifestHash, row.corpusRoot,
+      row.manifestLeafHash, row.manifestLeafIdx, row.onChainId, row.status, row.containsRevoked ? 1 : 0, row.createdAt,
+    );
+  }
+
+  /** Test-only escape hatch: writes a `corpus_episode` row directly. Never called from production code paths. */
+  _insertCorpusEpisodeUnchecked(corpusId: string, leafHash: Hex, corpusIndex: number): void {
+    this.db.prepare(
+      "INSERT OR REPLACE INTO corpus_episode (corpus_id, leaf_hash, corpus_index) VALUES (?, ?, ?)",
+    ).run(corpusId, leafHash, corpusIndex);
   }
 
   // ---------------------------------------------------------------- episodes

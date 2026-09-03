@@ -66,9 +66,26 @@ export const apiErrorsTotalCounter = new Counter({
 });
 
 /**
- * Register a collector function that will be called to gather metrics.
- * The log daemon uses this to bridge its internal metrics into gauges.
+ * Create a collector that bridges daemon metrics into Prometheus gauges.
+ * Call this when starting the daemon to wire metrics into the registry.
  */
-export function registerCollector(collectFn: () => void) {
-  metricsRegistry.registerCollector(collectFn);
+export function createDaemonCollector(getDaemonMetrics: () => any) {
+  return () => {
+    try {
+      const daemonMetrics = getDaemonMetrics();
+
+      // Update anchor_lag_seconds per chain
+      if (daemonMetrics && daemonMetrics.anchor_lag_seconds) {
+        for (const [chainId, lagSeconds] of daemonMetrics.anchor_lag_seconds.entries()) {
+          anchorLagGauge.set({ chain: String(chainId) }, lagSeconds);
+        }
+      }
+
+      // Note: other gauges (log_size, ingest_queue, verification_queue) are
+      // managed by the API layer as it processes requests. The daemon only
+      // exposes anchor_lag_seconds and pending_revocations count.
+    } catch {
+      // Silently ignore errors in metric collection
+    }
+  };
 }

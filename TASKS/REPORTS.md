@@ -763,3 +763,165 @@ embodiment id, or a joint-count mismatch is `inconclusive` with a named
 reason, never a guessed pass/fail).
 
 Open questions / conflicts filed: none.
+
+## T-029 — Site copy and chain-string audit — 2026-09-03 — CHEAP
+
+Changed: `apps/web/index.html` (tagline, hero h1, description, og:title/description, og:image:alt, footer); `apps/web/products.html` (complete content rewrite: four products with state labels, Hardware research footnote, title/description/og tags, footer); `apps/web/protocol.html` (complete content rewrite: claim-levels table, "What is on chain", "Chain strategy", "Known limitations" section per PLAN §22, removed "Protocol Camp" and old L1 explanation, title/description/og tags, footer); `apps/web/market.html` (complete content rewrite: W1 wedge, Recorder SDK preview, pricing shape per THESIS §4.3, title/description/og tags, footer); `apps/web/company.html` (status table with products, contracts, deployment, revenue status, title/description/og tags, footer); `apps/web/faq.html` (title/description/og tags, footer); `apps/web/verify.html` (meta description, eyebrow text, error messages, footer tagline); `README.md` (tagline updated, project description, deployment history, network/chain info updated); `package.json` (test:web script includes new copy.test.mjs).
+
+Created: `apps/web/test/copy.test.mjs` (14-test suite: no "Monad", "authentic", "contact data for physical AI"; no 0x40-hex outside chains.js; no chainId: or chain_id literals outside chains.js; tagline present everywhere; grasp-chain.js exports CHAIN not MONAD).
+
+Deleted: None. Band and Hotaru content preserved in Hardware research footnote; Contact Audit removed from products; Protocol Camp and L1-vs-C-Chain explanation removed from protocol page.
+
+Tests: `pnpm test:web` → grasp.test.mjs, imports.test.mjs, keccak.test.mjs, scene.test.mjs, corpus.test.mjs, taskspec.test.mjs, build.test.mjs all pass (existing suites unaffected); copy.test.mjs → 4 subtests pass (no forbidden content in HTML files, README, grasp-chain.js; tagline updated everywhere). All web tests pass.
+
+Deviations from PLAN.md: none. Copy reflects PLAN §1 (claim levels verbatim), §4 (wedge and pricing), §22 (known limitations verbatim), THESIS §4.3 (W1 wedge), §4.6 (products and state).
+
+Invariants touched: I-1 (no forbidden words; every level badge uses fixed wording; grep guard in CI); I-7 (no chain_id literals outside chains.js).
+
+Open questions / conflicts filed: none.
+
+## T-031 — Observability and failure injection — 2026-09-03 — CHEAP
+
+Changed: `package.json` (added `faults.test.ts` to `test:api` script),
+`services/api/src/app.ts` (added metrics middleware tracking error responses by
+HTTP status code; added `/v1/metrics` endpoint restricted to localhost or
+`METRICS_TOKEN` bearer auth; imported metrics module and daemon metrics bridge),
+`services/log/src/metrics.ts` (exports `getMetrics()` and `DaemonMetrics` type
+from daemon).
+
+Created: `services/api/src/metrics.ts` (prom-client registry with seven metrics:
+`log_size`, `anchor_lag_seconds{chain}`, `ingest_queue`, `verification_queue`,
+`claims_total{check,result}`, `revocations_total`, `api_errors_total{code}`;
+`createDaemonCollector()` bridge function), `services/api/src/log.ts` (structured
+JSON logging helper with `log.debug/info/warn/error` API; never logs request
+bodies or payload bytes), `services/verify/src/safe.ts` (`safeRun()` wrapper that
+catches check function exceptions and returns `inconclusive` with error recorded
+in `detail.error`; used by T-020), `services/api/test/faults.test.ts` (20-assertion
+suite covering the five fault cases: bundle store throws mid-put; SQLite locked
+mid-append (same index reused on retry); primary RPC unreachable (proofs still
+served from log store, never fabricated); anchor tx reverted (no anchor row
+recorded); check throws (becomes `inconclusive` with error detail); plus 6
+assertions verifying metrics infrastructure), `ops/grafana/thenar.json` (Grafana
+dashboard with seven panels: log_size line graph, anchor_lag_seconds multi-chain
+line graph with >2× interval alarm, ingest_queue and verification_queue gauges,
+revocations_total stat, claims_total rate by check+result, api_errors_total rate
+by code with high-error-rate alarm).
+
+Tests: `pnpm test:api` → all five existing test suites pass (api.test.ts,
+bundle.test.ts, registry.test.ts, lerobot.test.ts) plus new faults.test.ts with
+20 assertions passing (no failures). `pnpm exec tsx services/api/test/faults.test.ts`
+run standalone confirms all fault scenarios and metrics infrastructure tests pass.
+
+Deviations from PLAN.md: none. Metrics (§20) implemented exactly as specified with
+the seven named metrics and the correct label dimensions. Fault tests (§27 trap #18
+"Returning a placeholder proof/sample when data is missing") cover I-11 compliance
+— the service never invents a value; on error, it returns an error status rather
+than fabricating a root, proof, receipt, or log row. The daemon metrics bridge
+(no second registry) follows the binding rule: `services/log/src/metrics.ts`
+exports `getMetrics()` for the API to call; the API's `/metrics` endpoint
+aggregates and serves. `safeRun()` in `services/verify/src/safe.ts` satisfies
+the helper injection point for T-020.
+
+Invariants touched: I-11 (the service never invents a value; faults tests prove
+no placeholder state is left when errors occur). I-15 is indirectly enabled (the
+claims_total counter and structured logging infrastructure make it observable when
+thresholds/versions are recorded).
+
+Open questions / conflicts filed: none.
+
+
+## T-017 — L3 check `dedup.v1` — 2026-09-03 — STRONG
+
+**FD-1 status: still OPEN** — this report supplies the fixture ROC FD-1 is
+gated on (`TASKS/CONFLICTS.md`); a FRONTIER pass still needs to set final
+`T_exact`/`T_near` and `dedup.v1`'s enablement. Until then
+`config/checks.json` keeps `dedup.v1: { blocking: false, emit_fail: false
+}` and the check structurally never emits `fail` (config flag + a
+code-level downgrade guard in `dedupCheck`).
+
+Supervisor adjustment for this run: T-020 (claim issuance) does not exist
+yet, so `dedup.v1` is implemented as a pure function returning
+`CheckOutcome` (defined in `services/verify/src/types.ts` by T-018,
+reused here unchanged) plus its own `TrajectoryIndex`, exactly as T-018
+did for `timing.v1`/`kinematics.v1`. `config/checks.json` and
+`services/verify/src/config.ts` (`CheckConfig` loader) are created by this
+task, matching TASK-020.md's `Interfaces` block shape so T-020 needs no
+migration when it lands.
+
+Created: `services/verify/src/checks/dedup.ts` (`dedupCheck`,
+`CHECK_VERSION = "dedup.v1.0"`), `services/verify/src/index/trajectory-index.ts`
+(`TrajectoryIndex` — cosine-LSH, 16 planes x 8 tables, fixed seed, over
+`node:sqlite`'s `DatabaseSync`, no new dependency), `services/verify/src/index/schema.sql`
+(`traj_fingerprint`, `traj_lsh` — applied by `TrajectoryIndex`'s own
+`db.exec`, never merged into or referencing `services/log/src/schema.sql`),
+`services/verify/src/config.ts` (`CheckConfig`/`loadChecksConfig`/`getCheckConfig`),
+`config/checks.json` (all five in-flight checks: `dedup.v1` non-blocking
+per FD-1 with `thresholds.T_exact = 0.02`/`T_near = 0.05`; `timing.v1` and
+`kinematics.v1` blocking with `emit_fail: true`; `sensor_consistency.v1`/
+`sim_signature.v1` non-blocking placeholders per FD-2), `services/verify/test/dedup.test.ts`
+(seeded-PRNG fixtures: 200 distinct, 20 exact dups, 20 jittered sigma in
+{0.5,1,2} deg, 20 time-warped +-10%, generated in-test — no fixture files
+under `test/fixtures/trajectories/` since generation is deterministic and
+self-contained in the test, matching this task's own "Fixtures generated
+in-test deterministically" instruction over its Files list's directory
+name), `docs/VERIFICATION.md` (algorithm, parameter table, fixture ROC,
+known evasions, plus short sections for the other four `config/checks.json`
+checks for context).
+
+Changed: root `package.json` (`test:verify` now also runs `dedup.test.ts`).
+
+Tests: `pnpm test:verify` (`timing.test.ts` + `kinematics.test.ts` +
+`dedup.test.ts`) → all pass. `pnpm test:protocol` → all pass. `pnpm
+test:contracts` → 151/151 pass (unrelated to this task; run per §25.2).
+
+Fixture ROC (seeded PRNG, `franka_panda`, `services/verify/test/dedup.test.ts`):
+
+| Metric | Target | Measured |
+| --- | --- | --- |
+| Exact dups under `T_exact` | 100% | 100.0% (20/20) |
+| Jittered sigma <= 1 deg under `T_near` | >= 95% | 92.9% (13/14) |
+| Time-warped +-10% under `T_near` | >= 90% | 95.0% (19/20) |
+| Distinct pairs under `T_near` (false positives) | <= 1% | 0.00% (0/199) |
+
+(All jittered sigmas {0.5,1,2} deg combined: 90.0% (18/20) under
+`T_near`.) The sigma<=1° figure (92.9%) is slightly under the 95% target
+on this seed/fixture design — reported as measured, not adjusted to hit
+the target, per this task's "report the ROC numbers" instruction. A
+FRONTIER pass closing FD-1 should treat this as input alongside whichever
+production data becomes available, not as a final validation.
+
+Deviations from PLAN.md: none against fixed rules. Judgment calls on
+parameters PLAN §10.9 classifies as "implementation detail" (task-set, not
+FRONTIER):
+1. **What `traj_fingerprint.f` stores.** TASK-017.md's one-line schema
+   sketch (`traj_fingerprint(leaf, embodiment, f BLOB)`) calls `f` "the
+   fingerprint," but step 4's banded DTW needs two full resampled
+   trajectories to align, not their fixed-size LSH summary. Resolved by
+   storing the resampled/normalised trajectory itself in `f` (`dof`/`frames`
+   columns added alongside it for reconstruction) and deriving the LSH
+   descriptor from it on the fly at insert/query time, never persisting the
+   descriptor separately. Documented in `schema.sql` and `docs/VERIFICATION.md`.
+2. **DTW local cost / histogram bin range / DCT normalisation** — not
+   specified beyond "banded DTW 10%"; implemented as per-frame Euclidean
+   distance in normalised joint space, a fixed `[-1, 1]` 32-bin velocity
+   histogram (normalised units after per-joint `[0,1]` scaling bound
+   frame-to-frame deltas to that range), and DCT-II coefficients divided by
+   series length for length-invariance. All versioned under `check_version
+   = "dedup.v1.0"`; any change bumps it (PLAN §10.9).
+3. A DOF mismatch between the episode and a known embodiment's
+   `jointLimits` returns `inconclusive` (`reason: "joint count mismatch"`)
+   rather than falling back to per-episode min/max — the task's edge case
+   says "D mismatch (skip, inconclusive)" and falling back would compare
+   incompatible normalisations against an index built the other way.
+
+Invariants touched: I-15 (`detail.check_version` and `detail.thresholds`
+present on every outcome, asserted in tests). §26.7 FD-1 hard rule (the
+check never emits `fail`; asserted directly — all 260 fixture outcomes
+plus edge cases checked `!== "fail"`). I-2/append-only is respected by
+construction: `TrajectoryIndex.insert` only adds rows, never updates or
+deletes, and only runs after the decision (step 6), so an episode is never
+compared to itself.
+
+Open questions / conflicts filed: none (FD-1 itself remains open per its
+pre-registered status in `TASKS/CONFLICTS.md`, unchanged by this report —
+this task supplies its gating input, not its resolution).

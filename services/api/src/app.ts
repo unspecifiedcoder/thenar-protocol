@@ -19,9 +19,13 @@ import { MemoryUploadRegistry, type UploadRegistry } from "./store/uploadRegistr
 import { NotImplementedChainReader, type ChainReader } from "./chainReader.ts";
 import { Registry } from "./registry.ts";
 import { LogStore } from "../../log/src/store.ts";
+import type { ILogStore } from "../../log/src/store-interface.ts";
+import { ViemChainReader, loadChainReaderTargets } from "./chain.ts";
 import {
   metricsRegistry, apiErrorsTotalCounter, claimsTotalCounter, revocationsTotalCounter,
+  anchorLagGauge, logSizeGauge, ingestQueueGauge, verificationQueueGauge,
 } from "./metrics.ts";
+import { getMetrics as getDaemonMetrics } from "../../log/src/metrics.ts";
 
 import { healthRoutes } from "./routes/health.ts";
 import { orgRoutes } from "./routes/orgs.ts";
@@ -46,10 +50,24 @@ export type Deps = {
   bundleStore: BundleStore;
   /** T-015: `Upload` rows (PLAN §8), in-memory until T-014's SQLite table backs this. */
   uploadRegistry: UploadRegistry;
-  /** T-015 injection point for T-016's real viem reader (PLAN §12 `/licences/{id}/download`). */
+  /** T-015 injection point for T-016's real viem reader (PLAN §12 `/licences/{id}/download`); untouched by T-016 (`/anchors`, `/corpora/{id}` read `graspReader`/`logStore` below instead — PLAN §15 leaves this route to a later task). */
   chainReader: ChainReader;
   /** T-024: org/signing-key registry, backed by the `org`/`api_key`/`signing_key` tables. */
   registry: Registry;
+  /**
+   * T-016: direct read access to the `anchor_chain`/`corpus`/`revocation`
+   * tables for `GET /v1/anchors` and `GET /v1/corpora/{id}` (PLAN §12/§15).
+   * Optional so existing `Deps` object literals (e.g. `registry.test.ts`,
+   * T-024) that predate this field keep compiling without touching them.
+   */
+  logStore?: ILogStore;
+  /**
+   * T-016: viem `GraspLog`/`LicenceRegistry` reader with the 15 s cache
+   * (D-29, PLAN §15). Optional for the same reason as `logStore`; a route
+   * that needs it and finds it undefined treats every chain read as
+   * unreachable rather than guessing (I-11).
+   */
+  graspReader?: ViemChainReader;
 };
 
 export type AppEnv = { Variables: { deps: Deps; parsedBody?: { value: unknown } } };
@@ -71,9 +89,15 @@ export function defaultDeps(env: NodeJS.ProcessEnv = process.env): Deps {
     nowMinute: () => Math.floor(Date.now() / 60_000),
     bundleStore: new LocalBundleStore(env.BUNDLE_STORE_ROOT ?? ".data/bundles"),
     uploadRegistry: new MemoryUploadRegistry(),
-    // T-016 supplies the real viem reader; until then, refuse rather than fabricate (I-11).
+    // Untouched by T-016 — `/licences/{id}/download` (PLAN §12) is not one of the
+    // two routes this task wires up; refuse rather than fabricate (I-11) until it is.
     chainReader: new NotImplementedChainReader(),
     registry: new Registry(logStore),
+    logStore,
+    // `.env.contracts` (T-009) may not exist yet on a clean checkout — `loadChainReaderTargets`
+    // then returns no chains and every read reports `unreachable`, which is correct (I-11),
+    // not a reason to leave `graspReader` unset and 500 instead.
+    graspReader: new ViemChainReader(loadChainReaderTargets(env.ENV_CONTRACTS_FILE ?? ".env.contracts")),
   };
 }
 

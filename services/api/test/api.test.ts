@@ -8,6 +8,7 @@ import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { privateKeyToAccount } from "viem/accounts";
+import type { Hex } from "viem";
 import { createApp, type Deps } from "../src/app.ts";
 import { KeyStore, type ApiKeyRecord } from "../src/auth.ts";
 import { MemoryIdempotencyStore } from "../src/idempotency.ts";
@@ -447,7 +448,8 @@ function validManifest() {
 
 // =========================================================================
 // Every §12 route exists and is a real 501 (except /healthz), auth-gated
-// as the table says.
+// as the table says. `/corpora/{id}` and `/anchors` are T-016's — they are
+// wired to a real store/reader now, so they are asserted separately below.
 // =========================================================================
 {
   const app = createApp(makeDeps());
@@ -458,14 +460,69 @@ function validManifest() {
     ["GET", "/v1/proofs/inclusion?leaf=" + hex(0x01) + "&root=" + hex(0x02) + "&size=1"],
     ["GET", "/v1/proofs/consistency?from_size=1&to_size=2"],
     ["GET", "/v1/consent/" + hex(0x01)],
-    ["GET", "/v1/corpora/corpus_1"],
     ["GET", "/v1/corpora/corpus_1/report"],
-    ["GET", "/v1/anchors"],
     ["GET", "/v1/anchors/audit"],
   ];
   for (const [method, path, headers] of routes) {
     const res = await req(app, path, { method, headers });
     ok(res.status === 501, `${method} ${path} -> 501 not_implemented`, String(res.status));
+  }
+}
+
+// =========================================================================
+// T-016 — GET /v1/anchors and GET /v1/corpora/{id} (PLAN §12/§15, D-29).
+// No `graspReader`/`.env.contracts` here — every on-chain field reports
+// `unreachable` rather than a fabricated value (I-11); `services/api/test
+// /chain.test.ts` exercises the real Anvil-backed reads.
+// =========================================================================
+{
+  const logStore = new LogStore(":memory:");
+  const app = createApp(makeDeps({ logStore, graspReader: undefined }));
+
+  // No corpus written yet -> 404, never a fabricated row.
+  {
+    const res = await req(app, "/v1/corpora/does_not_exist");
+    ok(res.status === 404, "GET /v1/corpora/{unknown} -> 404", String(res.status));
+  }
+
+  // A corpus row written directly (T-016 only reads this table; POST
+  // /corpora's pipeline is a later task) with no `on_chain_id` and one
+  // episode leaf with a live revocation -> contains_revoked true, on_chain null.
+  {
+    const leafHash = hex(0x11) as Hex;
+    const consentKey = hex(0x22) as Hex;
+    logStore.append(leafHash, { orgId: "org_supplier", consentKey });
+    logStore._insertCorpusUnchecked({
+      corpusId: "corpus_1", orgId: "org_supplier", manifest: JSON.stringify({ title: "demo" }),
+      corpusManifestHash: hex(0x33) as Hex, corpusRoot: hex(0x44) as Hex, manifestLeafHash: null, manifestLeafIdx: null,
+      onChainId: null, status: "logged", containsRevoked: false, createdAt: Date.now(),
+    });
+    logStore._insertCorpusEpisodeUnchecked("corpus_1", leafHash, 0);
+    logStore._revokeUnchecked(consentKey, hex(0x55) as Hex);
+
+    const res = await req(app, "/v1/corpora/corpus_1");
+    ok(res.status === 200, "GET /v1/corpora/{id} -> 200 for a stored corpus", String(res.status));
+    const body = await res.json();
+    ok(body.corpus_id === "corpus_1", "corpus body carries corpus_id");
+    ok(body.contains_revoked === true, "contains_revoked computed true from a revoked episode's consent key");
+    ok(body.on_chain === null, "on_chain is null when the corpus carries no on_chain_id");
+  }
+
+  // GET /v1/anchors lists the stored anchor with its chains[] and a live
+  // block marked unreachable (no graspReader configured for this app).
+  {
+    logStore.recordAnchor(0, hex(0x66) as any, 1, hex(0x77) as any, "0xdead", 100);
+    logStore.recordAnchorChain(43113, 0, hex(0x66) as any, 1, hex(0x77) as any, "0xdead", 100);
+
+    const res = await req(app, "/v1/anchors");
+    ok(res.status === 200, "GET /v1/anchors -> 200", String(res.status));
+    const body = await res.json();
+    ok(Array.isArray(body.items) && body.items.length === 1, "one anchor listed");
+    const anchor = body.items[0];
+    ok(anchor.root === hex(0x66), "anchor root matches the store");
+    ok(Array.isArray(anchor.chains) && anchor.chains.length === 1, "one chain locator");
+    ok(anchor.chains[0].live.unreachable === true, "no graspReader -> chain marked unreachable, not fabricated");
+    ok(anchor.prev_root === null, "prev_root null (unreachable) rather than guessed");
   }
 }
 
