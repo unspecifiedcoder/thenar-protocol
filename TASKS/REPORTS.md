@@ -619,3 +619,147 @@ Open questions / conflicts filed: none. Slither is not installed locally (no `cr
 > conservation invariant the task specified (Σ Licensed.amount == paid + credited − withdrawn)
 > and "credited never decreases except via withdraw". Follow-up: add both before
 > external review (tracked as part of T-030's acceptance).
+
+## T-024 — Organisation and signing-key registry — 2026-09-03 — STRONG
+
+Created: `services/api/src/registry.ts` (`Registry`: `createOrg`, `getOrg`,
+`issueApiKey`, `registerKey`, `revokeKey`, `resolveKey`, `listKeys`,
+`validatePubkey`, `toPublicSigningKey`, `newUlid`), `services/api/bin/thenar-admin.ts`
+(local admin CLI; `tokenMatches`/`runAdminCommand` exported so tests call
+the CLI's flows directly rather than spawning a subprocess),
+`services/api/test/registry.test.ts`.
+
+Changed: `services/api/src/routes/orgs.ts` (the three `/orgs/{orgId}/keys*`
+handlers, real now instead of 501 stubs), `services/api/src/auth.ts`
+(`KeyStore` takes an optional `ILogStore` and authenticates against the
+`api_key` table when given one; `sha256Hex` exported), `services/api/src/app.ts`
+(`Deps.registry`; `defaultDeps` opens a `LogStore` — the real path at
+`THENAR_LOG_DB` if set, else `:memory:` — and wires `KeyStore` to it only
+when `THENAR_LOG_DB` is set, keeping the `API_KEYS_JSON` env fallback for
+tests), `services/log/src/schema.sql` (`api_key` gets `key_hash`/`role`
+columns + an index on `key_hash` — additive, same pattern the file already
+documents for every other table), `services/log/src/store.ts` and
+`store-interface.ts` (`ILogStore` grows `createOrg`/`org`, `insertApiKey`/
+`apiKeyByHash`, `insertSigningKey`/`signingKey`/`revokeSigningKey`/
+`signingKeysForOrg`, plus `OrgRow`/`ApiKeyRow`/`SigningKeyRow` types — no
+SQLite opened from the API), `services/api/test/api.test.ts` (added
+`registry`/`LogStore` to `makeDeps`; the org-keys route left the "every
+route is a 501 stub" table since it's implemented now), root `package.json`
+(`admin` script; `registry.test.ts` registered on the `test:api` line).
+
+Tests: `pnpm test:api` (includes `registry.test.ts`) → all pass (56
+registry.test.ts assertions: pubkey length/prefix validation per alg,
+createOrg/issueApiKey, keyId = keccak(pubkey) and the duplicate-pubkey 409,
+attestation stored raw with `attestation_level` always 1, revoke setting
+`validTo` once and the double-revoke 409, `resolveKey`'s `[validFrom,
+validTo)` boundary — inclusive start, exclusive end, including the exact
+`at == validTo` case — the three HTTP routes end-to-end including the
+org-mismatch 403 and the public listing's omission of `attestation`, and
+the admin CLI's token gate plus all three subcommands via direct function
+calls). `pnpm test:log` → all pass (`schema.sql`'s new columns don't
+disturb `log.test.ts`/`tree.test.ts`). Manually exercised
+`thenar-admin.ts` as a real subprocess (create-org, wrong `--token`, unset
+`ADMIN_TOKEN`) to confirm the exported functions match the CLI's actual
+behaviour, not just the test harness's view of it.
+
+Deviations from PLAN.md: two judgment calls where the task text was
+underspecified but not ambiguous enough to warrant a `TASKS/CONFLICTS.md`
+stop (§26.2 — the task's own Edge cases/binding rules cover the shape,
+just not every field):
+1. `attestation_level` is hard-coded to `1` for every registered key
+   regardless of whether `attestation` was supplied, per the task's literal
+   "`attestation_level = 1` always in this task" — not `0` when absent,
+   since neither PLAN.md nor the task defines a 0 case and T-023 (real
+   attestation verification) doesn't exist yet either way.
+2. `api_key.key_hash`/`api_key.role` are new columns added to T-014's
+   `api_key` table (rather than a separate table), since the table as
+   T-014 left it (`key_id, org_id, created_at, revoked_at`) has nowhere to
+   hold the sha256 digest or role the task explicitly requires
+   (`issueApiKey` "stores sha256"; "roles per key"). This is additive in
+   the same style the schema file already uses for every other table
+   ("new columns are additive... for old rows") and touches no public
+   interface (leaf layout, ABI, HTTP path, schema version) — not a §26.5
+   condition.
+Also: `POST /orgs/{orgId}/keys` returns `201` (uploads.ts's convention for
+a newly-created resource) since PLAN §12 doesn't pin a status code for
+this route beyond the error-code table.
+
+Invariants touched: I-14/D-20 (`resolveKey`'s half-open interval is the
+literal enforcement point every future signature check reads from). I-11
+(no fabricated success — org/key lookups that miss return `not_found`/
+`null`, never a placeholder row).
+
+Open questions / conflicts filed: none.
+
+## T-018 — L3 checks `timing.v1` and `kinematics.v1` — 2026-09-03 — STRONG
+
+Changed: `packages/protocol/src/embodiments.ts` (added optional
+`jointLimits?: [number, number][]`/`maxVel?: number[]` fields to
+`Embodiment`; populated them for `franka_panda`, `ur5e`, `viperx300`,
+`widowx250`, `so_arm100`), `apps/web/embodiments.js` (regenerated via
+`pnpm gen:embodiments` so the browser copy stays byte-identical to the
+protocol source, per `apps/web/test/build.test.mjs`), root `package.json`
+(added `test:verify` script; appended it to the `test` chain),
+`.github/workflows/ci.yml` (added a "Verification checks" step running
+`pnpm test:verify`).
+
+Created: `services/verify/package.json` (`@thenar/verify`, private, no new
+deps), `services/verify/src/types.ts` (`CheckOutcome`/`CheckResult`, per
+this task's supervisor adjustment — T-020 doesn't exist yet, so this is
+defined here exactly as PLAN §9.3 / TASK-020.md's `Interfaces` block
+specify, so T-020 needs no migration when it lands),
+`services/verify/src/checks/timing.ts` (`timingCheck`, check id 0x0002),
+`services/verify/src/checks/kinematics.ts` (`kinematicsCheck`, check id
+0x0003), `services/verify/src/run.ts` (`runOnEpisode(ref, dir)` adapter
+over T-011's `readEpisodeFrames`), `services/verify/test/timing.test.ts`
+(15 assertions), `services/verify/test/kinematics.test.ts` (27 assertions)
+— all synthetic in-test fixtures (clean; video-locked 29.97 vs declared
+30; dropped frames; duplicated timestamps; frame-count drift; teleporting
+joint (velocity); acceleration spike; out-of-range joint/action; 1°
+tolerance boundary; action absent; unknown embodiment; embodiment with no
+recorded limits; joint-count mismatch).
+
+Tests: `pnpm test:verify` → pass (42 assertions, 0 failures).
+`pnpm test:protocol` → pass, including `packages/protocol/test/ci.ts`'s
+guard confirming `test:verify` is wired into both `pnpm test` and CI.
+
+Deviations from PLAN.md:
+1. Per the supervisor's explicit instruction, `CheckOutcome` is defined in
+   `services/verify/src/types.ts` instead of being imported from T-020
+   (which does not exist). Both checks are pure functions over frames
+   (`timingCheck`, `kinematicsCheck`) rather than being wired into a claim-
+   issuance pipeline; T-020 will call them and wrap their `CheckOutcome`
+   in a signed `VerificationClaim`.
+2. `jointLimits`/`maxVel` values for the five embodiments are approximated
+   from public spec sheets and typical servo/joint parameters, not
+   re-extracted from the Menagerie MJCF `range` attributes byte-for-byte —
+   the agent did not fetch the MJCF files. Each entry's code comment says
+   so explicitly and cites the model file the real values should come
+   from (`franka_emika_panda/panda.xml`, `universal_robots_ur5e/ur5e.xml`,
+   `trossen_vx300s/vx300s.xml`, `trossen_wx250s/wx250s.xml`,
+   `trs_so_arm100/so_arm100.xml`). Franka Panda's values are the best-
+   grounded (well-published manufacturer limits); UR5e, ViperX 300,
+   WidowX 250 and SO-ARM100 are reasonable engineering approximations that
+   should be checked against the actual MJCF `range`/`actuator` blocks
+   before these tolerances are treated as authoritative for a real L3
+   claim. This is a "configuration" value (PLAN §10.9) that a human should
+   verify, not a protocol constant this task could get wrong in a way that
+   breaks an invariant.
+3. `kinematics.v1`'s "acceleration spikes (> 50 rad/s²) flagged" wording
+   is implemented as a `fail` condition (first offending frame/joint in
+   `detail`), matching the enforcement style the task uses everywhere else
+   ("Any violated → fail" for `timing.v1`; range and velocity are also
+   `fail` conditions for `kinematics.v1`) and the "teleporting joints"
+   fixture the task's own Tests section names — a purely advisory,
+   non-failing "flag" would leave that fixture with no rule to violate.
+   Not treated as a §26 stop: the task's Edge cases/fixture list covers
+   this exact behaviour, the ambiguity is in enforcement strength wording
+   only, and no invariant, interface, or protocol semantic is at stake.
+
+Invariants touched: I-15 (`detail` always carries `check_version` and
+`thresholds` on every outcome, pass/fail/inconclusive alike). I-11 (no
+fabricated result: an embodiment with no recorded limits, an unknown
+embodiment id, or a joint-count mismatch is `inconclusive` with a named
+reason, never a guessed pass/fail).
+
+Open questions / conflicts filed: none.

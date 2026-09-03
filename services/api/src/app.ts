@@ -19,6 +19,9 @@ import { MemoryUploadRegistry, type UploadRegistry } from "./store/uploadRegistr
 import { NotImplementedChainReader, type ChainReader } from "./chainReader.ts";
 import { Registry } from "./registry.ts";
 import { LogStore } from "../../log/src/store.ts";
+import {
+  metricsRegistry, apiErrorsTotalCounter, claimsTotalCounter, revocationsTotalCounter,
+} from "./metrics.ts";
 
 import { healthRoutes } from "./routes/health.ts";
 import { orgRoutes } from "./routes/orgs.ts";
@@ -116,6 +119,14 @@ export function createApp(deps: Deps = defaultDeps()) {
     await next();
   });
 
+  // Metrics middleware (T-031): track error responses by HTTP status code
+  app.use("/v1/*", async (c, next) => {
+    await next();
+    if (c.res.status >= 400) {
+      apiErrorsTotalCounter.inc({ code: String(c.res.status) });
+    }
+  });
+
   // Idempotency (PLAN §12): every POST under /v1 replays on a repeated
   // `Idempotency-Key` with the same body, and 409s on the same key with a
   // different body. Applied generically so no route can forget it. The
@@ -144,6 +155,21 @@ export function createApp(deps: Deps = defaultDeps()) {
       }
     });
     c.res = new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+  });
+
+  // Metrics endpoint (T-031): served only from localhost or with METRICS_TOKEN
+  app.get("/v1/metrics", async (c) => {
+    const token = process.env.METRICS_TOKEN;
+    const authHeader = c.req.header("Authorization");
+    const isLocalhost = c.req.header("x-forwarded-for") === undefined || c.req.header("x-forwarded-for") === "127.0.0.1";
+
+    const authorized = isLocalhost || (token && authHeader === `Bearer ${token}`);
+    if (!authorized) {
+      return c.text("Unauthorized", 401);
+    }
+
+    const metrics = await metricsRegistry.metrics();
+    return c.text(metrics, 200, { "content-type": "text/plain; version=0.0.4; charset=utf-8" });
   });
 
   app.route("/v1", healthRoutes);

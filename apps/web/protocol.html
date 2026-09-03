@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Protocol — THENAR</title>
-<meta name="description" content="How contact data is committed, licensed and settled on Avalanche, and what is deliberately kept off chain.">
+<title>Protocol — THENAR — Provenance and rights for physical-AI data</title>
+<meta name="description" content="How physical-AI data is logged, verified, and settled. The claim ladder, chain architecture, and what the protocol does not prove.">
 <link rel="canonical" href="https://thenar.io/protocol">
 <link rel="icon" href="./mark.svg" type="image/svg+xml">
-<meta property="og:title" content="Protocol — THENAR">
-<meta property="og:description" content="How contact data is committed, licensed and settled on Avalanche, and what is deliberately kept off chain.">
+<meta property="og:title" content="Protocol — THENAR — Provenance and rights for physical-AI data">
+<meta property="og:description" content="How physical-AI data is logged, verified, and settled. The claim ladder, chain architecture, and what the protocol does not prove.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://thenar.io/protocol">
 <meta property="og:site_name" content="THENAR">
 <meta property="og:image" content="https://thenar.io/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="THENAR, contact data for physical AI">
+<meta property="og:image:alt" content="THENAR, Provenance and rights for physical-AI data">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://thenar.io/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,99 +42,83 @@
 <!-- NAV:END -->
 <main id="main">
   <section class="fwrap">
-    <p class="feyebrow">GRASP on Avalanche</p>
-    <h2 class="fh2">Hashes on chain.<br>Everything else off it.</h2>
-    <p class="flede" style="margin-top:var(--s-300)">A buyer needs to verify a slice of capture data without trusting our internal records, and a contributor needs to withdraw without us being able to pretend they did not. That is the whole job. Here is the design, and here is the part it does not solve.</p>
+    <p class="feyebrow">The claim ladder</p>
+    <h2 class="fh2">Five levels of evidence,<br>each with fixed wording</h2>
+    <p class="flede" style="margin-top:var(--s-300)">Levels are badges, not a cumulative ladder. The only implication is L2 ⇒ L1. Every surface shows the set of badges an episode holds and uses this wording verbatim.</p>
+    <div class="tscroll" style="margin-top:var(--s-600)">
+      <table>
+        <thead><tr>
+          <th scope="col">Level</th>
+          <th scope="col">Name</th>
+          <th scope="col">Wording (verbatim)</th>
+        </tr></thead>
+        <tbody>
+          <tr><td><b>L0</b></td><td><b>Committed</b></td><td>Committed — existed by block {block} on {chain}; log unchanged since; consent {live | revoked at block {onset}} as of anchor (size {size}).</td></tr>
+          <tr><td><b>L1</b></td><td><b>Signed</b></td><td>Signed — {org} signed this record before it was logged; unchanged since.</td></tr>
+          <tr><td><b>L2</b></td><td><b>Attested</b></td><td>Attested — signing key held in hardware attested by {manufacturer} ({model}); this proves which device signed, not what its sensors saw.</td></tr>
+          <tr><td><b>L3</b></td><td><b>Checked</b></td><td>Checked by {operator} — {n} checks run: {list}. Heuristic; see details.</td></tr>
+          <tr><td>—</td><td>Pending</td><td>Pending — received, not yet anchored. (not a level)</td></tr>
+          <tr><td>—</td><td>Check failed</td><td>Check {name} failed: {summary}. (appended whenever any claim is fail)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="flede" style="margin-top:var(--s-400)">Forbidden: <i>authentic, genuine, real, proven real, verified</i> (except inside "Checked by … see details"), <i>independent</i> (until third-party verifiers exist).</p>
+  </section>
+
+  <section class="fwrap">
+    <p class="feyebrow">What is on chain</p>
+    <h2 class="fh2">Hashes only.<br>Everything else off chain.</h2>
+    <p class="flede" style="margin-top:var(--s-300)">A buyer needs to verify a slice without trusting our records. A contributor needs to revoke without us able to deny it. That is the whole job.</p>
     <div class="bento" style="margin-top:var(--s-600)">
       <article class="tile">
-        <h3>Why the C-Chain, and not our own L1</h3>
-        <p>Because the workload does not have the shape that justifies a chain of its own, and claiming it does is the first thing a reviewer kills. Batched into an hourly anchor, our entire provenance traffic is 24 transactions a day. A dedicated L1 would cost roughly 4,100 dollars a year against about 88, but the money is not the argument: it is that an L1 needs a part time operator we do not have. The decisive reason is settlement. USDC is native and deep on the C-Chain; on our own L1 it would be a bridged representation secured by five nodes we run ourselves, which is a company with no revenue underwriting buyer funds.</p>
-        
+        <h3>One leaf per episode</h3>
+        <p>A 197-byte preimage: payload hash, manifest hash, consent commitment, terms hash, capture and submission timestamps, duration, scope bits, channels, task ID, world seed (if sim), success flag, quality score. No identity, no payload, no free text. The consent commitment is salted fresh on every submission so episodes cannot be linked.</p>
       </article>
       <article class="tile">
-        <h3>One leaf per accepted clip</h3>
-        <p>A 154 byte preimage hashing to a 32 byte leaf: payload hash, sensor manifest hash, a consent commitment, the terms id, capture and submission timestamps, duration, scope bits. No identity, no payload, no free text. The consent commitment uses a fresh random salt on every submission, because a stable pseudonymous identifier written on chain is one no erasure request can ever undo, and that single mistake would break the entire privacy position.</p>
-        
+        <h3>A monotonic head, not roots</h3>
+        <p>The log is an RFC 6962 Merkle tree, living off chain and anchored hourly with its previous root and its size. A pile of independent roots proves nothing about ordering. A monotonic head with a size makes a consistency proof possible. The chain anchors the log; it is not the log.</p>
       </article>
       <article class="tile">
-        <h3>A monotonic head, not a bag of roots</h3>
-        <p>The log is an append only Merkle tree in the Certificate Transparency style, living off chain and anchored hourly with its previous root and its size. Publishing a pile of independent roots would prove nothing about ordering; a monotonic head with a size is what makes a consistency proof possible. The chain anchors the log. The chain is not the log.</p>
-        
-      </article>
-      <article class="tile">
-        <h3>Revocation needs a non membership proof</h3>
-        <p>Withdrawal is the hard half. A buyer has to be able to prove a clip's consent was NOT revoked as of a given root, and an inclusion list cannot express that, so revocations live in a sparse Merkle tree anchored in the same call. One extra word per anchor. The verifier reports the block at which a withdrawal became publicly knowable, which is the fact a buyer's counsel actually needs.</p>
-        
+        <h3>Revocation via non-membership</h3>
+        <p>Consent withdrawal needs a non-membership proof — an inclusion list cannot express absence. Revocations live in a sparse Merkle tree anchored in the same call. One extra word per anchor. The verifier reports the block at which a withdrawal became public, which is the fact a buyer's counsel needs.</p>
       </article>
       <article class="tile" style="border-color:var(--blue)">
-        <h3>Payment and terms in one transaction</h3>
-        <p>This is the only part where a chain genuinely beats the alternatives. Off chain, the claim that a buyer paid for a corpus under a specific version of the licence is our word. On chain it is a USDC transfer and a state write in one transaction that neither side can revise afterwards, pinned to the log size at the moment of sale so an inclusion proof three years later is checkable against a head that provably existed.</p>
-        
+        <h3>Payment and terms, one transaction</h3>
+        <p>The only place a chain beats alternatives. Off chain: "the buyer paid under these terms" is our word. On chain: a USDC transfer and terms hash in one call, immutable afterwards. A receipt three years later is checkable against a head that provably existed.</p>
       </article>
-      <article class="tile">
-        <h3>What it does not prove</h3>
-        <p>A ledger attests record integrity after submission, not authenticity at capture. Nothing written on chain shows a stream came off a real hand rather than a replay, and a device key can be extracted. Closing that needs a secure element and a remote attestation path, and the Band CAD does not have one. Avalanche shipped a P-256 precompile that would verify exactly those signatures cheaply when the hardware exists. It does not exist.</p>
-        
-      </article>
-    </div>
-  </section>
-  <section class="fwrap">
-    <p class="feyebrow">Protocol Camp, cohort 10</p>
-    <h2 class="fh2">The twelve weeks</h2>
-    <p class="flede" style="margin-top:var(--s-300)">
-      Demo days land at week 6 and week 12, so both dates carry something a
-      stranger can verify on their own laptop. Two weeks are deliberately empty,
-      because a plan with no slack is a plan that has not been costed.</p>
-    <div class="weeks">
-      <ol>
-        <li><b>1</b><span>Freeze the manifest schema. Canonical JSON, channel descriptors, golden test vectors, and a reserved grip force descriptor that is not used yet.</span></li>
-        <li><b>2</b><span>Deterministic packer. Quest capture in, chunked channels and a signed manifest out. CI proves two machines produce byte identical roots.</span></li>
-        <li><b>3</b><span>Registry contracts on Fuji, source verified, non upgradeable. First real corpus root committed. External reviewers confirmed in writing this week, not in week 10.</span></li>
-        <li><b>4</b><span>Verifier CLI on npm. Recomputes from the spec, reads the anchor over a public RPC, prints MATCH or names the exact broken leaf.</span></li>
-        <li><b>5</b><span>Static explorer, published as JSON rather than a database, because it is a convenience and never the source of truth.</span></li>
-        <li class="demo"><b>6</b><span>DEMO DAY. A stranger verifies a corpus on their own machine with no credentials. Then we flip one byte and the verifier localises it.</span></li>
-        <li><b>7</b><span>Licence escrow. Purchase in USDC, receipt and terms hash written in the same transaction. No contributor split: there are zero contributors.</span></li>
-        <li><b>8</b><span>Revocation, the sparse tree, and the remedy when a withdrawal lands after a sale. That last part is the only genuinely new problem here.</span></li>
-        <li class="buf"><b>9</b><span>Buffer. Named as buffer so it does not quietly become week 8 running late.</span></li>
-        <li><b>10</b><span>Contract freeze, static analysis, invariant tests, published external findings, mainnet deploy with verified source.</span></li>
-        <li class="buf"><b>11</b><span>Buffer, then a transparency log mirror so a buyer who wants no chain at all gets the same tamper evidence.</span></li>
-        <li class="demo"><b>12</b><span>DEMO DAY. Mainnet, end to end, driven by people who are not us, with a written statement of what the ledger does not prove.</span></li>
-      </ol>
-    </div>
-
-    <div class="note" style="margin:var(--s-600) auto 0">
-      <b>What week 12 is, honestly.</b> A live purchase on mainnet for a small
-      real amount is a working settlement path. It is not a market signal, and we
-      will not present it as one. Revenue is zero, signed licences are zero, and
-      the buyer at a demo day is somebody in the room.
     </div>
   </section>
 
   <section class="fwrap">
-    <p class="feyebrow">Scope discipline</p>
-    <h2 class="fh2">What we are not<br>building in twelve weeks</h2>
-    <p class="flede" style="margin-top:var(--s-300)">Cut deliberately, because scope discipline is part of what is being judged and an over full plan is the easiest thing in the world to write.</p>
-    <div class="bento" style="margin-top:var(--s-600)">
-      <article class="tile">
-        <h3>Not the Band as a data source</h3>
-        <p>Nobody has worn one and no force data will exist by December. The protocol is built on Quest capture that runs today, and the Band enters later as a registry entry rather than a contract change.</p>
-        
-      </article>
-      <article class="tile">
-        <h3>Not a custom L1, no token</h3>
-        <p>Validator operations and a bridge are a permanent burden that does not repay itself at our volume. Settlement is USDC. A token would be the fastest way to make the provenance claim look like a pretext.</p>
-        
-      </article>
-      <article class="tile">
-        <h3>Not per clip micropayments</h3>
-        <p>A one cent fee costs more than the payment. Contributors without wallets are paid on ordinary rails against a publicly verifiable claim, because requiring a wallet is a barrier and not a feature.</p>
-        
-      </article>
-      <article class="tile">
-        <h3>Not hardware attestation</h3>
-        <p>It is the honest gap in the design and it is silicon and firmware work, not a software sprint. The schema reserves the field and the documentation says the gap is open.</p>
-        
-      </article>
+    <p class="feyebrow">Chain strategy</p>
+    <h2 class="fh2">Primary anchor on<br>Avalanche C-Chain</h2>
+    <p class="flede" style="margin-top:var(--s-300)">The protocol is chain-agnostic; no chain ID appears in any record. Avalanche C-Chain is a good primary because USDC settlement is native and embedded. A mirror anchor on Ethereum ensures the log survives if any single chain or its RPCs disappear. Any EVM chain can carry the log; no chain is privileged in the protocol itself.</p>
+  </section>
+
+  <section class="fwrap">
+    <p class="feyebrow">Known limitations</p>
+    <h2 class="fh2">What the protocol<br>does not prove</h2>
+    <div class="rail" style="margin:var(--s-600) auto 0;max-width:880px">
+      <div>
+        <h3 style="font-size:16px;line-height:24px;margin-bottom:var(--s-100)">The operator can omit or refuse to anchor</h3>
+        <p>Append receipts and public audit make this detectable, not impossible.</p>
+      </div>
+      <div>
+        <h3 style="font-size:16px;line-height:24px;margin-bottom:var(--s-100)">Checks are heuristics, not proof</h3>
+        <p>They have recorded thresholds; they can be evaded and can err; they are evidence, not certainty.</p>
+      </div>
+      <div>
+        <h3 style="font-size:16px;line-height:24px;margin-bottom:var(--s-100)">Signatures prove authorship, not measurement</h3>
+        <p>A signature proves which key signed, not what a sensor measured. <code>captured_at</code>, <code>source</code>, and <code>embodiment</code> are claims by the signer, not the chain.</p>
+      </div>
+      <div>
+        <h3 style="font-size:16px;line-height:24px;margin-bottom:var(--s-100)">Revocation onset is recorded; rights are not</h3>
+        <p>The protocol records when consent was withdrawn. What a buyer may do after that onset is governed by the terms document, not by this protocol.</p>
+      </div>
+      <div>
+        <h3 style="font-size:16px;line-height:24px;margin-bottom:var(--s-100)">Anchors depend on chain availability</h3>
+        <p>The log is verifiable only if at least one chain carrying it is reachable. The same log is anchored on more than one for redundancy.</p>
+      </div>
     </div>
   </section>
 
@@ -164,7 +148,7 @@
     </div>
   </div>
   <div class="fbase">
-    <span>THENAR — contact data for physical AI.</span>
+    <span>THENAR — Provenance and rights for physical-AI data.</span>
     <span>Built in the open. Quest and Meta are trade marks of Meta Platforms, Inc. Thenar is not affiliated with Meta.</span>
   </div>
 </div></footer>
