@@ -113,7 +113,7 @@ the tokens "physical-AI" and "physical AI" — must also contain "declared" or
 envelope (`alg`, `key_id == keyId(record.pubkey)`) and passes `signature.sig`
 to `LogStore.revoke`. T-012 green; adversarial attack 9 un-skipped.
 
-- **C-2: T-033 — `POST /episodes` never records a `consentKey` on the leaf
+- **C-3: T-033 — `POST /episodes` never records a `consentKey` on the leaf
   row, so `GET /v1/corpora/{id}.contains_revoked` cannot ever become true
   for an SDK-path episode — golden demo step 7 blocked (found after C-1
   was fixed).** `services/api/src/routes/episodes.ts`'s `.post("/episodes",
@@ -146,3 +146,10 @@ to `LogStore.revoke`. T-012 green; adversarial attack 9 un-skipped.
   the SDK-path contract, so flagged rather than guessed at. Status: OPEN,
   blocks the `contains_revoked` half of PLAN §21 step 7 and therefore PLAN
   §24's release gate.
+
+**C-3 — RESOLVED (FRONTIER, 2026-09-03; ADR D-37):** `POST /v1/episodes` (SDK
+path) body becomes `{ manifest, consent_key }` — `consent_key` is required and
+must equal `keccak256(0x02 ‖ recordHash)` of the record whose commitment the
+manifest carries; the server cannot derive it (it never sees the record or the
+salt). It is stored on the episode row so revocations resolve to episodes and
+`contains_revoked` can flip. Not part of `manifestHash`. PLAN §12 amended.

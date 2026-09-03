@@ -201,3 +201,12 @@ data." Reconsider if: customer language differs after E2.
 and is a founder decision taken after T-033 runs, not before.**
 Why: outward-facing; the live site is the only public artefact today.
 Invariant: no agent repoints DNS or hosting.
+
+**D-37 The SDK path supplies `consent_key` with the manifest.**
+Why: the server never sees the consent record or salt, so it cannot derive
+the SMT key; without it a revocation cannot be tied to the episode and
+`contains_revoked` can never flip for SDK-submitted episodes (found by the
+golden demo, C-3). Alternatives: put the key in the manifest (rejected —
+it would enter `manifestHash` and is not part of what the signer attests);
+derive server-side (impossible). Invariant: `consent_key` is validated as
+32-byte hex and stored on the episode row; never included in any hash.

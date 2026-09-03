@@ -1559,3 +1559,75 @@ and, transitively, the "§21 steps 1-8 run unattended" release gate (PLAN §24) 
 the object — a FRONTIER-adjacent call either way, since it touches a signature-verification
 code path, D-20/I-6). Not worked around with `LogStore._revokeUnchecked` since that would
 fake the exact thing step 7 exists to prove.
+
+### T-033 follow-up — `--live` persistence, step-0 chain-head check, `--reset-local` — 2026-09-03
+
+Changed: `scripts/golden.mjs` only (per the coordinator's follow-up instruction; no
+sub-agents used, all changes made directly).
+
+- `--live` no longer builds a scratch SQLite DB / bundle store. It now uses a persistent
+  `THENAR_LOG_DB` (default `.data/log.db`) and `BUNDLE_STORE_ROOT` (default
+  `.data/bundles/`), both under the repo root, created if absent — every `--live` run
+  appends to and extends the one real log against Fuji's persistent `GraspLog`, instead of
+  anchoring a fresh scratch log nobody could re-derive (this is exactly what caused the
+  second `--live` attempt in the original report above to fail: a same-size, different-root
+  collision against the chain's real, already-advanced head). `.data/` is not yet in the
+  root `.gitignore` — flagging here since adding it is outside this task's file scope.
+- `--local` is unchanged: a fresh `mkdtemp` scratch DB/bundle store/two Anvils every run,
+  deleted on exit.
+- Added `--reset-local`, accepted only with `--local` (throws if combined with `--live`).
+  Since `--local` is already unconditionally scratch on every invocation, the flag has no
+  further effect today — kept for CLI symmetry with `--live`'s new persistence and as a
+  documented hook, per the coordinator's instruction.
+- Added a step-0 "chain head check", `--live` only: reads Fuji's `GraspLog.anchorCount`/
+  `anchorAt` before touching anything else, prints `(root, size)` alongside the local
+  store's own size, and throws a named `step 0/8 FAILED` error if the store is behind the
+  chain (rather than letting step 3 hit `anchorHead`'s existing "the log is behind chain…"
+  throw deep inside an unrelated step).
+- The org-seeding block now guards `store.createOrg` behind `!store.org(SUPPLIER_ORG)`
+  (`org` is insert-only, T-024) since a persistent `--live` store now survives across runs.
+
+Tests: `pnpm demo:golden --local`, run once as instructed (not twice — the coordinator
+asked only for one confirmation run here; the original report above already has two clean
+runs of steps 1-6 against the pre-follow-up code, and this change touches nothing `--local`
+exercises except adding the now-provably-inert `--reset-local` guard and leaving step 0
+skipped). Result: **steps 1-6 pass** (identical shape to the original report); **step 7
+now gets further than before** — see below — then fails at a new, different assertion.
+`--live` was **not** re-run, per the coordinator's explicit instruction (the supervisor is
+redeploying fresh Fuji contracts first).
+
+Unplanned but directly relevant finding: between the original report and this follow-up,
+another concurrent session landed a fix for **C-1** (`TASKS/CONFLICTS.md`) —
+`services/api/src/routes/consent.ts` now passes `body.signature.sig` (not the whole
+object) to `LogStore.revoke`. Confirmed live: this run's step 7 revocation is now
+genuinely accepted (`POST /v1/consent/{key}/revoke` → `200`, `GET /v1/consent/{key}` →
+`"revoked"`), and the revocation-only anchor (D-17: equal size, changed `revocationRoot`)
+completed on both chains. Step 7 then failed at its next assertion,
+`GET /v1/corpora/{id}.contains_revoked`, on a **second, sibling** gap — filed as **C-2**
+(`TASKS/CONFLICTS.md`): `POST /episodes` (`services/api/src/routes/episodes.ts`) always
+calls `commitEpisode` with `consentKeyHex: null`, so an SDK-path episode's leaf row never
+carries a `consentKey` for `computeContainsRevoked`
+(`services/api/src/routes/corpora.ts`) to match against the revocation table — and the
+`leaf` table's insert-only triggers (PLAN §14) rule out fixing this after the fact. This
+is the same episode C-1's fix made revocation possible for in the first place (the SDK
+path is used specifically because the dataset-ingest path never returns a `ConsentRecord`
+to revoke — see C-1's own write-up), so both gaps sit on the same one episode step 7
+needs. Not worked around (would require an insert-time change to a file outside T-033's
+scope). `scripts/golden.mjs` throws a step-7-named, fully-diagnostic error at this exact
+point rather than a generic one.
+
+Also observed (informational, not acted on — outside this follow-up's scope and the
+coordinator did not ask for it): a separate concurrent session landed T-025 in between
+these runs (`POST /corpora`, `POST /corpora/{id}/log`, `GET /v1/corpora/{id}/report` are
+now implemented, not `notImplemented` stubs). `scripts/golden.mjs`'s step 4 still uses its
+own escape-hatch corpus creation (deviation 1 in the original report) and
+`scripts/lib/assemble-report.mjs` still assembles the report itself rather than calling
+the new route — both still function correctly against the current codebase (confirmed by
+this run reaching step 7), so nothing broke, but the "swap for the endpoint with one line"
+this task's supervisor anticipated is now possible and not yet done; flagging for a
+follow-up task rather than doing it here since it wasn't part of this instruction.
+
+Deviations from PLAN.md: none beyond what the original report already lists.
+Invariants touched: same as the original report, plus T-024 (org table insert-only,
+now actually exercised across persistent `--live` runs).
+Open questions / conflicts filed: **C-2** (new, see above); **C-1** now resolved upstream.

@@ -568,7 +568,7 @@ max 500) and return `{ items, next_cursor }`. Never a fabricated success (I-11).
 | POST | `/datasets` | org | `{source_uri?, info_json_hash, files:[FileEntry]}` → `Dataset` (all hashes must be stored uploads) |
 | POST | `/datasets/{id}/ingest` | org | `{terms_hash, scope_bits, source, consent: {holder, pubkey, alg, scope_bits}}` → `{job_id}` (T-011/T-036) |
 | GET | `/jobs/{jobId}` | org | `{status, episodes:[{episode_index, leaf_hash, leaf_index, receipt}], errors:[…]}` |
-| POST | `/episodes` | org | `{manifest}` → `{leaf_hash, leaf_index, submitted_at, receipt}` (files must be stored; §9.1 validated; §10.4 recomputed) |
+| POST | `/episodes` | org | `{manifest, consent_key}` → `{leaf_hash, leaf_index, submitted_at, receipt}` (files must be stored; §9.1 validated; §10.4 recomputed; `consent_key` = keccak256(0x02 ‖ recordHash) of the record behind `consent_commitment`, stored with the episode, never in the hash — D-37) |
 | GET | `/episodes/{leafHash}` | public | `{preimage, leaf_index, submitted_at, badges, wording, claims, anchor?}` |
 | GET | `/proofs/inclusion?leaf=&root=&size=` | public | `{index, size, root, proof}`; leaf not covered → 404 |
 | GET | `/proofs/consistency?from_size=&to_size=` | public | `{proof}` |
