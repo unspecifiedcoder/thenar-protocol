@@ -276,7 +276,46 @@ export const EMBODIMENTS = [
       "ee_pose_gripper",
       "joint_position"
     ],
-    "note": "The research standard. Most published datasets use it."
+    "note": "The research standard. Most published datasets use it.",
+    "jointLimits": [
+      [
+        -2.8973,
+        2.8973
+      ],
+      [
+        -1.7628,
+        1.7628
+      ],
+      [
+        -2.8973,
+        2.8973
+      ],
+      [
+        -3.0718,
+        -0.0698
+      ],
+      [
+        -2.8973,
+        2.8973
+      ],
+      [
+        -0.0175,
+        3.7525
+      ],
+      [
+        -2.8973,
+        2.8973
+      ]
+    ],
+    "maxVel": [
+      2.175,
+      2.175,
+      2.175,
+      2.175,
+      2.61,
+      2.61,
+      2.61
+    ]
   },
   {
     "id": "franka_fr3",
@@ -304,7 +343,41 @@ export const EMBODIMENTS = [
       "joint_position"
     ],
     "trademarkCheck": true,
-    "note": "The industrial standard, highest real install base."
+    "note": "The industrial standard, highest real install base.",
+    "jointLimits": [
+      [
+        -6.2832,
+        6.2832
+      ],
+      [
+        -6.2832,
+        6.2832
+      ],
+      [
+        -6.2832,
+        6.2832
+      ],
+      [
+        -6.2832,
+        6.2832
+      ],
+      [
+        -6.2832,
+        6.2832
+      ],
+      [
+        -6.2832,
+        6.2832
+      ]
+    ],
+    "maxVel": [
+      3.15,
+      3.15,
+      3.15,
+      3.2,
+      3.2,
+      3.2
+    ]
   },
   {
     "id": "ur10e",
@@ -411,6 +484,40 @@ export const EMBODIMENTS = [
     "actionSpaces": [
       "ee_pose_gripper",
       "joint_position"
+    ],
+    "jointLimits": [
+      [
+        -3.1416,
+        3.1416
+      ],
+      [
+        -1.885,
+        1.9897
+      ],
+      [
+        -1.7907,
+        1.6231
+      ],
+      [
+        -3.1416,
+        3.1416
+      ],
+      [
+        -1.7453,
+        2.1468
+      ],
+      [
+        -3.1416,
+        3.1416
+      ]
+    ],
+    "maxVel": [
+      3,
+      3,
+      3,
+      3,
+      3,
+      3
     ]
   },
   {
@@ -424,6 +531,40 @@ export const EMBODIMENTS = [
     "actionSpaces": [
       "ee_pose_gripper",
       "joint_position"
+    ],
+    "jointLimits": [
+      [
+        -3.1416,
+        3.1416
+      ],
+      [
+        -1.885,
+        1.9897
+      ],
+      [
+        -1.7907,
+        1.6231
+      ],
+      [
+        -3.1416,
+        3.1416
+      ],
+      [
+        -1.7453,
+        2.1468
+      ],
+      [
+        -3.1416,
+        3.1416
+      ]
+    ],
+    "maxVel": [
+      3,
+      3,
+      3,
+      3,
+      3,
+      3
     ]
   },
   {
@@ -490,7 +631,36 @@ export const EMBODIMENTS = [
       "ee_pose_gripper",
       "joint_position"
     ],
-    "note": "Sub-$500. The LeRobot community default."
+    "note": "Sub-$500. The LeRobot community default.",
+    "jointLimits": [
+      [
+        -2,
+        2
+      ],
+      [
+        -1.75,
+        1.75
+      ],
+      [
+        -1.6,
+        1.6
+      ],
+      [
+        -1.75,
+        1.75
+      ],
+      [
+        -2.7,
+        2.7
+      ]
+    ],
+    "maxVel": [
+      4.8,
+      4.8,
+      4.8,
+      4.8,
+      4.8
+    ]
   },
   {
     "id": "low_cost_arm",

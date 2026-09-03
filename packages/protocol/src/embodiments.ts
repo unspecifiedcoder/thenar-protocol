@@ -26,6 +26,15 @@ export type Embodiment = {
   actionSpaces: string[];
   trademarkCheck?: boolean;
   note?: string;
+  /**
+   * Per-joint `[min, max]` limits in radians, ordered to match the model's
+   * actuated-joint order in its Menagerie MJCF. Used by T-018's
+   * `kinematics.v1` check (PLAN §10.9 id 0x0003). Absent for embodiments
+   * without recorded limits — the check emits `inconclusive` for those.
+   */
+  jointLimits?: [number, number][];
+  /** Per-joint velocity cap in rad/s, same order as `jointLimits`. */
+  maxVel?: number[];
 };
 
 const EE = ["ee_pose_gripper"];
@@ -59,9 +68,27 @@ export const EMBODIMENTS: Embodiment[] = [
   { id: "barkour_vb", name: "Barkour vB", vendor: "Google", class: "quadruped", dof: 12, licence: "Apache-2.0", menagerie: "google_barkour_vb", actionSpaces: LOCO },
 
   // --------------------------------------------------------------------- arms
-  { id: "franka_panda", name: "Panda", vendor: "Franka Emika", class: "arm", dof: 7, licence: "Apache-2.0", menagerie: "franka_emika_panda", actionSpaces: EE_JOINT, note: "The research standard. Most published datasets use it." },
+  {
+    id: "franka_panda", name: "Panda", vendor: "Franka Emika", class: "arm", dof: 7, licence: "Apache-2.0", menagerie: "franka_emika_panda", actionSpaces: EE_JOINT, note: "The research standard. Most published datasets use it.",
+    // Ranges from menagerie's franka_emika_panda/panda.xml <joint range="…">
+    // (joint1..joint7); velocity caps from Franka's published joint
+    // velocity limits (dq_max), same order. Approximated from the
+    // manufacturer spec sheet, not re-fetched from the MJCF for this task
+    // (see TASK-018.md note) — reasonable but not re-verified against the
+    // file bytes.
+    jointLimits: [[-2.8973, 2.8973], [-1.7628, 1.7628], [-2.8973, 2.8973], [-3.0718, -0.0698], [-2.8973, 2.8973], [-0.0175, 3.7525], [-2.8973, 2.8973]],
+    maxVel: [2.175, 2.175, 2.175, 2.175, 2.61, 2.61, 2.61],
+  },
   { id: "franka_fr3", name: "FR3", vendor: "Franka Robotics", class: "arm", dof: 7, licence: "Apache-2.0", menagerie: "franka_fr3", actionSpaces: EE_JOINT },
-  { id: "ur5e", name: "UR5e", vendor: "Universal Robots", class: "arm", dof: 6, licence: "BSD-3-Clause", menagerie: "universal_robots_ur5e", actionSpaces: EE_JOINT, trademarkCheck: true, note: "The industrial standard, highest real install base." },
+  {
+    id: "ur5e", name: "UR5e", vendor: "Universal Robots", class: "arm", dof: 6, licence: "BSD-3-Clause", menagerie: "universal_robots_ur5e", actionSpaces: EE_JOINT, trademarkCheck: true, note: "The industrial standard, highest real install base.",
+    // menagerie's universal_robots_ur5e/ur5e.xml gives each joint the
+    // default UR unlimited-rotation range (+-2*pi); velocity caps from UR's
+    // published max joint speed (~180 deg/s), approximated uniformly across
+    // joints rather than re-read from the MJCF (see TASK-018.md note).
+    jointLimits: [[-6.2832, 6.2832], [-6.2832, 6.2832], [-6.2832, 6.2832], [-6.2832, 6.2832], [-6.2832, 6.2832], [-6.2832, 6.2832]],
+    maxVel: [3.15, 3.15, 3.15, 3.2, 3.2, 3.2],
+  },
   { id: "ur10e", name: "UR10e", vendor: "Universal Robots", class: "arm", dof: 6, licence: "BSD-3-Clause", menagerie: "universal_robots_ur10e", actionSpaces: EE_JOINT, trademarkCheck: true },
   { id: "kuka_iiwa14", name: "LBR iiwa 14", vendor: "KUKA", class: "arm", dof: 7, licence: "BSD-3-Clause", menagerie: "kuka_iiwa_14", actionSpaces: EE_JOINT, trademarkCheck: true },
   { id: "kinova_gen3", name: "Gen3", vendor: "Kinova", class: "arm", dof: 7, licence: "BSD-3-Clause", menagerie: "kinova_gen3", actionSpaces: EE_JOINT },
@@ -69,13 +96,40 @@ export const EMBODIMENTS: Embodiment[] = [
   { id: "flexiv_rizon4s", name: "Rizon 4S", vendor: "Flexiv", class: "arm", dof: 7, licence: "Apache-2.0", menagerie: "flexiv_rizon4s", actionSpaces: EE_JOINT },
   { id: "xarm7", name: "xArm7", vendor: "UFACTORY", class: "arm", dof: 7, licence: "BSD-3-Clause", menagerie: "ufactory_xarm7", actionSpaces: EE_JOINT },
   { id: "lite6", name: "Lite 6", vendor: "UFACTORY", class: "arm", dof: 6, licence: "BSD-3-Clause", menagerie: "ufactory_lite6", actionSpaces: EE_JOINT },
-  { id: "viperx300", name: "ViperX 300 6DOF", vendor: "Trossen", class: "arm", dof: 6, licence: "BSD-3-Clause", menagerie: "trossen_vx300s", actionSpaces: EE_JOINT },
-  { id: "widowx250", name: "WidowX 250 6DOF", vendor: "Trossen", class: "arm", dof: 6, licence: "BSD-3-Clause", menagerie: "trossen_wx250s", actionSpaces: EE_JOINT },
+  {
+    id: "viperx300", name: "ViperX 300 6DOF", vendor: "Trossen", class: "arm", dof: 6, licence: "BSD-3-Clause", menagerie: "trossen_vx300s", actionSpaces: EE_JOINT,
+    // Approximate ranges for menagerie's trossen_vx300s/vx300s.xml joints
+    // (waist, shoulder, elbow, forearm_roll, wrist_angle, wrist_rotate),
+    // derived from Trossen's published Dynamixel-servo travel limits rather
+    // than re-read from the MJCF file bytes (see TASK-018.md note). Velocity
+    // cap approximated from Dynamixel XM430/XM540 typical max speed.
+    jointLimits: [[-3.1416, 3.1416], [-1.8850, 1.9897], [-1.7907, 1.6231], [-3.1416, 3.1416], [-1.7453, 2.1468], [-3.1416, 3.1416]],
+    maxVel: [3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
+  },
+  {
+    id: "widowx250", name: "WidowX 250 6DOF", vendor: "Trossen", class: "arm", dof: 6, licence: "BSD-3-Clause", menagerie: "trossen_wx250s", actionSpaces: EE_JOINT,
+    // Approximate ranges for menagerie's trossen_wx250s/wx250s.xml joints
+    // (waist, shoulder, elbow, forearm_roll, wrist_angle, wrist_rotate),
+    // derived from Trossen's published Dynamixel-servo travel limits rather
+    // than re-read from the MJCF file bytes (see TASK-018.md note). Velocity
+    // cap approximated from Dynamixel XM430 typical max speed.
+    jointLimits: [[-3.1416, 3.1416], [-1.8850, 1.9897], [-1.7907, 1.6231], [-3.1416, 3.1416], [-1.7453, 2.1468], [-3.1416, 3.1416]],
+    maxVel: [3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
+  },
   { id: "unitree_z1", name: "Z1", vendor: "Unitree", class: "arm", dof: 6, licence: "BSD-3-Clause", menagerie: "unitree_z1", actionSpaces: EE_JOINT },
   { id: "arx_l5", name: "L5", vendor: "ARX", class: "arm", dof: 6, licence: "BSD-3-Clause", menagerie: "arx_l5", actionSpaces: EE_JOINT },
   { id: "agilex_piper", name: "PiPER", vendor: "AgileX", class: "arm", dof: 6, licence: "MIT", menagerie: "agilex_piper", actionSpaces: EE_JOINT },
   { id: "rethink_sawyer", name: "Sawyer", vendor: "Rethink Robotics", class: "arm", dof: 7, licence: "Apache-2.0", menagerie: "rethink_robotics_sawyer", actionSpaces: EE_JOINT },
-  { id: "so_arm100", name: "SO-ARM100", vendor: "TheRobotStudio", class: "arm", dof: 5, licence: "Apache-2.0", menagerie: "trs_so_arm100", actionSpaces: EE_JOINT, note: "Sub-$500. The LeRobot community default." },
+  {
+    id: "so_arm100", name: "SO-ARM100", vendor: "TheRobotStudio", class: "arm", dof: 5, licence: "Apache-2.0", menagerie: "trs_so_arm100", actionSpaces: EE_JOINT, note: "Sub-$500. The LeRobot community default.",
+    // Approximate ranges for menagerie's trs_so_arm100/so_arm100.xml joints
+    // (rotation, pitch, elbow, wrist_pitch, wrist_roll), derived from the
+    // STS3215 servo's ~270 deg mechanical travel rather than re-read from
+    // the MJCF file bytes (see TASK-018.md note). Velocity cap approximated
+    // from the STS3215's rated no-load speed.
+    jointLimits: [[-2.0, 2.0], [-1.75, 1.75], [-1.6, 1.6], [-1.75, 1.75], [-2.7, 2.7]],
+    maxVel: [4.8, 4.8, 4.8, 4.8, 4.8],
+  },
   { id: "low_cost_arm", name: "Low-Cost Robot Arm", vendor: "Community", class: "arm", dof: 5, licence: "Apache-2.0", menagerie: "low_cost_robot_arm", actionSpaces: EE_JOINT },
   { id: "yam", name: "YAM", vendor: "I2RT", class: "arm", dof: 6, licence: "MIT", menagerie: "i2rt_yam", actionSpaces: EE_JOINT },
   { id: "seeed_devarm", name: "reBot DevArm", vendor: "Seeed Studio", class: "arm", dof: 6, licence: "MIT", menagerie: "seeed_studio_devarm", actionSpaces: EE_JOINT },
