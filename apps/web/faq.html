@@ -52,7 +52,7 @@
         </details>
         <details class="qa">
           <summary>Why not just use simulation? It scales and costs almost nothing.</summary>
-          <p>We do use simulation, and it is the right way to get trajectories and task structure at volume. But contact is the least accurate part of every physics engine, so friction, deformation and slip are approximated, and a policy trained only in simulation learns to correct against numbers the solver invented. The sim to real gap in manipulation is a contact gap. Real recordings are how you find out which of your simulated grasps were fiction.</p>
+          <p>We do use simulation, and it is the right way to get trajectories and task structure at volume. But contact is the least accurate part of every physics engine, so friction, deformation and slip are approximated, and a policy trained only in simulation learns to correct against numbers the solver invented. The sim-to-hardware gap in manipulation is a contact gap. Hardware-captured recordings are how you find out which of your simulated grasps were fiction.</p>
         </details>
         <details class="qa">
           <summary>Why can a better model not estimate force from video?</summary>
@@ -72,11 +72,11 @@
         </details>
         <details class="qa">
           <summary>Why would any buyer trust your provenance?</summary>
-          <p>They should not trust it, they should be able to check it. Terms and consent are recorded with the contribution at capture rather than asserted about it later. Be clear about the limit: that proves what was submitted and under what terms, not that the stream came off a real hand. Hardware attestation is what closes that gap and we have not built it. The honest offer is that you audit the first paid slice rather than take our word about a network that does not exist yet.</p>
+          <p>They should not trust it, they should be able to check it. Terms and consent are recorded with the contribution at capture rather than asserted about it later. Be clear about the limit: that proves what was submitted and under what terms, not that the stream came from a hardware-captured source. Hardware attestation is what closes that gap and we have not built it. The honest offer is that you audit the first paid slice rather than take our word about a network that does not exist yet.</p>
         </details>
         <details class="qa">
           <summary>What stops Meta, or a funded competitor, from doing this?</summary>
-          <p>Nothing stops them, and if measured contact matters as much as we think, somebody with more money will build a version. We expect it to be closed and pointed at their own models, which is what a platform does with hand data. That is not a moat, it is a bet on being early and open in a business with hardware and operations attached, which is genuinely less attractive than software and is a real reason large teams have stayed on cameras.</p>
+          <p>Nothing stops them, and if measured contact matters as much as we think, somebody with more money will build a version. We expect it to be closed and pointed at their own models, which is what a platform does with hand data. That is not a moat, it is a bet on being early and open in a business with hardware and operations attached, which is genuinely less attractive than software and is why large teams have stayed on cameras.</p>
         </details>
         <details class="qa">
           <summary>Why believe a small team can ship a wearable sensor?</summary>
@@ -88,7 +88,7 @@
         </details>
         <details class="qa">
           <summary>What would prove you wrong?</summary>
-          <p>The weak version is a manipulation benchmark where adding measured contact force to pose and video does not improve success on unfamiliar objects. That is a soft test, because an extra informative channel rarely hurts. The real one has a denominator: whether a dollar spent on measured force beats the same dollar spent on more simulation, more demonstrations, or tactile sensors mounted on the robot. We can run the weak version on our own tasks as soon as a Band records, and we should, before asking anybody to fund the strong one.</p>
+          <p>The weak version is a manipulation benchmark where adding measured contact force to pose and video does not improve success on unfamiliar objects. That is a soft test, because an extra informative channel rarely hurts. The rigorous one has a denominator: whether a dollar spent on measured force beats the same dollar spent on more simulation, more demonstrations, or tactile sensors mounted on the robot. We can run the weak version on our own tasks as soon as a Band records, and we should, before asking anybody to fund the strong one.</p>
         </details>
     </div>
   </section>

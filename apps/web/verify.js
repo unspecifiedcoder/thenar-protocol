@@ -6,11 +6,46 @@
  * No bundler: every import below is a relative `.js` specifier the browser
  * resolves directly, same discipline as the rest of `apps/web`.
  */
-import { keccak256 } from "./keccak.js";
+import { keccak256, hexToBytes } from "./keccak.js";
 import { decodeLeaf, hashLeaf, LEAF_VERSIONS } from "./leaves.js";
 import { verifyInclusion, verifyConsistency, computeRoot as smtComputeRoot, SMT_ZERO } from "./merkle.js";
 import { hashObject, hashObjectExcluding } from "./jcs.js";
 import { CHAINS } from "./chains.js";
+import { verify as ed25519Verify } from "./ed25519.js";
+
+/**
+ * `utf8(domain) ‖ 0x00 ‖ objectHash` — PLAN §10.6. Only the `manifest`
+ * domain is needed on this page (episode signatures, L1); the constant
+ * matches `packages/protocol/src/sign.ts`'s `DOMAINS.manifest` exactly.
+ */
+const MANIFEST_DOMAIN = "THENAR/v1/manifest";
+function signMessage(domain, objectHash) {
+  const domainBytes = new TextEncoder().encode(domain);
+  const hashBytes = hexToBytes(objectHash);
+  const out = new Uint8Array(domainBytes.length + 1 + hashBytes.length);
+  out.set(domainBytes, 0);
+  out[domainBytes.length] = 0;
+  out.set(hashBytes, domainBytes.length + 1);
+  return out;
+}
+
+/**
+ * Verify an episode manifest's `signature` (§9.1, alg `ed25519` only — this
+ * page does not vendor a P-256 verifier) against `objectHash` =
+ * `manifestHash`, per §10.6. Returns `false` on any malformed input rather
+ * than throwing, same discipline as `sign.ts`'s own `verify`.
+ */
+export function verifyManifestSignature(objectHash, signature, pubkey) {
+  try {
+    const msg = signMessage(MANIFEST_DOMAIN, objectHash);
+    const sigBytes = hexToBytes(signature);
+    const pubBytes = hexToBytes(pubkey);
+    if (pubBytes.length !== 32 || sigBytes.length !== 64) return false;
+    return ed25519Verify(sigBytes, msg, pubBytes, { zip215: false });
+  } catch {
+    return false;
+  }
+}
 
 export const ZERO32 = "0x" + "00".repeat(32);
 
@@ -162,7 +197,14 @@ function stepManifestHash(ep) {
   try {
     const got = hashObjectExcluding(ep.manifest, ["signature"]);
     const ok = got === ep.manifest_hash;
-    return { name: "manifestHash", ok, detail: ok ? "recomputed manifestHash matches" : `recomputed ${got}, report names ${ep.manifest_hash}` };
+    if (!ok) return { name: "manifestHash", ok, detail: `recomputed ${got}, report names ${ep.manifest_hash}` };
+    const sig = ep.manifest.signature;
+    if (!sig) return { name: "manifestHash", ok: true, detail: "recomputed manifestHash matches (manifest carries no signature — L1 not claimed)" };
+    if (sig.alg !== "ed25519") {
+      return { name: "manifestHash", ok: true, detail: `recomputed manifestHash matches; signature alg "${sig.alg}" is not checked by this page (only ed25519 is vendored here)` };
+    }
+    const sigOk = verifyManifestSignature(got, sig.sig, ep.org_pubkey || sig.pubkey);
+    return { name: "manifestHash", ok: sigOk, detail: sigOk ? "recomputed manifestHash matches; ed25519 signature over it verifies" : "manifestHash matches but the ed25519 signature over it does not verify" };
   } catch (e) {
     return { name: "manifestHash", ok: false, detail: e.message || String(e) };
   }

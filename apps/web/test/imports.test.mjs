@@ -9,6 +9,7 @@
 import { readdirSync, readFileSync, existsSync, statSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { keccak256, bytesToHex } from "../keccak.js";
 
 const web = join(dirname(fileURLToPath(import.meta.url)), "..");
 let fails = 0;
@@ -73,6 +74,19 @@ for (const f of files.filter((x) => x.endsWith(".html"))) {
     const resolvedPath = resolve(dirname(f), spec);
     ok(existsSync(resolvedPath), `${f} links ${spec}`);
   }
+}
+
+// T-026: `ed25519.js` vendors `@noble/ed25519` (package version 3.2.0) plus
+// an inlined standalone SHA-512, with no bundler to check it for us — so its
+// content is pinned by a keccak of its bytes. Any edit (accidental or
+// otherwise) to the vendored body, the sha512 addition, or the wiring
+// between them changes this hash and fails the build; updating it is a
+// deliberate act, not something a diff should do quietly.
+const ED25519_KECCAK = "0x38411f561c404bb91a4af61d36432bbc57347bbbc634a3cae0cf4b03545679ad";
+{
+  const bytes = readFileSync(join(web, "ed25519.js"));
+  const got = keccak256(bytesToHex(new Uint8Array(bytes)));
+  ok(got === ED25519_KECCAK, "ed25519.js content is pinned by keccak", got === ED25519_KECCAK ? "" : `got ${got}`);
 }
 
 console.log(fails === 0 ? "\nweb imports: all resolve\n" : `\n${fails} broken reference(s)\n`);

@@ -45,7 +45,7 @@ reading the log.
 
 The log is an append-only Merkle tree in the Certificate Transparency style,
 living off chain and anchored with its previous root and its size. Publishing a
-pile of independent roots would prove nothing about ordering; a monotonic head
+pile of unrelated roots would prove nothing about ordering; a monotonic head
 with a size is what makes a **consistency proof** possible.
 
 `anchor()` refuses a size that does not grow and a root that does not change, so
@@ -132,7 +132,7 @@ Against the live deployment, with a funded testnet key in `.env.deployer`:
 node --experimental-strip-types scripts/e2e.mjs
 ```
 
-That builds a real batch of captures, anchors it, has the chain confirm one
+That builds a batch of captures, anchors it, has the chain confirm one
 capture is in the log, extends the log and has the chain confirm nothing was
 rewritten, withdraws a consent and reads back the block it became knowable, then
 publishes terms and buys a licence. It writes `apps/web/sample-proof.json` so

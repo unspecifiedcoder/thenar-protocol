@@ -42,17 +42,18 @@
 <section class="wrap" style="padding-top:96px;padding-bottom:16px">
   <h1 style="margin:0 0 18px">Corpora</h1>
   <p style="max-width:64ch;font-size:17px;line-height:1.55;color:var(--fg-dim)">
-    A corpus is a set of accepted episodes against one published task, sealed at
-    an anchor the log already carries. Everything below is read from the
-    contract. The cap table is what a licence fee splits to, in the same
-    transaction that records the sale.
+    A corpus is a set of episodes committed to the log, manifest-leafed,
+    anchored, and sealed for sale by <code>LicenceRegistry.sealCorpus</code>.
+    The list below reads sealed corpora straight off the contract; open one
+    for its report summary, terms, price, and the exact calldata a buyer
+    wallet sends — no private key ever asked for here.
   </p>
 </section>
 
 <section class="wrap" style="padding-bottom:64px">
   <div id="corpora" class="cstack">
     <div class="cempty" data-state="loading">
-      <span class="spin" aria-hidden="true"></span> Reading the market…
+      <span class="spin" aria-hidden="true"></span> Reading corpora…
     </div>
   </div>
 </section>

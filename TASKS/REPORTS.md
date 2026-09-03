@@ -1094,3 +1094,89 @@ Deviations from PLAN.md: none.
 Invariants touched: I-1 (integrity never presented as truth; badges + wording snapshot + grep guard enforce this; forbidden words never appear outside L3 wording template). I-14 (key validity evaluated at first-anchor time, stored in signature.validAtAnchor field, checked by L1 rule).
 
 Open questions / conflicts filed: none.
+
+## T-036 — Commit & append: manifests, leaves, append receipts, ingest job — 2026-09-03 — STRONG
+
+Changed: `services/api/src/routes/datasets.ts`, `services/api/src/routes/jobs.ts`,
+`services/api/src/routes/episodes.ts` (replaced their 501 stubs with real
+handlers); `services/api/src/app.ts` (`Deps.operator: OperatorSigner`;
+`defaultDeps` derives/loads the operator key from `OPERATOR_KEY` and
+registers it on boot); `services/log/src/schema.sql` (added `consent_salt`
+table); `services/log/src/store-interface.ts` (`LeafMeta` type widening
+`append`'s meta param to the episode fields `store.ts` already persisted;
+`episodeByManifestHash`, `createDataset`/`datasetById`,
+`createJob`/`jobById`/`updateJob`, `claimSalt` added to `ILogStore`;
+`DatasetRow`/`JobRow` types); `services/log/src/store.ts` (implements the
+above); `services/api/test/api.test.ts` (three assertions updated from
+"reaches the 501 stub" to the real status codes these routes now return —
+`POST /datasets` with an unstored file → 422, `POST /episodes` with a
+schema-valid but unsigned manifest → 401, `GET /jobs/{unknown}` → 404, moved
+out of the blanket 501-stub list into its own block); `package.json`
+(registered `ingest.test.ts` in `test:api`).
+
+Created: `services/api/src/ingest/receipt.ts` (`AppendReceipt` type,
+`signAppendReceipt` — §9.5/§10.6), `services/api/src/ingest/commit.ts`
+(`commitEpisode` — the single validate → duplicate-check → append → sign
+path shared by the ingest job and `POST /episodes`), `services/api/src/
+ingest/job.ts` (`buildManifestFromEpisode`, `commitEpisodesFromRefs`,
+`materializeDataset`, `processIngest`, plus an in-process
+salt-bearing job-result cache for `GET /jobs/{id}`), `services/api/src/
+ingest/operator.ts` (`loadOperatorSigner`, `ensureOperatorKey`),
+`services/api/test/ingest.test.ts`.
+
+Tests: `pnpm test:api` → pass (api.test.ts, bundle.test.ts, registry.test.ts,
+lerobot.test.ts, faults.test.ts, chain.test.ts, ingest.test.ts all green,
+291+ assertions, 0 FAIL in any of this task's suites). `pnpm test:log` →
+pass. `pnpm test:protocol` → pass. `ingest.test.ts` covers: the v3 fixture
+end-to-end through the real HTTP routes (`POST /datasets` →
+`POST /datasets/{id}/ingest` → `GET /jobs/{id}`) producing 3 leaves;
+`payloadHash` recomputed from the materialised bundle-store files matches
+the committed manifest's `payload_hash`; every `AppendReceipt` verifies with
+`sign.verify` against the operator's registered key; `POST /datasets` with
+an unstored file → 422 naming the hash; a dataset with 0 episodes → 422;
+partial-failure atomicity via a synthetic `EpisodeRef[]` (one ref with a
+null `embodiment` fails validation, the other two commit, and the log grows
+by exactly 2); salt reuse refused via an injected fixed `saltFn` (second
+episode gets a `conflict` error, first commits, log grows by exactly 1);
+duplicate `manifestHash` refused on `POST /episodes` (second identical
+submission → 409, log size unchanged). Noted, not caused by this task: the
+same `pnpm test:api` run also executes `services/api/test/licence-flow.test.ts`
+(untracked, added concurrently by a different in-progress task in this
+shared checkout, exercises on-chain corpus/licence flows via anvil) which
+fails for reasons unrelated to datasets/jobs/episodes (missing
+`GET /v1/corpora/{id}/onchain`, `scripts/seal-corpus.mjs`/`license.mjs`/
+`download.mjs` — none of which T-036 touches or owns).
+
+Deviations from PLAN.md: (1) "register its keyId as an org key with role
+`operator`" (TASK-036.md binding rule) — `SigningKeyRow` (§8/T-024) has no
+`role` field; only `api_key.role` does, and its check constraint already
+lists `operator` for that unrelated purpose. Implemented instead as:
+register the operator's Ed25519 key as a `SigningKey` of a fixed
+`org_operator` organisation (kind `verifier`, the closest existing kind) on
+boot if absent — this gives `resolveKey`/`sign.verify` a published key to
+check an `AppendReceipt` against without inventing a schema field PLAN §8
+doesn't define. (2) `captured_at` for ingest-job-built manifests: `EpisodeRef`
+(T-011) carries no per-episode capture timestamp, so every episode in one
+`ingest` call uses the server's ingest-time as `captured_at` (still "a
+claim" per §9.1, consistent across the one dataset). (3) `GET /jobs/{id}`
+returns `submitted_at` and `salt` per episode, matching TASK-036.md's own
+"Expected behaviour"/Tests sections (more detailed than PLAN §12's summary
+row, not in conflict with it) — the salt is served only from an in-process
+cache and never written to the durable `job` row (§10.5 "never stored"), so
+a job's full per-episode detail (including its salts) is only retrievable
+for the lifetime of the process that ran the ingest; a restarted process
+can still report a job's `status` (from the durable row) but not its
+episodes/errors, and refuses (`internal`) rather than fabricate them (I-11).
+
+Invariants touched: I-2 (append-only: nothing is written before every
+`commitEpisode` check passes); I-6 (a fresh `ConsentRecord`/salt/nonce is
+drawn per episode; `consentCommitment` derivation and `consentKey` use the
+existing §9.4/§10.5 functions unchanged); I-11 (a manifest field the reader
+can't supply — e.g. `embodiment` — is left `null` and rejected by
+`validateManifest` rather than patched with an invented value; an unstored
+file, an empty dataset, and a stale in-process job cache all refuse rather
+than fabricate); §27 trap #7 (`submittedAt` is `commit.ts`'s own `now()`,
+never read from the manifest); §27 trap #9 (the salt is never persisted —
+only `keccak(salt)` via the new `consent_salt` table's `claimSalt`).
+
+Open questions / conflicts filed: none.

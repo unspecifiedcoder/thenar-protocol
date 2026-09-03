@@ -165,152 +165,67 @@ td.what{color:var(--fg-dim)}
       <a class="btn primary" href="./products.html">The four products</a>
       <a class="btn ghost" href="./protocol.html">How it works</a>
     </div>
+  </section>
 
-    <div class="stage3d" id="stage">
-      <canvas id="bandc3d"></canvas>
-      <span class="hint3d">DRAG TO ROTATE</span>
-      <span class="state" id="state3d">ASSEMBLED</span>
-    </div>
+  <section class="fwrap" id="answers" style="padding-top:var(--s-700)">
+    <p class="feyebrow">What a report answers</p>
+    <h2 class="fh2">Four questions<br>counsel asks</h2>
+    <p class="flede" style="margin-top:var(--s-300)">
+      A Provenance Report answers the questions a buyer's legal team asks before licensing a dataset.
+      Every answer is checkable without trusting THENAR.</p>
 
-    <div class="creds">
-      <span>Open CAD in pure Python</span>
-      <span>Watertight, audited geometry</span>
-      <span>Every part on a 180 mm bed</span>
-      <span>Printable STLs published</span>
+    <div class="grid g4 loop" style="margin-top:var(--s-600)">
+      <article class="card"><h3>What is it?</h3>
+        <p>A dataset of episodes: the files, their hashes, metadata, and the range of episodes included. Verifiable against the corpus root.</p></article>
+      <article class="card"><h3>Where did it come from?</h3>
+        <p>Who captured each episode, when, under what terms and consent status. Signatures prove identity at submission. Revocation is provable if consent was withdrawn later.</p></article>
+      <article class="card"><h3>Who may train on it?</h3>
+        <p>The license terms are recorded with the dataset and anchored on chain. Supplier and terms are immutable. Buyers get a receipt naming the root, terms, and amount paid.</p></article>
+      <article class="card"><h3>Is that still true?</h3>
+        <p>The log is append-only. Consistency proofs show nothing was rewritten since the anchor. Revocation status is proven at the moment of purchase or delivery.</p></article>
     </div>
   </section>
 
-  <section class="fwrap" id="demo" style="padding-top:var(--s-700)">
-    <p class="feyebrow">The whole argument, in 2.4 seconds</p>
-    <h2 class="fh2">One grasp.<br>Two recordings.</h2>
+  <section class="fwrap" id="claims">
+    <p class="feyebrow">Claim levels (PLAN §1)</p>
+    <h2 class="fh2">Every surface shows<br>what each badge proves</h2>
     <p class="flede" style="margin-top:var(--s-300)">
-      Somebody picks up a glass and it starts to slide. Watch what each sensor
-      has to say about the moment it happens. Drag the trace to scrub.</p>
+      Levels are badges over an L0 base, not a cumulative ladder. Each episode carries the set of badges it holds.
+      Wording is verbatim and never weakened.</p>
 
-    <div class="demo">
-      <div class="stage">
-        <svg class="hand" viewBox="3 22 196 302" role="img"
-             aria-label="Right hand, palm view, with pressure at the thenar eminence and the fingertips">
-          <defs>
-            <radialGradient id="pg">
-              <stop offset="0%"   stop-color="#FA9DCD" stop-opacity=".95"/>
-              <stop offset="55%"  stop-color="#FA9DCD" stop-opacity=".32"/>
-              <stop offset="100%" stop-color="#FA9DCD" stop-opacity="0"/>
-            </radialGradient>
-          </defs>
-          <path class="skin" d="M 10.6 147.2 L 21.5 191.9 L 24.0 198.6 L 43.8 239.4 L 69.3 273.0 L 82.0 300.0 L 110.0 316.0 L 150.0 312.0 L 176.0 284.0 L 185.0 240.2 L 179.6 186.0 L 186.3 141.9 L 191.0 90.1 L 190.6 87.6 L 189.2 85.0 L 187.3 83.3 L 184.7 82.2 L 182.1 82.1 L 179.3 82.9 L 177.3 84.4 L 175.7 86.8 L 167.9 137.5 L 163.5 158.7 L 162.6 160.9 L 161.1 162.5 L 159.0 163.1 L 156.9 162.7 L 154.7 160.5 L 154.2 157.4 L 158.2 52.1 L 157.5 48.6 L 156.0 46.1 L 151.8 43.2 L 147.1 43.0 L 142.6 45.4 L 140.2 49.2 L 132.2 132.6 L 130.5 136.6 L 128.6 137.7 L 126.5 137.7 L 123.7 135.8 L 122.7 132.2 L 118.6 38.0 L 115.8 33.0 L 110.8 30.4 L 105.1 31.0 L 100.8 34.7 L 99.2 39.9 L 98.0 137.5 L 97.3 142.3 L 95.8 143.9 L 93.8 144.7 L 90.1 143.4 L 88.7 140.0 L 80.0 55.2 L 76.9 50.7 L 72.0 48.7 L 66.7 49.7 L 63.1 52.9 L 61.6 58.1 L 63.8 121.2 L 67.2 177.8 L 66.3 180.3 L 64.0 182.0 L 62.6 190.5 L 60.9 193.0 L 58.5 193.9 L 55.6 193.0 L 49.2 183.6 L 32.6 141.5 L 29.4 137.2 L 26.3 135.3 L 22.1 134.5 L 18.6 135.0 L 14.8 137.0 L 12.4 139.7 L 10.7 143.6 Z"/>
-          <ellipse class="emin" cx="90" cy="252" rx="26" ry="33"
-                   transform="rotate(-20 90 252)"/>
-          <g id="pads">
-            <circle class="pp" data-w="1"   cx="90"  cy="252" r="0" fill="url(#pg)"/>
-            <circle class="pp" data-w=".62" cx="26"  cy="153" r="0" fill="url(#pg)"/>
-            <circle class="pp" data-w=".52" cx="72"  cy="64"  r="0" fill="url(#pg)"/>
-            <circle class="pp" data-w=".52" cx="109" cy="47"  r="0" fill="url(#pg)"/>
-            <circle class="pp" data-w=".44" cx="148" cy="58"  r="0" fill="url(#pg)"/>
-            <circle class="pp" data-w=".34" cx="182" cy="96"  r="0" fill="url(#pg)"/>
-          </g>
-          <text class="lbl" x="100" y="316" text-anchor="middle">THENAR EMINENCE</text>
-        </svg>
-
-        <div>
-          <canvas id="trace" aria-label="Grip force and video derived pose over one grasp"></canvas>
-          <div class="readout">
-            <div>Peak correction <b>14.2 N</b></div>
-            <div>Pose movement at slip <b>0.9 mm</b></div>
-            <div>Reflex latency <b>70 ms</b></div>
-          </div>
-        </div>
+    <div class="rail" style="margin-top:var(--s-600);margin-left:auto;margin-right:auto">
+      <div>
+        <h3>L0 Committed</h3>
+        <p style="color:var(--fg-dim);margin-top:var(--s-75)">Existed by block {block} on {chain}; log unchanged since; consent {live | revoked at block {onset}} as of anchor (size {size}).</p>
       </div>
-
-      <div class="foot">
-        <p>The glass begins to slide at the marked instant. Grip force collapses,
-          then the corrective squeeze lands about seventy milliseconds later. The
-          pose track moves under a millimetre, which is inside the noise floor of
-          every hand tracker there is. A camera can watch this happen and record
-          nothing about it.</p>
-        <div class="ctrl">
-          <button class="btn sm" id="play" aria-pressed="true">Pause</button>
-          <button class="btn sm ghost" id="replay">Replay</button>
-        </div>
+      <div>
+        <h3>L1 Signed</h3>
+        <p style="color:var(--fg-dim);margin-top:var(--s-75)">{org} signed this record before it was logged; unchanged since.</p>
+      </div>
+      <div>
+        <h3>L2 Attested</h3>
+        <p style="color:var(--fg-dim);margin-top:var(--s-75)">Signing key held in hardware attested by {manufacturer} ({model}); this proves which device signed, not what its sensors saw.</p>
+      </div>
+      <div>
+        <h3>L3 Checked</h3>
+        <p style="color:var(--fg-dim);margin-top:var(--s-75)">Checked by {operator} — {n} checks run: {list}. Heuristic; see details.</p>
       </div>
     </div>
   </section>
 
-  <section class="fwrap" id="gap">
-    <p class="feyebrow">The bottleneck</p>
-    <p class="big tagline" id="bigline">Everyone is recording video. <span class="dim">Nobody records force.</span></p>
-    <div class="grid g3" style="margin-top:var(--s-600)">
-      <article class="card">
-        <h3>Simulation is weakest exactly where manipulation happens</h3>
-        <p>Contact is the least accurate part of every physics engine. Friction,
-          deformation and slip are approximated, so teleoperating a simulated
-          arm yields a clean trajectory through an interaction that never had to
-          obey a real surface. That is the sim to real gap, and it is a contact
-          gap.</p>
-      </article>
-      <article class="card">
-        <h3>Video cannot recover force</h3>
-        <p>You can estimate a hand's pose from footage to within a few
-          millimetres. You cannot estimate the newtons it applied, or the
-          correction it made forty milliseconds after the object shifted in its
-          grip. That correction is the entire skill, and it is invisible.</p>
-      </article>
-      <article class="card">
-        <h3>Instrumented capture does not leave the lab</h3>
-        <p>Force sensing gloves exist, bolted to a bench in a handful of
-          research groups, producing hours. A model needs years. Nobody has put
-          contact sensing on a hand that walks out of the building and into a
-          kitchen.</p>
-      </article>
-    </div>
-  </section>
-
-  <section class="fwrap" id="capture">
-    <p class="feyebrow">What we run today</p>
-    <h2 class="fh2">We are already<br>collecting</h2>
+  <section class="fwrap" id="limitations">
+    <p class="feyebrow">Known limitations (PLAN §22)</p>
+    <h2 class="fh2">What it does not prove</h2>
     <p class="flede" style="margin-top:var(--s-300)">
-      Teleoperation on a Quest 3S, today, on hardware anybody can buy. It is
-      how we get task structure and intent at volume while the Band is still
-      in design, and it is the honest half of the answer to what we have
-      before our own instrument ships.</p>
+      The following is stated in every report and never weakened:</p>
 
-    <div class="stage3d" id="stage3" style="aspect-ratio:16/8">
-      <canvas id="questc"></canvas>
-      <span class="hint3d">DRAG TO ROTATE</span>
-      <span class="state" id="state3d3">QUEST 3S · TOUCH PLUS</span>
-    </div>
-
-    <div class="bento" style="margin-top:16px">
-      <article class="tile">
-        <h3>What the headset gives us</h3>
-        <p>Six degrees of freedom on both hands at 90 Hz, head pose, and the
-          operator's own segmentation of the task, because a person doing
-          teleoperation naturally breaks work into attempts. Cheap, scalable,
-          and it works in any room.</p>
-        <div class="spec">
-          <div>TRACKING<b>6DoF, both hands</b></div>
-          <div>CONTROLLERS<b>Touch Plus, ringless</b></div>
-          <div>COST<b>Off the shelf</b></div>
-        </div>
-      </article>
-      <article class="tile" style="border-color:var(--blue)">
-        <h3>What it cannot give us</h3>
-        <p>Force. A Touch Plus reports a trigger axis and a capacitive touch
-          flag, not newtons at a fingertip. Squeeze a real glass hard enough to
-          break it and the controller sends exactly the same number as holding
-          it gently. That missing channel is the entire reason the Band
-          exists.</p>
-        <div class="spec">
-          <div>GRIP FORCE<b>None</b></div>
-          <div>SLIP EVENTS<b>Invisible</b></div>
-          <div>CONTACT AREA<b>None</b></div>
-        </div>
-      </article>
-    </div>
-
-    <p class="flede" style="margin-top:var(--s-500);color:var(--fg-mute);font-size:14px">
-      Our own likeness of hardware we use, modelled for this page. No Meta
-      marks, dimensions approximate. Thenar is not affiliated with Meta.</p>
+    <ul class="rail" style="margin-top:var(--s-600);margin-left:auto;margin-right:auto;list-style:disc;padding-left:var(--s-400)">
+      <li>The operator (THENAR) can decline to log or anchor a record; append receipts and public audit make this detectable, not impossible.</li>
+      <li>Checks are heuristics with recorded thresholds; they can be evaded and can err; they are evidence, not proof.</li>
+      <li>A signature proves which key signed, not what a sensor measured; captured_at, source and embodiment are claims by the signer.</li>
+      <li>Consent onset is recorded; what a buyer may do after onset is governed by the terms document, not by this protocol.</li>
+      <li>Anchors depend on the availability of at least one chain carrying the log; the same log is anchored on more than one.</li>
+    </ul>
   </section>
 
   <section class="fwrap" id="band">

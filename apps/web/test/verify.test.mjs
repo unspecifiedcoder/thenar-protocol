@@ -66,11 +66,14 @@ ok(hashObject(vectors.jcs.input) === vectors.jcs.hash, "jcs: hashObject matches 
 
 /* ------------------------------------------------------------- sparse SMT */
 {
+  // Vector naming: `*In` is the proof for `keyRevoked` (it IS in the tree,
+  // i.e. membership); `*Out` is the proof for `keyLive` (it is NOT in the
+  // tree, i.e. non-membership) — see `packages/protocol/test/vectors.ts`.
   const s = vectors.sparse;
-  const gotOut = merkle.computeRoot(s.keyRevoked, s.valueRevoked, BigInt(s.bitmapOut), s.siblingsOut);
-  ok(gotOut === s.sparseRoot, "sparse: computeRoot (membership) matches the vector's root");
-  const gotIn = merkle.computeRoot(s.keyLive, merkle.SMT_ZERO, BigInt(s.bitmapIn), s.siblingsIn);
-  ok(gotIn === s.sparseRoot, "sparse: computeRoot (non-membership) matches the vector's root");
+  const gotMember = merkle.computeRoot(s.keyRevoked, s.valueRevoked, BigInt(s.bitmapIn), s.siblingsIn);
+  ok(gotMember === s.sparseRoot, "sparse: computeRoot (membership, keyRevoked) matches the vector's root");
+  const gotAbsent = merkle.computeRoot(s.keyLive, merkle.SMT_ZERO, BigInt(s.bitmapOut), s.siblingsOut);
+  ok(gotAbsent === s.sparseRoot, "sparse: computeRoot (non-membership, keyLive) matches the vector's root");
 }
 
 /* ------------------------------------------------------------------ CT log */
