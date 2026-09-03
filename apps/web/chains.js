@@ -12,8 +12,8 @@ export const CHAINS = [
     "role": "primary",
     "rpc": "https://api.avax-test.network/ext/bc/C/rpc",
     "explorer": "https://testnet.snowtrace.io",
-    "log": "0xDF1F8B068229C868be073eA4883186513AC059Fd",
-    "verifier": "0x46bb2769C3F55A4Ae0cdA0885F14d191b5D1E307",
-    "registry": "0xe4565B5Fd752A368DDbF90AB6ca4B321cb4df26D"
+    "log": "0xde2E34b8A97774807842470b2619dC8BB099EaF1",
+    "verifier": "0x44589a2464C4CD29df57CB757fC3e1296c38b565",
+    "registry": "0x1a89aB71F65E50B36Eae138268Dc8D8f44f23Ccd"
   }
 ];

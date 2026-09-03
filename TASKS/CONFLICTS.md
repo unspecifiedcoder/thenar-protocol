@@ -108,3 +108,7 @@ in `apps/web/*.html`, `apps/web/*.js` (excluding vendored `ed25519.js`) or
 `services/api/src/report/**` that contains the word "physical" — after removing
 the tokens "physical-AI" and "physical AI" — must also contain "declared" or
 "attested". PLAN §1.1 guard text amended accordingly.
+
+**C-1 — RESOLVED (2026-09-03):** `routes/consent.ts` now validates the signature
+envelope (`alg`, `key_id == keyId(record.pubkey)`) and passes `signature.sig`
+to `LogStore.revoke`. T-012 green; adversarial attack 9 un-skipped.

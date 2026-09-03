@@ -163,13 +163,47 @@ async function pollJob(apiBase, headers, jobId, timeoutMs = 30_000) {
 
 async function main() {
   const mode = process.argv.includes("--live") ? "live" : "local";
+  const resetLocal = process.argv.includes("--reset-local");
+  if (resetLocal && mode !== "local") {
+    throw new Error("--reset-local only applies to --local (--live always appends to the one persistent, real log — see TASKS/REPORTS.md's T-033 follow-up)");
+  }
   console.log(`golden demo — mode: ${mode}`);
 
+  // Everything genuinely disposable (the mirror's own `.env.contracts`, the
+  // jitter fixture, the delivered-files copy) lives under `scratch` and is
+  // removed at the end regardless of mode. The log DB and bundle store are
+  // NOT under `scratch` in `--live` mode — see below.
   const scratch = mkdtempSync(join(tmpdir(), "thenar-golden-"));
   const envContractsPath = join(scratch, ".env.contracts");
-  const dbPath = join(scratch, "log.sqlite");
-  const bundleRoot = join(scratch, "bundles");
-  mkdirSync(bundleRoot, { recursive: true });
+
+  let dbPath, bundleRoot;
+  if (mode === "live") {
+    // T-033 follow-up: `--live` anchors against Fuji's real, persistent
+    // `GraspLog` — a fresh scratch log every run would produce anchors that
+    // extend nothing a re-run (or anyone else) can re-derive, and after the
+    // first run would simply fail (§21's own coherence rule: same size,
+    // different root, refused — this is exactly what happened when this
+    // task first ran `--live` twice against a scratch log; see
+    // TASKS/REPORTS.md). `THENAR_LOG_DB`/`BUNDLE_STORE_ROOT` therefore
+    // default to a fixed, checked-in-`.gitignore`d path under `.data/` that
+    // every `--live` run reuses and extends, exactly like the real log
+    // service would in production.
+    dbPath = process.env.THENAR_LOG_DB ?? join(REPO_ROOT, ".data/log.db");
+    bundleRoot = process.env.BUNDLE_STORE_ROOT ?? join(REPO_ROOT, ".data/bundles");
+    mkdirSync(dirname(dbPath), { recursive: true });
+    mkdirSync(bundleRoot, { recursive: true });
+    console.log(`live mode: persistent store db=${dbPath} bundles=${bundleRoot}`);
+  } else {
+    // `--local` stays fully scratch (mkdtemp, deleted at exit) — every run
+    // starts from an empty log against two brand-new Anvils, so there is no
+    // real head anywhere for a stale local log to ever diverge from.
+    // `--reset-local` is accepted for CLI symmetry with `--live`'s
+    // persistence flag but has no extra effect: `--local` is unconditionally
+    // reset (a fresh directory) on every invocation already.
+    dbPath = join(scratch, "log.sqlite");
+    bundleRoot = join(scratch, "bundles");
+    mkdirSync(bundleRoot, { recursive: true });
+  }
 
   const cleanups = [];
   const onExit = () => { for (const fn of cleanups.reverse()) { try { fn(); } catch { /* best effort */ } } };

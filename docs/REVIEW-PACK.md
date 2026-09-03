@@ -149,11 +149,13 @@ All tests must pass. The checked-in gas snapshot must match the current build.
 
 | Contract | Address (Avalanche Fuji, 43113) |
 | --- | --- |
-| `GraspLog` | `0xDF1F8B068229C868be073eA4883186513AC059Fd` |
-| `LeafVerifier` | `0x46bb2769C3F55A4Ae0cdA0885F14d191b5D1E307` |
-| `LicenceRegistry` | `0xe4565B5Fd752A368DDbF90AB6ca4B321cb4df26D` |
-| Mock USDC (testnet only) | `0x23171590c14a13ead6f8407b22a522349efb588b` |
+| `GraspLog` | `0xde2E34b8A97774807842470b2619dC8BB099EaF1` |
+| `LeafVerifier` | `0x44589a2464C4CD29df57CB757fC3e1296c38b565` |
+| `LicenceRegistry` | `0x1a89aB71F65E50B36Eae138268Dc8D8f44f23Ccd` |
+| Mock USDC (testnet only) | `0x5f344d9dba76f8da0ec0cb0211d077a121175e07` |
 | Deployer / relayer | `0x72db032c0dFB6E7502e16A73fabdab31712dc706` (relayer key; Safe handover pending) |
-| Deployed at block | 58151548 |
+| Deployed at block | 58152901 |
 
-Mirror (Ethereum Sepolia): pending a funded key.
+Mirror (Ethereum Sepolia): deferred to the mainnet checklist.
+
+Superseded (first Fuji deployment, block 58151548; its log carries one anchor from a scratch store and is not coherent): `GraspLog 0xDF1F8B068229C868be073eA4883186513AC059Fd`, `LeafVerifier 0x46bb2769C3F55A4Ae0cdA0885F14d191b5D1E307`, `LicenceRegistry 0xe4565B5Fd752A368DDbF90AB6ca4B321cb4df26D`.
