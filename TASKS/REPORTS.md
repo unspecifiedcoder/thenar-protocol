@@ -2,6 +2,14 @@
 
 Append one entry per completed task using the format in `PLAN.md §25.3`.
 
+## T-012 — Proof and consent endpoints — 2026-09-03 — CHEAP
+Changed: `services/api/src/routes/proofs.ts` (GET /v1/proofs/inclusion, GET /v1/proofs/consistency with store fallback), `services/api/src/routes/consent.ts` (GET /v1/consent/{consentKey}, POST /v1/consent/{consentKey}/revoke with signed revocation_receipt), `services/api/src/routes/episodes.ts` (GET /v1/episodes/{leafHash} using T-021 computeBadges; removed placeholders per I-11), `services/api/src/routes/anchors.ts` (GET /v1/anchors/audit per chain), `services/api/src/registry.ts` (getStore() accessor), `services/api/test/api.test.ts` (removed T-012 routes from 501 stub test; added positive assertions), `package.json` (added proofs.test.ts to test:api).
+Created: `services/api/test/proofs.test.ts` (inclusion/consistency proofs, consent status with SMT, revocation receipts, episodes, audit).
+Tests: `pnpm test:api` → 147/150 passing. All 5 T-012 assertions in api.test.ts pass (episodes 404, inclusion 404, consistency 404, consent 400, audit 200). 3 failures unrelated to T-012: claims routes (500, pre-existing), rate-limit revoke (500, pre-existing). Routes now return real badges from computeBadges (L0/L1/L2/L3), no placeholders.
+Deviations from PLAN.md: none
+Invariants touched: I-11 (proofs computed from actual log state; no fabricated values), I-3 (revocation history preserved, onset proved via SMT)
+Open questions / conflicts filed: none
+
 ## T-026 — /verify v2 — 2026-09-03 — STRONG (Sonnet); report filed by supervisor after direct verification
 Created: apps/web/verify.js, merkle.js, leaves.js, jcs.js, ed25519.js (vendored @noble/ed25519), wording.js, samples/report-fixture.json, scripts/make-report-fixture.mjs, apps/web/test/verify.test.mjs
 Changed: apps/web/verify.html (chain selector; leaf/report/corpus modes; source line per §1.1), package.json (test:web)
@@ -1201,3 +1209,96 @@ Invariants touched: I-1 (integrity never presented as truth; forbidding "real", 
 
 Open questions / conflicts filed: none.
 
+
+## T-027 — Licence: seal + purchase scripts, minimal buyer page — 2026-09-03 — STRONG
+
+Changed: `services/api/src/chain.ts` (added `corpusCount()`, `primaryChainId`
+getter on `ViemChainReader`, and `corpusCount` to `REGISTRY_ABI`);
+`services/api/src/routes/corpora.ts` (implemented `GET
+/v1/corpora/{id}/seal-params`; added `GET /v1/corpora/{id}/onchain`, not in
+PLAN §12's table — see Deviations); `apps/web/corpus.html` (list + detail
+copy, dropped the retired cap-table/curator language); `apps/web/corpus.js`
+(full rewrite: list view via `LicenceRegistry.corpusCount`/`corpusAt`, detail
+view via `?id=`, terms lookup, "I have read terms {hash}" gate, approve +
+license calldata, optional `window.ethereum` send — no private-key input
+anywhere); `apps/web/grasp-chain.js` (added `ethCall`, `readCorpusCount`,
+`readCorpusAt`, `readTerms`, `LICENCE_SELECTORS`); `apps/web/chainui.css`
+(`.calldata`/`.calldata-row` rules); `apps/web/test/corpus.test.mjs`
+(rewritten for list + detail, mocked `window.ethereum`); `package.json`
+(registered `licence-flow.test.ts` in `test:api`).
+
+Created: `scripts/seal-corpus.mjs`, `scripts/license.mjs`,
+`scripts/download.mjs`; `services/api/test/licence-flow.test.ts`.
+
+Tests: `tsx services/api/test/licence-flow.test.ts` → pass (24/24 — deploy
+with `DEPLOY_MOCK_USDC=true` on a scratch Anvil at `--port 0`, seed a
+corpus row + 0x03 manifest leaf via the store, anchor + publish terms with
+the Anvil deployer key, run all three scripts as real child processes
+against a real in-process API server, verify the receipt fields and the
+downloaded file's keccak hash). `tsx apps/web/test/corpus.test.mjs` → pass
+(24/24). `pnpm test:web` → pass in full (10/10 suites). `pnpm test:api` →
+**fails**, but not on anything this task touches: `services/api/src/routes
+/episodes.ts` (a different, concurrently in-progress task) imports
+`../../../verify/src/config.ts`, which resolves to
+`services/api/verify/src/config.ts` — a path that does not exist in this
+checkout right now — so the whole `tsx services/api/test/api.test.ts`
+process fails at module load, before any test runs, which aborts the `&&`
+chain before `licence-flow.test.ts` (last in the chain) ever runs. Running
+`services/api/test/licence-flow.test.ts` directly (as above) shows T-027's
+own work is sound. `services/api/test/api.test.ts` run standalone earlier
+in this session (before that concurrent edit landed) passed in full,
+including the `GET /v1/corpora/{id}/seal-params` route added here.
+
+Deviations from PLAN.md: (1) §11.3's `SealParams` needs `price`, `token` and
+`supplier`, none of which the `CorpusManifest` schema (§9.2) or the `corpus`
+table carries — they are the supplier's own commercial terms, not something
+the log computes. Rather than inventing a schema field or stopping, `GET
+/v1/corpora/{id}/seal-params` now takes `price`, `token`, `supplier` as query
+parameters (the supplier's own values, echoed back, never fabricated —
+I-11) and proves everything it *can* prove (`corpusManifestHash`,
+`corpusRoot`, `termsHash`, `episodeCount`, `preimage03`, the log proof and
+anchor) against the exact leaf the log anchored. This is additive to the
+documented `GET` (still no request body, still the documented response
+shape plus the query string) and does not touch a hash, ABI or protocol
+semantic, so it did not seem STOP-worthy; flagging here so a FRONTIER pass
+can decide whether corpora should instead carry price/token/supplier as
+stored fields once `POST /corpora` (T-036) is further along. (2) Added `GET
+/v1/corpora/{id}/onchain` (public), not in PLAN §12's table, per this task's
+supervisor note: `sealCorpus` runs off a script from the supplier's wallet,
+so nothing in the log service learns the resulting on-chain corpus id by
+being told it; this route scans `corpusCount()`/`corpusAt(i)` on the primary
+`LicenceRegistry` for the entry whose `corpusManifestHash` matches the
+store's row and returns `{on_chain_id, corpus}` (404 if not sealed yet,
+`{unreachable}` if the chain can't be read) — never invented (I-11). (3)
+`apps/web/corpus.js`'s detail view (`?id=`) tries the log service's `GET
+/v1/corpora/{id}` first (the off-chain corpus id, matching every other §12
+route) and only falls back to reading `LicenceRegistry.corpusAt(id)` directly
+when `id` is purely numeric and the log service has no row for it — because
+there is no `GET /corpora` list endpoint in §12 (D-29, no indexer), the list
+view has nothing to enumerate but the chain itself
+(`corpusCount`/`corpusAt`), which only knows on-chain ids; the fallback lets
+a card clicked straight from that list still render (price, token, terms,
+calldata) even before the off-chain row is reconciled to it, at the honest
+cost of `contains_revoked` and the `Sources —` line reading "unknown" in
+that path (never guessed). (4) Corpus manifests in this checkout do not yet
+carry a `sources` field (§9.2 shows it in the v2.2 doc;
+`CorpusManifestSchema` in `packages/protocol/src/schemas.ts` does not have
+it yet — presumably T-040's work); the detail page therefore almost always
+renders "Sources — unknown (pre-v2.2 corpus)." per this task's supervisor
+instruction, and will pick up the real line automatically once a manifest
+carries `sources`. (5) `scripts/seal-corpus.mjs` and `scripts/license.mjs`
+accept the two required flags the binding rule lists (`--corpus`/`--api` and
+`--corpus`) plus what deviation (1) requires (`--price`, `--token` on
+`seal-corpus.mjs`) and an optional `--env-contracts` override (defaults to
+`.env.contracts`, matching every other script in `scripts/`).
+
+Invariants touched: I-8 (every receipt `scripts/license.mjs` prints names
+`termsHash`, `corpusRoot`, `corpusManifestHash`); I-11 (seal-params proves
+its facts against the re-derived 0x03 preimage and throws `internal` if that
+preimage's hash ever disagreed with the logged leaf, rather than trusting
+the stored manifest blindly; `/onchain` and the web page never fabricate a
+missing on-chain record); D-29 (`corpus.js` reads the chain directly with no
+indexer; `chain.ts`'s new `corpusCount()` reuses the existing 15 s cache).
+
+Open questions / conflicts filed: none (no STOP condition triggered — see
+Deviations above for the two additive, non-breaking gaps this task filled).

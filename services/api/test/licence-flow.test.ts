@@ -19,7 +19,7 @@
  * Needs `anvil` and `forge` on PATH — skipped loudly, not silently green,
  * if either is missing (same convention as `chain.test.ts`).
  */
-import { execFileSync, spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { execFileSync, spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync, readFileSync as readFileSyncFs } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -104,12 +104,24 @@ async function waitForRpc(url: string, timeoutMs = 20_000): Promise<void> {
   throw new Error(`anvil did not answer at ${url} within ${timeoutMs}ms: ${lastErr}`);
 }
 
-function runScript(scriptPath: string, args: string[], env: NodeJS.ProcessEnv, cwd: string): { status: number; stdout: string; stderr: string } {
-  const r = spawnSync(
-    process.execPath, ["--experimental-strip-types", scriptPath, ...args],
-    { cwd, env: { ...process.env, ...env }, encoding: "utf8" },
-  );
-  return { status: r.status ?? 1, stdout: r.stdout ?? "", stderr: r.stderr ?? "" };
+/**
+ * Runs a script as a child process and waits for it — with `spawn`, not
+ * `spawnSync`. The scripts under test call back into this same process's
+ * own in-process API server (`apiServer` below); `spawnSync` blocks this
+ * process's entire event loop until the child exits, which would freeze
+ * that very server and deadlock the child against its own parent. `spawn`
+ * keeps the event loop (and the server) running while the child works.
+ */
+function runScript(scriptPath: string, args: string[], env: NodeJS.ProcessEnv, cwd: string): Promise<{ status: number; stdout: string; stderr: string }> {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, ["--experimental-strip-types", scriptPath, ...args], {
+      cwd, env: { ...process.env, ...env },
+    });
+    let stdout = "", stderr = "";
+    child.stdout.on("data", (d) => { stdout += d.toString("utf8"); });
+    child.stderr.on("data", (d) => { stderr += d.toString("utf8"); });
+    child.on("close", (code) => resolve({ status: code ?? 1, stdout, stderr }));
+  });
 }
 
 async function main() {
@@ -273,7 +285,7 @@ async function main() {
 
     // ----------------------------------------------------- scripts/seal-corpus.mjs
     const scriptEnv = { SUPPLIER_KEY: DEPLOYER_KEY, SUPPLIER_API_KEY: SUPPLIER_KEY, BUYER_KEY };
-    const sealResult = runScript(
+    const sealResult = await runScript(
       join(REPO_ROOT, "scripts/seal-corpus.mjs"),
       ["--corpus", "corpus_1", "--api", API_BASE, "--price", "1000000", "--token", mockUsdc, "--env-contracts", envFile],
       scriptEnv, REPO_ROOT,
@@ -300,7 +312,7 @@ async function main() {
     await pub.waitForTransactionReceipt({ hash: mintTx });
 
     // -------------------------------------------------------- scripts/license.mjs
-    const licenseResult = runScript(
+    const licenseResult = await runScript(
       join(REPO_ROOT, "scripts/license.mjs"),
       ["--corpus", onChainCorpusId, "--env-contracts", envFile],
       scriptEnv, REPO_ROOT,
@@ -314,7 +326,7 @@ async function main() {
 
     // ------------------------------------------------------- scripts/download.mjs
     const outDir = mkdtempSync(join(tmpdir(), "thenar-licence-download-"));
-    const downloadResult = runScript(
+    const downloadResult = await runScript(
       join(REPO_ROOT, "scripts/download.mjs"),
       ["--receipt", receiptId, "--api", API_BASE, "--out", outDir],
       scriptEnv, REPO_ROOT,
