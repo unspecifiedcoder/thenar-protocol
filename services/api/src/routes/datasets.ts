@@ -56,7 +56,7 @@ export const datasetRoutes = new Hono<AppEnv>()
   // shape (PLAN §12) — an in-process queue that finishes before responding
   // is a valid instance of that, and keeps this task's tests deterministic.
   .post("/datasets/:id/ingest", async (c) => {
-    const { keyStore, logStore, bundleStore, operator } = c.get("deps");
+    const { keyStore, logStore, bundleStore, operator, onEpisodeCommitted } = c.get("deps");
     if (!logStore) throw new ApiError("internal", "log store not configured");
     const principal = requireAuth(keyStore, c.req.header("Authorization"));
     const body = parseOrThrow(IngestDatasetBody, await getJsonBody(c));
@@ -69,7 +69,7 @@ export const datasetRoutes = new Hono<AppEnv>()
 
     const now = () => Math.floor(Date.now() / 1000);
     const result = await processIngest({
-      commitDeps: { store: logStore, now, operator },
+      commitDeps: { store: logStore, now, operator, onEpisodeCommitted },
       bundleStore,
       dataset,
       body: {

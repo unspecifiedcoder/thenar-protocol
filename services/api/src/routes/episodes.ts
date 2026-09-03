@@ -14,7 +14,7 @@ export const episodeRoutes = new Hono<AppEnv>()
   // recomputed and the manifest signature verified before anything is
   // appended (PLAN §12 binding rule).
   .post("/episodes", async (c) => {
-    const { keyStore, registry, logStore, uploadRegistry, operator } = c.get("deps");
+    const { keyStore, registry, logStore, uploadRegistry, operator, onEpisodeCommitted } = c.get("deps");
     if (!logStore) throw new ApiError("internal", "log store not configured");
     const principal = requireAuth(keyStore, c.req.header("Authorization"));
     const body = parseOrThrow(CreateEpisodeBody, await getJsonBody(c));
@@ -55,7 +55,7 @@ export const episodeRoutes = new Hono<AppEnv>()
 
     if (!operator) throw new ApiError("internal", "operator signing key not configured");
     const outcome = await commitEpisode(
-      { store: logStore, now: () => Math.floor(Date.now() / 1000), operator },
+      { store: logStore, now: () => Math.floor(Date.now() / 1000), operator, onEpisodeCommitted },
       principal.orgId,
       manifest,
       manifest.dataset_id ?? null,
@@ -70,4 +70,68 @@ export const episodeRoutes = new Hono<AppEnv>()
     });
   })
   // GET /v1/episodes/{leafHash} — public
-  .get("/episodes/:leafHash", (c) => notImplemented(`episode detail for ${c.req.param("leafHash")}`));
+  // Return { preimage, leaf_index, submitted_at, badges, wording, claims, anchor? }
+  .get("/episodes/:leafHash", (c) => {
+    const { logStore, registry } = c.get("deps");
+    const store = logStore ?? registry?.getStore();
+    if (!store) throw new ApiError("internal", "log store not configured");
+
+    const leafHash = c.req.param("leafHash") as Hex;
+
+    // Get episode metadata
+    const episodeMeta = store.episodeMeta(leafHash);
+    if (!episodeMeta) {
+      throw new ApiError("not_found", `episode ${leafHash} not found`);
+    }
+
+    // Get claims for this episode
+    const claims = store.claimsFor(leafHash);
+
+    // Find the anchor containing this leaf
+    let anchor: { root: Hex; size: number; chains?: any[] } | undefined;
+    const leaves = store.leaves();
+    const leafIndex = leaves.indexOf(leafHash);
+    if (leafIndex !== -1) {
+      const anchors = store.anchors();
+      for (const a of anchors) {
+        if (leafIndex < a.size) {
+          anchor = { root: a.root, size: a.size };
+          // Get chain locators from anchorChains
+          const chains = store.anchorChains(a.root, a.size);
+          if (chains.length > 0) {
+            anchor.chains = chains.map((ch) => ({
+              chain_id: ch.chainId,
+              index: ch.idx,
+              at: ch.at,
+              block_number: ch.blockNumber,
+              tx_hash: ch.txHash,
+            }));
+          }
+          break;
+        }
+      }
+    }
+
+    // For now, return basic episode info with placeholder badges
+    // T-021 badge engine will be used to compute proper badges
+    const response: any = {
+      preimage: episodeMeta.preimage,
+      leaf_index: episodeMeta.index,
+      submitted_at: episodeMeta.submittedAt,
+      badges: anchor ? ["L0"] : [],
+      wording: anchor ? ["Committed — ..."] : ["Pending — received, not yet anchored."],
+      claims: claims.map((c) => ({
+        check: c.check,
+        result: c.result,
+        issued_at: c.issuedAt,
+        detail: c.detail,
+        verifier_key_id: c.verifierKeyId,
+      })),
+    };
+
+    if (anchor) {
+      response.anchor = anchor;
+    }
+
+    return c.json(response);
+  });

@@ -228,187 +228,14 @@ td.what{color:var(--fg-dim)}
     </ul>
   </section>
 
-  <section class="fwrap" id="band">
-    <p class="feyebrow">The instrument</p>
-    <h2 class="fh2">The Thenar Band</h2>
-    <p class="flede" style="margin-top:var(--s-300)">
-      A wrist unit worn while you do ordinary work. Four printed parts, a
-      removable bay cap, and a camera that comes off with a quarter turn.</p>
-
-    <div class="bandgrid">
-      <div class="bandstick">
-        <div class="stage3d tall" id="stage2">
-          <canvas id="bandc3d2"></canvas>
-          <span class="hint3d">DRAG TO ROTATE</span>
-          <span class="state" id="state3d2">EXPLODED</span>
-        </div>
-      </div>
-      <div class="bandlist" id="bandlist">
-        <article class="tile" data-part="band-cuff">
-          <h3><span class="dot" style="background:#2B2B31;outline:1px solid var(--line-2)"></span>Wrist chassis</h3>
-          <p>An open C that springs over the wrist, so there is no buckle to
-            thread one handed. The bore is an ellipse because a wrist is: model
-            it round and it rocks, digs in at the styloid, and reads its sensors
-            through a moving air gap.</p>
-          <div class="spec">
-            <div>BORE<b>58 &times; 46 mm</b></div>
-            <div>WALL<b>3.4 mm</b></div>
-            <div>VOLUME<b>25.9 cm&sup3;</b></div>
-          </div>
-        </article>
-
-        <article class="tile" data-part="band-cap">
-          <h3><span class="dot" style="background:#4D17F5"></span>Removable bay cap</h3>
-          <p>A lip drops into the bay mouth on a 0.25 mm printed snap fit, and a
-            thumb notch on the proximal edge gives you somewhere to lever it off
-            without taking a glove off first. Vented, because the bay holds a
-            radio and a battery.</p>
-          <div class="spec">
-            <div>FIT<b>0.25 mm/side</b></div>
-            <div>PLATE<b>4.6 mm</b></div>
-            <div>VENTS<b>3</b></div>
-          </div>
-        </article>
-
-        <article class="tile" data-part="band-cam">
-          <h3><span class="dot" style="background:#3A3A42;outline:1px solid var(--line-2)"></span>Detachable camera</h3>
-          <p>Three lugs, drop in and twist 60 degrees to a hard stop. A bayonet
-            rather than a thread because it is one handed, tool free, and cannot
-            back itself out under vibration, which matters when the entire point
-            is that somebody wears it while actually working. It looks down the
-            hand, tilted 20 degrees palmar, so the fingers and whatever they
-            hold are in frame.</p>
-          <div class="spec">
-            <div>LUGS<b>3 &times; 34&deg;</b></div>
-            <div>TWIST<b>60&deg;</b></div>
-            <div>TILT<b>20&deg; palmar</b></div>
-          </div>
-        </article>
-
-        <article class="tile" data-part="band-pad">
-          <h3><span class="dot" style="background:#FA9DCD"></span>Thenar pressure pad</h3>
-          <p>Reaches round to the mound at the base of the thumb on a
-            deliberately thin arm. The arm has to flex, because the mound
-            changes shape as the thumb opposes, and a rigid one would lift the
-            pad off at exactly the moment the grip it is measuring begins.</p>
-          <div class="spec">
-            <div>PAD<b>32 &times; 24 mm</b></div>
-            <div>ARM<b>3.0 mm</b></div>
-            <div>CHANNELS<b>6</b></div>
-          </div>
-        </article>
-      </div>
-    </div>
-
-    <div class="clockbox">
-      <div>
-        <h3>Three sensors, one clock</h3>
-        <p>Vision, inertial and contact are sampled against a shared timebase
-          in the device, not aligned in software afterwards. A correction that
-          lands seventy milliseconds after a slip is only legible if the two
-          streams agree on when now was.</p>
-      </div>
-      <div class="viz band" style="margin:0"><canvas id="bandc"></canvas></div>
-    </div>
-
-    <p class="flede" style="margin-top:var(--s-600);color:var(--fg-mute);font-size:14px">
-      Geometry is watertight and audited: every bayonet check is proven to fail
-      on a build that is not twisted home, or it does not count as a check.
-      The Band is in design and not yet a product you can buy.</p>
-  </section>
-
-  <section class="fwrap" id="proof">
-    <p class="feyebrow">The proof</p>
-    <h2 class="fh2">We ship hardware</h2>
-    <p class="flede" style="margin-top:var(--s-300)">
-      A wearable sensor is a hardware problem long before it is a data problem.
-      Hotaru is the evidence we take a device from parameters to a shipped
-      object, in public.</p>
-    <div class="bento" style="margin-top:var(--s-600)">
-      <article class="tile" style="padding:0;overflow:hidden">
-        <div class="viz" style="margin:0;border-radius:0;aspect-ratio:16/10">
-          <canvas id="hot"></canvas>
-        </div>
-      </article>
-      <article class="tile">
-        <h3>Hotaru</h3>
-        <p>A desk robot with four servos, a microphone and a speaker. It leans
-          toward whoever is talking and folds down when the room goes quiet.
-          Twenty two printed parts, every one on a 180 mm bed, CAD open in pure
-          Python with public interface audits.</p>
-        <div class="spec">
-          <div>PARTS<b>22</b></div>
-          <div>SERVOS<b>4</b></div>
-          <div>STATUS<b>Shipping</b></div>
-        </div>
-        <p style="margin-top:var(--s-300)">
-          <a class="btn sm" href="https://aibo.loompad.tech">Meet Hotaru</a></p>
-      </article>
-    </div>
-  </section>
-
-  <section class="fwrap" id="engine">
-    <p class="feyebrow">The engine</p>
-    <h2 class="fh2">Capture, settle,<br>license, repeat</h2>
-    <p class="flede" style="margin-top:var(--s-300)">
-      Every failure a buyer reports becomes a capture target we pay for. The
-      network gets more valuable the more it is used, which is the only kind of
-      data business worth building.</p>
-    <div class="grid g4 loop" style="margin-top:var(--s-600)">
-      <article class="card"><h3>Instrument</h3>
-        <p>Our own device, so we control what is sensed and how it is
-          synchronised. Vision, inertial and contact on one clock.</p></article>
-      <article class="card"><h3>Capture</h3>
-        <p>Contributors record real tasks in real kitchens and workshops.
-          Consent is captured with the data, not asserted about it later.</p></article>
-      <article class="card"><h3>Settle</h3>
-        <p>Each accepted contribution is written on chain with its terms and its
-          author. Provenance and payment are the same record.</p></article>
-      <article class="card"><h3>License</h3>
-        <p>Buyers take slices by task, object and material. Their failures come
-          back to us as the next thing we pay to record.</p></article>
-    </div>
-
-    <div class="tscroll">
-      <table>
-        <caption class="sr-only">How contact data compares across collection approaches</caption>
-        <thead><tr>
-          <th scope="col">Approach</th><th scope="col">What it captures</th>
-          <th scope="col">What it misses</th><th scope="col">Scale</th>
-        </tr></thead>
-        <tbody>
-          <tr><td>Browser teleoperation of simulated arms</td>
-              <td class="what">Trajectories, object poses, task metadata</td>
-              <td class="what">Real friction, deformation, slip</td>
-              <td class="what">Very high</td></tr>
-          <tr><td>Scraped and egocentric video</td>
-              <td class="what">Hand pose, scene, intent</td>
-              <td class="what">All force, all correction</td>
-              <td class="what">Very high</td></tr>
-          <tr><td>Lab force rigs</td>
-              <td class="what">Contact, richly</td>
-              <td class="what">Everyday tasks, variety, volume</td>
-              <td class="what">Hours</td></tr>
-          <tr class="us"><td><b>Thenar</b></td>
-              <td>Vision, inertial and contact force, one clock</td>
-              <td>Whole body motion, for now</td>
-              <td>Network</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="namebox" style="margin-left:auto;margin-right:auto">
-      <svg viewBox="0 0 32 32" aria-hidden="true">
-        <rect width="32" height="32" rx="7" fill="#4D17F5"/>
-        <path d="M8 25 C8 13, 14 7, 24 7" fill="none" stroke="#fff"
-              stroke-width="3.2" stroke-linecap="round"/>
-        <circle cx="8" cy="25" r="3.4" fill="#FA9DCD"/>
-      </svg>
-      <p><b>Why the name.</b> The thenar eminence is the mound of muscle at the
-        base of your thumb. Its job is opposition, swinging the thumb across to
-        meet each fingertip, and modulating how hard it presses once it arrives.
-        It is the anatomy that separates a hand from a claw, and it is the exact
-        capability robots have not learned. The mark is that arc.</p>
+  <section class="fwrap" id="lab">
+    <p class="feyebrow">Research, not products</p>
+    <div class="note" style="margin:0 auto">
+      <b>Browser arm and hardware research.</b> The Thenar Band and Hotaru live under <code>/lab</code>.
+      Both are declared simulation and research, not products you can buy.
+      The Band is in design; nobody has worn one. Hotaru is a desk robot, open CAD and shipping,
+      evidence we take a device from parameters to a shipped object. Research code and CAD are public;
+      they do not carry product claims and are not part of the wedge.</p>
     </div>
   </section>
 
@@ -445,9 +272,9 @@ td.what{color:var(--fg-dim)}
       </article>
       <article class="tile" style="border-color:var(--blue)">
         <h3>What a ledger does not do</h3>
-        <p>It attests record integrity after submission, not authenticity at
-          capture. Nothing written on chain proves a stream came off a real
-          hand rather than a replay, and a device key can be extracted. Solving
+        <p>It attests record integrity after submission, not the truth of content at
+          capture. Nothing written on chain proves a stream came from a hardware-captured source
+          rather than a replay, and a device key can be extracted. Solving
           that needs attestation in the hardware, which is a secure element and
           a remote attestation path we have not built. We would rather say so
           here than be asked in diligence.</p>
@@ -464,59 +291,6 @@ td.what{color:var(--fg-dim)}
     </div>
   </section>
 
-  <section class="fwrap" id="faq">
-    <p class="feyebrow">Objections</p>
-    <h2 class="fh2">The questions<br>we get asked</h2>
-    <p class="flede" style="margin-top:var(--s-300)">
-      Including the hostile ones. If an answer here is weaker than you expected,
-      that is deliberate.</p>
-    <div class="qalist">
-        <details class="qa">
-          <summary>What do you actually have today?</summary>
-          <p>Three things, and no more than three. Hotaru is shipping open source hardware: a desk robot of 22 printed parts with public CAD in Python and interface audits anyone can run. Teleoperation capture on a Quest 3S is running now, which gives 6DoF on both hands at 90 Hz and no force at all. The Thenar Band exists as watertight CAD and printable STLs; nobody has worn one, and no user data has been recorded with it.</p>
-        </details>
-        <details class="qa">
-          <summary>Why not just use simulation? It scales and costs almost nothing.</summary>
-          <p>We do use simulation, and it is the right way to get trajectories and task structure at volume. But contact is the least accurate part of every physics engine, so friction, deformation and slip are approximated, and a policy trained only in simulation learns to correct against numbers the solver invented. The sim to real gap in manipulation is a contact gap. Real recordings are how you find out which of your simulated grasps were fiction.</p>
-        </details>
-        <details class="qa">
-          <summary>Why can a better model not estimate force from video?</summary>
-          <p>Because at the instant that matters the picture barely changes. The grip literature reports that a slip is answered by a corrective squeeze within roughly a tenth of a second, while the hand itself moves about a millimetre, which is at or under the resolution hand trackers report. We have not measured those numbers ourselves and we do not present them as ours. A vision model can learn a useful prior over what a grasp normally needs, but a prior is not a measurement, and it degrades on exactly the unfamiliar object you wanted the robot to handle.</p>
-        </details>
-        <details class="qa">
-          <summary>Why would force recorded on a human hand transfer to a robot gripper?</summary>
-          <p>This is the question that decides whether the company works, so we will not dress it up. Contact force does not transfer as a joint command, it transfers as a target: how much normal force a given material needs before it stops slipping, and how fast a correction has to arrive. That is a property of the object and the task rather than of the hand holding it, which is why we record material and contact area alongside the force. Instrumenting the robot instead is cheaper and in domain, and teams should do it. It only tells you about grasps the robot already attempts, which is why it does not replace watching a person succeed at something the robot currently fails.</p>
-        </details>
-        <details class="qa">
-          <summary>The Band is not built. What stops it staying CAD forever?</summary>
-          <p>Nothing but us building it, which is why we publish what state it is in instead of a launch date. The geometry is watertight, every part fits a 180 mm bed, and the snap fit and bayonet are toleranced with audits that must be proven to fail on a bad build before they count as checks. The next milestone is a printed unit recording contact, vision and inertial against one clock. Until that exists we keep calling it in design.</p>
-        </details>
-        <details class="qa">
-          <summary>Why blockchain at all? This sounds like a database.</summary>
-          <p>For our own bookkeeping a database is fine and we use one. Paying people is not the reason either: Wise and Stripe Connect move small amounts to large populations every day, and asking a contributor to hold a wallet is a barrier, not a feature. The reason is narrower. A buyer wants to verify a slice without trusting our internal records, and a contributor wants to check their own terms without asking us. Writing only a payload hash and the agreed terms makes the receipt and the provenance one entry. A signed manifest in a public append only log gives most of the same property, and if that suits a buyer better we will use it.</p>
-        </details>
-        <details class="qa">
-          <summary>Why would any buyer trust your provenance?</summary>
-          <p>They should not trust it, they should be able to check it. Terms and consent are recorded with the contribution at capture rather than asserted about it later. Be clear about the limit: that proves what was submitted and under what terms, not that the stream came off a real hand. Hardware attestation is what closes that gap and we have not built it. The honest offer is that you audit the first paid slice rather than take our word about a network that does not exist yet.</p>
-        </details>
-        <details class="qa">
-          <summary>What stops Meta, or a funded competitor, from doing this?</summary>
-          <p>Nothing stops them, and if measured contact matters as much as we think, somebody with more money will build a version. We expect it to be closed and pointed at their own models, which is what a platform does with hand data. That is not a moat, it is a bet on being early and open in a business with hardware and operations attached, which is genuinely less attractive than software and is a real reason large teams have stayed on cameras.</p>
-        </details>
-        <details class="qa">
-          <summary>Why believe a small team can ship a wearable sensor?</summary>
-          <p>Partly, and only partly. Hotaru is evidence we take a device from parameters to a shipped object in public: 22 printed parts, CAD in pure Python, published STLs and audits anyone can rerun. That is evidence about geometry, tolerancing and release discipline. It is not evidence about transduction, drift, calibration across different hands, or yield, which is the part that actually kills force sensing wearables. Those are ahead of us and we have not solved them.</p>
-        </details>
-        <details class="qa">
-          <summary>Who buys contact data, and has anyone paid you?</summary>
-          <p>Nobody has paid us and no licences are signed. The buyer we build for is a team training manipulation policies that already knows which of its tasks fail, because we would rather record twenty named failures than a generic corpus nobody asked for. If that is you, telling us the failing tasks costs nothing and changes what we instrument first.</p>
-        </details>
-        <details class="qa">
-          <summary>What would prove you wrong?</summary>
-          <p>The weak version is a manipulation benchmark where adding measured contact force to pose and video does not improve success on unfamiliar objects. That is a soft test, because an extra informative channel rarely hurts. The real one has a denominator: whether a dollar spent on measured force beats the same dollar spent on more simulation, more demonstrations, or tactile sensors mounted on the robot. We can run the weak version on our own tasks as soon as a Band records, and we should, before asking anybody to fund the strong one.</p>
-        </details>
-    </div>
-  </section>
 
   <section class="fwrap" id="stands">
     <p class="feyebrow">Honest status</p>
@@ -524,7 +298,7 @@ td.what{color:var(--fg-dim)}
     <div class="rail" style="margin-top:var(--s-600);margin-left:auto;margin-right:auto">
       <div>
         <h3>Shipped</h3>
-        <p>Hotaru is real hardware with open CAD, printable STLs, and interface
+        <p>Hotaru is open hardware with CAD, printable STLs, and interface
           audits anyone can run.</p>
       </div>
       <div>

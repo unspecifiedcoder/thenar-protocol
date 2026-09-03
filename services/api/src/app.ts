@@ -21,8 +21,14 @@ import { Registry } from "./registry.ts";
 import { LogStore } from "../../log/src/store.ts";
 import type { ILogStore } from "../../log/src/store-interface.ts";
 import { ViemChainReader, loadChainReaderTargets } from "./chain.ts";
+import { dirname, join } from "node:path";
+import type { Hex } from "viem";
 import { ensureOperatorKey, loadOperatorSigner } from "./ingest/operator.ts";
 import type { OperatorSigner } from "./ingest/receipt.ts";
+import { ensureVerifierKey, loadVerifierSigner } from "./ingest/verifier.ts";
+import type { VerifierSigner } from "../../verify/src/issue.ts";
+import { TrajectoryIndex } from "../../verify/src/index/trajectory-index.ts";
+import { processPending, type WorkerDeps } from "../../verify/src/worker.ts";
 import {
   metricsRegistry, apiErrorsTotalCounter, claimsTotalCounter, revocationsTotalCounter,
   anchorLagGauge, logSizeGauge, ingestQueueGauge, verificationQueueGauge,
@@ -78,6 +84,23 @@ export type Deps = {
    * rather than signing with something invented (I-11).
    */
   operator?: OperatorSigner;
+  /**
+   * T-020: THENAR's own verifier key, distinct from `operator` — signs
+   * every VerificationClaim the worker issues for THENAR's own checks.
+   * Optional for the same reason as `operator`: a route/hook that needs
+   * it and finds it undefined refuses rather than signing with something
+   * invented (I-11).
+   */
+  verifier?: VerifierSigner;
+  /** T-020: the shared `dedup.v1` fingerprint index (T-017), reused across every `onEpisodeCommitted` run. */
+  trajectoryIndex?: TrajectoryIndex;
+  /**
+   * T-020: fired by `commitEpisode` after a successful append
+   * (`services/api/src/ingest/commit.ts`) — wired here to
+   * `processPending` (`services/verify/src/worker.ts`) rather than a hard
+   * import in `commit.ts`, so a test can inject its own hook (or none).
+   */
+  onEpisodeCommitted?: (leafHash: Hex, leafIndex: number) => void | Promise<void>;
 };
 
 export type AppEnv = { Variables: { deps: Deps; parsedBody?: { value: unknown } } };
@@ -98,6 +121,22 @@ export function defaultDeps(env: NodeJS.ProcessEnv = process.env): Deps {
   // an AppendReceipt's signature against.
   const operator = loadOperatorSigner(env.OPERATOR_KEY);
   if (operator) ensureOperatorKey(logStore, registry, operator);
+
+  // T-020: VERIFIER_KEY (a 32-byte ed25519 seed, hex) — THENAR's own
+  // verifier key, registered under `org_verifier` (distinct from
+  // `org_operator`). `bundleStore` is built once below so `onEpisodeCommitted`
+  // can share it with the worker without re-reading env.
+  const verifier = loadVerifierSigner(env.VERIFIER_KEY);
+  ensureVerifierKey(logStore, registry, verifier);
+  const bundleStore = new LocalBundleStore(env.BUNDLE_STORE_ROOT ?? ".data/bundles");
+  const trajectoryIndex = new TrajectoryIndex(
+    env.TRAJECTORY_INDEX_DB ?? (dbPath ? join(dirname(dbPath), "trajectory-index.sqlite") : ":memory:"),
+  );
+  const workerDeps: WorkerDeps = { store: logStore, bundleStore, verifier, trajectoryIndex };
+  const onEpisodeCommitted = async (leafHash: Hex) => {
+    await processPending(workerDeps, [leafHash]);
+  };
+
   return {
     keyStore: dbPath
       ? new KeyStore([], logStore)
@@ -105,13 +144,16 @@ export function defaultDeps(env: NodeJS.ProcessEnv = process.env): Deps {
     idempotencyStore: new MemoryIdempotencyStore(),
     rateLimiter: new TokenBucketLimiter(),
     nowMinute: () => Math.floor(Date.now() / 60_000),
-    bundleStore: new LocalBundleStore(env.BUNDLE_STORE_ROOT ?? ".data/bundles"),
+    bundleStore,
     uploadRegistry: new MemoryUploadRegistry(),
     // Untouched by T-016 — `/licences/{id}/download` (PLAN §12) is not one of the
     // two routes this task wires up; refuse rather than fabricate (I-11) until it is.
     chainReader: new NotImplementedChainReader(),
     registry,
     logStore,
+    verifier,
+    trajectoryIndex,
+    onEpisodeCommitted,
     operator: operator ?? undefined,
     // `.env.contracts` (T-009) may not exist yet on a clean checkout — `loadChainReaderTargets`
     // then returns no chains and every read reports `unreachable`, which is correct (I-11),

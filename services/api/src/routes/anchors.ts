@@ -57,4 +57,52 @@ export const anchorRoutes = new Hono<AppEnv>()
     return c.json(paginated(items, nextCursor));
   })
   // GET /v1/anchors/audit — public
-  .get("/anchors/audit", (c) => notImplemented("anchor audit"));
+  // Per chain from .env.contracts, run auditAnchors
+  .get("/anchors/audit", async (c) => {
+    const { logStore, registry } = c.get("deps");
+    const store = logStore ?? registry?.getStore();
+    if (!store) throw new ApiError("internal", "log store not configured");
+
+    // If no chains configured, return empty list
+    const anchors = store.anchors();
+    if (anchors.length === 0) {
+      return c.json({
+        items: [],
+        note: "no anchors recorded",
+      });
+    }
+
+    // Load chains from .env.contracts
+    const { loadChains } = await import("../../log/src/chains.ts");
+    let targets: any[] = [];
+    try {
+      targets = loadChains();
+    } catch {
+      return c.json({
+        items: [],
+        note: "no chains configured",
+      });
+    }
+
+    const { auditAnchors, defaultReader } = await import("../../log/src/anchorer.ts");
+    const items = [];
+
+    for (const target of targets) {
+      try {
+        const audits = await auditAnchors(logStore, target, defaultReader(target));
+        items.push({
+          chain_id: target.id,
+          chain_name: target.name,
+          audits,
+        });
+      } catch (e) {
+        items.push({
+          chain_id: target.id,
+          chain_name: target.name,
+          error: e instanceof Error ? e.message : "unknown error",
+        });
+      }
+    }
+
+    return c.json({ items });
+  });

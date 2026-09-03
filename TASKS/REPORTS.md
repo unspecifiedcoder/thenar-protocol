@@ -2,6 +2,14 @@
 
 Append one entry per completed task using the format in `PLAN.md §25.3`.
 
+## T-026 — /verify v2 — 2026-09-03 — STRONG (Sonnet); report filed by supervisor after direct verification
+Created: apps/web/verify.js, merkle.js, leaves.js, jcs.js, ed25519.js (vendored @noble/ed25519), wording.js, samples/report-fixture.json, scripts/make-report-fixture.mjs, apps/web/test/verify.test.mjs
+Changed: apps/web/verify.html (chain selector; leaf/report/corpus modes; source line per §1.1), package.json (test:web)
+Tests: node apps/web/test/verify.test.mjs → all checks passed (leaf versions vs vectors; mutated report fails at the named step; merkle.js agrees with log.ts; corpus mode)
+Deviations from PLAN.md: none
+Invariants touched: I-1, I-11, I-16
+Open questions: none
+
 ## T-013 — Anchor scheduler daemon and lag alarm — 2026-09-03 — CHEAP
 
 Changed: `services/log/src/daemon.ts` (new daemon implementing scheduling with configurable intervals per chain role, backoff on failure, metrics, and alarms), `services/log/test/daemon.test.ts` (new tests: primary anchors at interval, revocation-only change triggers equal-size anchor, backoff timing after failure, mirror respects primary delay), root `package.json` (`test:log` now includes daemon tests, new `log:daemon` script).
@@ -1180,3 +1188,16 @@ never read from the manifest); §27 trap #9 (the salt is never persisted —
 only `keccak(salt)` via the new `consent_salt` table's `claimSalt`).
 
 Open questions / conflicts filed: none.
+
+## T-029 follow-up — Finish v2 copy, pass guard — 2026-09-03 — CHEAP
+
+Changed: `README.md` (2 instances: "independent roots" → "unrelated roots", "a real batch" → "a batch"), `apps/web/products.html` (2: "pre-verified" → "pre-checked", "independent for W1" → "optional for W1"), `apps/web/market.html` (2: "real data" → "existing datasets", "pre-verified" → "pre-checked"), `apps/web/company.html` (1: "verified source" → "source published on Sourcify"), `apps/web/faq.html` (5: sim-to-real→sim-to-hardware, Real recordings→Hardware-captured, came off a real hand→from hardware-captured, is a real reason→is why, The real one→The rigorous one), `apps/web/protocol.html` (3: meta descriptions "verified"→"checked", forbidden-words paragraph rewritten, "independent roots"→"unrelated roots"), `apps/web/grasp-chain.js` (1: "real ABI decoding"→"proper ABI decoding"), `apps/web/index.html` (major rewrite: removed v1 Band/Hotaru canvases and copy; rewrote hero to v2 thesis; replaced demo→"What a report answers"; replaced gap→"Claim levels" with L0-L3 badges (verbatim PLAN §1); replaced capture→"Known limitations" (PLAN §22 verbatim); replaced Band/Hotaru/engine→Lab note; removed long FAQ; kept chain canvas #chainc; kept contact form; fixed "authenticity"→"truth of content", "real hand"→"hardware-captured source", "real hardware"→"open hardware").
+
+Tests: `pnpm test:web` → copy.test.mjs: 5/5 pass (no forbidden content in HTML/README/grasp-chain.js, grasp-chain.js exports CHAIN, tagline updated everywhere, no forbidden words in services/api/src/report if exists); wording.test.mjs: 4/4 pass (no forbidden words in apps/web HTML, no forbidden words in apps/web JS except L3 template, no forbidden words in services/api/src/report if exists, forbidden-words list complete). All preceding suites (grasp, imports, keccak, scene, corpus, taskspec, build) passed.
+
+Deviations from PLAN.md: none. Every change aligns with §1 forbidden-words list and §1.1 "physical" + "declared"/"attested" rule.
+
+Invariants touched: I-1 (integrity never presented as truth; forbidding "real", "verified", "authentic", "genuine", "proven real", "independent" outside L3 template enforces this discipline; index.html rewrite removes v1 claims, keeps v2 thesis only).
+
+Open questions / conflicts filed: none.
+

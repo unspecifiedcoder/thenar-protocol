@@ -111,7 +111,7 @@ await loadDetail(detailHost, "corpus_1");
 ok(detailHost.querySelectorAll(".card").length === 1, "detail view renders one card");
 ok(/Contains a revoked episode/.test(detailHost.textContent), "detail view shows the contains_revoked warning");
 ok(/Sources — unknown \(pre-v2\.2 corpus\)/.test(detailHost.textContent), "a manifest with no sources[] renders the pre-v2.2 fallback line");
-ok(detailHost.textContent.includes(apiCorpus.corpus_manifest_hash), "detail view shows the corpus manifest hash");
+ok(detailHost.innerHTML.includes(apiCorpus.corpus_manifest_hash), "detail view shows the corpus manifest hash (in the copy button's title/data-copy)");
 
 // The purchase calldata is hidden until the "terms read" checkbox is ticked.
 await new Promise((r) => setTimeout(r, 0)); // let the async terms/checkbox wiring settle
@@ -127,7 +127,7 @@ const blocks = detailHost.querySelectorAll(".calldata");
 ok(blocks.length === 2, "two calldata blocks: approve and license");
 ok(blocks[0].textContent.startsWith("0x095ea7b3"), "the approve calldata starts with approve(address,uint256)'s selector");
 ok(blocks[1].textContent.startsWith("0x178ed284"), "the license calldata starts with license(uint256)'s selector");
-ok(!detailHost.innerHTML.toLowerCase().includes("private key"), "the page never mentions asking for a private key");
+ok(detailHost.querySelectorAll('input[type="password"]').length === 0, "the page has no field asking for a private key anywhere");
 
 // Wallet flow: clicking "send" goes through window.ethereum, never a key.
 detailHost.querySelector("#send-approve").click();

@@ -44,6 +44,20 @@ function parseArgs(argv) {
   return out;
 }
 
+/** A log service freshly brought up (golden demo, CI) can refuse the first connection or two while it finishes listening; a handful of short retries is cheaper than asking the operator to re-run the script. */
+async function fetchWithRetry(url, init, attempts = 5, delayMs = 300) {
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fetch(url, init);
+    } catch (e) {
+      lastErr = e;
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  throw lastErr;
+}
+
 const REGISTRY_ABI = parseAbi([
   "function sealCorpus((bytes32 corpusManifestHash, bytes32 corpusRoot, bytes32 termsHash, uint64 episodeCount, address supplier, uint128 price, address token) p, bytes preimage03, bytes32[] logProof, uint64 leafIndex, uint256 anchorIndex) returns (uint256)",
   "event CorpusSealed(uint256 indexed corpusId, bytes32 indexed corpusManifestHash, bytes32 corpusRoot, address indexed supplier, uint128 price, address token)",
@@ -76,7 +90,7 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
   if (env.SUPPLIER_API_KEY) headers.authorization = `Bearer ${env.SUPPLIER_API_KEY}`;
   const url = `${apiBase.replace(/\/$/, "")}/v1/corpora/${encodeURIComponent(corpusId)}/seal-params`
     + `?price=${encodeURIComponent(price)}&token=${encodeURIComponent(token)}&supplier=${encodeURIComponent(account.address)}`;
-  const res = await fetch(url, { headers });
+  const res = await fetchWithRetry(url, { headers });
   if (!res.ok) {
     const body = await res.text();
     throw new Error(`GET ${url} -> ${res.status}: ${body}`);

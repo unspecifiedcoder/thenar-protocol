@@ -85,6 +85,11 @@ export function newUlid(now: number = Date.now()): string {
 export class Registry {
   constructor(private store: ILogStore, private now: () => number = () => Math.floor(Date.now() / 1000)) {}
 
+  /** Get the backing log store (T-012, T-024). */
+  getStore(): ILogStore {
+    return this.store;
+  }
+
   createOrg(name: string, kind: OrgKind): OrgRow {
     const row: OrgRow = { orgId: newUlid(), name, kind, status: "active", createdAt: this.now() };
     this.store.createOrg(row);

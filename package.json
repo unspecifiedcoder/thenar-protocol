@@ -6,7 +6,7 @@
     "test:protocol": "tsx packages/protocol/test/run.ts && tsx packages/protocol/test/foundry.ts && tsx packages/protocol/test/episode.ts && tsx packages/protocol/test/schemas.ts && tsx packages/protocol/test/selectors.ts && tsx packages/protocol/test/badges.ts && tsx packages/protocol/test/ci.ts",
     "test:contracts": "cd packages/contracts && forge test",
     "test:log": "tsx services/log/test/log.test.ts && tsx services/log/test/tree.test.ts && tsx services/log/test/daemon.test.ts",
-    "test:api": "tsx services/api/test/api.test.ts && tsx services/api/test/bundle.test.ts && tsx services/api/test/registry.test.ts && tsx services/api/test/lerobot.test.ts && tsx services/api/test/faults.test.ts && tsx services/api/test/chain.test.ts && tsx services/api/test/ingest.test.ts && tsx services/api/test/licence-flow.test.ts",
+    "test:api": "tsx services/api/test/api.test.ts && tsx services/api/test/bundle.test.ts && tsx services/api/test/registry.test.ts && tsx services/api/test/lerobot.test.ts && tsx services/api/test/faults.test.ts && tsx services/api/test/chain.test.ts && tsx services/api/test/ingest.test.ts && tsx services/api/test/proofs.test.ts && tsx services/api/test/licence-flow.test.ts",
     "test:verify": "tsx services/verify/test/timing.test.ts && tsx services/verify/test/kinematics.test.ts && tsx services/verify/test/dedup.test.ts && tsx services/verify/test/sensor_consistency.test.ts && tsx services/verify/test/sim_signature.test.ts",
     "test": "pnpm test:contracts && pnpm test:protocol && pnpm test:log && pnpm test:web && pnpm test:api && pnpm test:verify",
     "vectors": "tsx packages/protocol/test/vectors.ts",

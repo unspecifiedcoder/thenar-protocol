@@ -26,6 +26,16 @@ export type CommitDeps = {
   /** unix seconds — the server's own receive time (§27 trap #7: never read from the manifest). */
   now: () => number;
   operator: OperatorSigner;
+  /**
+   * T-020: fired after a successful append, with the new episode's leaf
+   * hash. Not a hard import of `services/verify/src/worker.ts` — the app
+   * wires this to `enqueueEpisode`/`processPending` (or nothing, in
+   * tests) so this file stays ignorant of checks/ffmpeg/parquet. A
+   * failure here is caught and logged, never allowed to turn a successful
+   * commit into a failed one — the episode leaf is already durably
+   * appended by the time this runs.
+   */
+  onEpisodeCommitted?: (leafHash: Hex, leafIndex: number) => void | Promise<void>;
 };
 
 export type CommitOutcome = {
@@ -80,5 +90,14 @@ export async function commitEpisode(
   });
 
   const receipt = await signAppendReceipt(deps.operator, leafHash, leafIndex, deps.store.size(), submittedAt);
+
+  if (deps.onEpisodeCommitted) {
+    try {
+      await deps.onEpisodeCommitted(leafHash, leafIndex);
+    } catch (err) {
+      console.error(`onEpisodeCommitted hook failed for ${leafHash}:`, err);
+    }
+  }
+
   return { leafHash, leafIndex, submittedAt, receipt };
 }

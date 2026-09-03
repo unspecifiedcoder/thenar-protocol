@@ -95,7 +95,7 @@ export async function readCorpusAt(id) {
 
 /**
  * `LicenceRegistry.termsAt(termsHash)` — the one registry read with a
- * dynamic field (`uri` is a `string`), so it needs real ABI decoding: word 0
+ * dynamic field (`uri` is a `string`), so it needs proper ABI decoding: word 0
  * is the byte offset to the string's `(length, bytes)` pair, not the value
  * itself. Reverts `UnknownTerms` for a hash nobody published (PLAN §11.3);
  * that becomes `null` here, not a thrown error, so a corpus whose terms

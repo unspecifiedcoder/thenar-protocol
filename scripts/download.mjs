@@ -29,6 +29,20 @@ function parseArgs(argv) {
   return out;
 }
 
+/** A log service freshly brought up (golden demo, CI) can refuse the first connection or two while it finishes listening; a handful of short retries is cheaper than asking the operator to re-run the script. */
+async function fetchWithRetry(url, init, attempts = 5, delayMs = 300) {
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fetch(url, init);
+    } catch (e) {
+      lastErr = e;
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+  throw lastErr;
+}
+
 export async function main(argv = process.argv.slice(2), env = process.env) {
   const args = parseArgs(argv);
   const receiptId = args.receipt;
@@ -46,7 +60,7 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
   const header = `${account.address}:${unixMinute}:${signature}`;
 
   const url = `${apiBase.replace(/\/$/, "")}/v1/licences/${encodeURIComponent(receiptId)}/download`;
-  const res = await fetch(url, { headers: { "X-Wallet-Sig": header } });
+  const res = await fetchWithRetry(url, { headers: { "X-Wallet-Sig": header } });
   if (!res.ok) {
     const body = await res.text();
     throw new Error(`GET ${url} -> ${res.status}: ${body}`);
