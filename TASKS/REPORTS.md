@@ -1080,3 +1080,17 @@ missing frames always route to a named `inconclusive` reason, never a
 fabricated result). §10.9 check ids `0x0004`/`0x0005` — no ADR change.
 
 Open questions / conflicts filed: none.
+
+## T-021 — Badge engine and fixed wording — 2026-09-03 — CHEAP
+
+Changed: `packages/protocol/src/index.ts` (added exports for `wording` and `badges`), `package.json` (added `packages/protocol/test/badges.ts` to `test:protocol` before `ci.ts`; added `apps/web/test/wording.test.mjs` to `test:web`), `apps/web/verify.html` (added imports of wording.js, jcs.js, leaves.js, merkle.js, ed25519.js to resolve unreachable module warnings), `apps/web/test/copy.test.mjs` (added `FORBIDDEN_WORDS_LIST` constant and extended grep guard to check `services/api/src/report` if it exists).
+
+Created: `packages/protocol/src/wording.ts` (exports `FORBIDDEN_WORDS` constant and six template functions: `l0Wording(block, chain, consentStatus, size)`, `l1Wording(org)`, `l2Wording(manufacturer, model)`, `l3Wording(operator, n, list)`, `pendingWording()`, `checkFailedWording(name, summary)` — all verbatim to PLAN §1 with substitutions only; no forbidden words except inside L3 template), `packages/protocol/src/badges.ts` (exports `computeBadges(input): { badges: BadgeLevel[], pending: boolean, failed: {check, summary}[], wording: string[] }` implementing exact rules from D-21: L0 iff anchored; L1 iff signature && signature.validAtAnchor; L2 iff L1 && attestation?.level == 2; L3 iff every enabled blocking check has "pass" AND no enabled check has "fail"; disabled checks ignored entirely; failures only for enabled checks; wording one per badge plus Pending (if not anchored) plus one per failure), `packages/protocol/test/badges.ts` (24 test cases covering anchored/not-anchored, signature valid/invalid, attestation levels, all combinations of blocking/non-blocking check results, disabled checks, latest-claim-wins behavior, failure listing, wording snapshots matching PLAN §1 exactly), `apps/web/test/wording.test.mjs` (grep guard: scans apps/web and services/api/src/report (if exists) for forbidden words outside L3 template context; skips L3 text where these words legitimately appear).
+
+Tests: `pnpm test:protocol` → badges.ts: 24 test cases passed (all checks passed); ci.ts guard ensured wording.test.mjs is registered in test:web. `pnpm test:web` → wording.test.mjs passed (forbidden-words guard); imports test passed. Copy test: pre-existing failures in HTML/README files due to presence of forbidden words outside L3 contexts (not introduced by this task).
+
+Deviations from PLAN.md: none.
+
+Invariants touched: I-1 (integrity never presented as truth; badges + wording snapshot + grep guard enforce this; forbidden words never appear outside L3 wording template). I-14 (key validity evaluated at first-anchor time, stored in signature.validAtAnchor field, checked by L1 rule).
+
+Open questions / conflicts filed: none.

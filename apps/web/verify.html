@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Verify — THENAR</title>
-<meta name="description" content="Verify capture data against the anchored log. Inclusion proofs, append-only history, live consent status — read straight from the contract.">
+<meta name="description" content="Verify capture data against the anchored log. Inclusion proofs, append-only history, live consent status, and full provenance reports — checked yourself, against any chain you choose.">
 <link rel="canonical" href="https://thenar.io/verify">
 <link rel="icon" href="./mark.svg" type="image/svg+xml">
 <meta property="og:title" content="Verify — THENAR">
-<meta property="og:description" content="Check a capture against the anchored log yourself, without trusting our records.">
+<meta property="og:description" content="Check a capture, a report, or a corpus against the anchored log yourself, without trusting our records.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://thenar.io/verify">
 <meta property="og:site_name" content="THENAR">
@@ -28,7 +28,7 @@
     font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:0 12px 10px 0;
     border-bottom:1px solid var(--line,#272727)}
   .vtable td{padding:12px 12px 12px 0;border-bottom:1px solid var(--line,#272727);
-    font-variant-numeric:tabular-nums}
+    font-variant-numeric:tabular-nums;vertical-align:top}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
   .verdict{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;
     font-size:12px;font-weight:600;letter-spacing:.02em}
@@ -40,6 +40,25 @@
   .vcard h3{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute,#6E6E6E);margin:0 0 10px}
   .vcard p{margin:0;font-size:13.5px;line-height:1.5}
   .scroller{overflow-x:auto}
+  .modetabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 22px}
+  .modetabs button{background:none;border:1px solid #272727;color:#9B9B9B;border-radius:999px;
+    padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer}
+  .modetabs button[aria-selected="true"]{border-color:#4D17F5;color:#fff;background:rgba(77,23,245,.14)}
+  .modepanel[hidden]{display:none}
+  .steplist{list-style:none;margin:14px 0;padding:0;display:grid;gap:8px}
+  .steplist li{display:flex;gap:10px;align-items:flex-start;font-size:13px;padding:8px 10px;
+    border-radius:8px;border:1px solid #272727}
+  .steplist li.ok{border-color:rgba(124,224,165,.35)}
+  .steplist li.fail{border-color:rgba(250,157,205,.4)}
+  .steplist li .dot{flex:none;width:9px;height:9px;border-radius:50%;margin-top:4px}
+  .steplist li.ok .dot{background:#7CE0A5}
+  .steplist li.fail .dot{background:#FA9DCD}
+  .steplist li .name{font-weight:600}
+  .steplist li .detail{color:#9B9B9B;display:block;margin-top:2px}
+  label.field{display:grid;gap:6px}
+  label.field span{font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:.06em}
+  .field input,.field textarea,.field select{background:#0E0E0E;border:1px solid #272727;border-radius:8px;
+    padding:10px 12px;color:#fff;font-family:inherit;font-size:14px}
 </style>
 </head>
 <body>
@@ -66,94 +85,121 @@
   <p style="max-width:62ch;font-size:17px;line-height:1.55;color:#C9C9C9">
     A buyer needs to verify a slice of capture data without trusting our internal
     records, and a contributor needs to withdraw without us being able to pretend
-    they did not. Everything below is read straight from the contract. Nothing on
-    this page passes through our servers.
+    they did not. Pick any chain THENAR is anchored on, or point this page at your
+    own RPC. Nothing here passes through our servers.
   </p>
 
-  <div class="vgrid">
-    <div class="vcard">
-      <h3>Log</h3>
-      <p class="mono"><a id="logaddr" href="#" style="color:#8E6BFF"></a></p>
-    </div>
-    <div class="vcard">
-      <h3>Market</h3>
-      <p class="mono"><a id="mktaddr" href="#" style="color:#8E6BFF"></a></p>
-    </div>
-    <div class="vcard">
-      <h3>Head</h3>
-      <p id="headline">reading…</p>
-    </div>
+  <div style="display:grid;gap:12px;grid-template-columns:1fr 2fr;max-width:760px;margin-top:22px">
+    <label class="field">
+      <span>Chain</span>
+      <select id="cchain"></select>
+    </label>
+    <label class="field">
+      <span>RPC endpoint</span>
+      <input id="crpc" class="mono">
+    </label>
   </div>
+  <p id="cstate" style="color:#9B9B9B;font-size:13px;margin-top:10px">reading the chain…</p>
 </section>
 
-<section class="wrap" style="padding-top:8px;padding-bottom:32px">
-  <h2 style="font-size:22px;margin:0 0 6px">Every anchor, as the chain holds it</h2>
-  <p style="color:#9B9B9B;font-size:14px;margin:0 0 8px">
-    The log is append-only. Each row names the batch root, how many captures it
-    covers, and the block it landed in. A root that carries a withdrawal is marked.
-  </p>
-  <div class="scroller">
-    <table class="vtable" id="anchors">
-      <thead><tr><th>#</th><th>Root</th><th>Captures</th><th>Block</th><th>Withdrawals</th></tr></thead>
-      <tbody><tr><td colspan="5" style="color:#6E6E6E">reading the log…</td></tr></tbody>
-    </table>
+<section class="wrap" style="padding-top:8px;padding-bottom:8px">
+  <div class="modetabs" role="tablist" aria-label="Verification mode">
+    <button type="button" id="tabLeaf" role="tab" aria-selected="true">Leaf preimage</button>
+    <button type="button" id="tabReport" role="tab" aria-selected="false">Report</button>
+    <button type="button" id="tabCorpus" role="tab" aria-selected="false">Corpus proof</button>
   </div>
-</section>
 
-<section class="wrap" style="padding-bottom:40px">
-  <h2 style="font-size:22px;margin:0 0 6px">Prove one capture</h2>
-  <p style="color:#9B9B9B;font-size:14px;margin:0 0 16px;max-width:62ch">
-    Paste the preimage a record was committed under — 154 bytes for a capture, 197 for an episode — its position in the
-    batch, and the sibling path. The contract does the checking; this page only
-    shows you what it said.
-  </p>
-  <form id="vform" style="display:grid;gap:12px;max-width:760px">
-    <label style="display:grid;gap:6px">
-      <span style="font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:.06em">Anchor index</span>
-      <input id="vindex" inputmode="numeric" placeholder="1" class="mono"
-             style="background:#0E0E0E;border:1px solid #272727;border-radius:8px;padding:10px 12px;color:#fff">
-    </label>
-    <label style="display:grid;gap:6px">
-      <span style="font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:.06em">Preimage (154 or 197 bytes, hex)</span>
-      <textarea id="vpre" rows="3" placeholder="0x01…" class="mono"
-                style="background:#0E0E0E;border:1px solid #272727;border-radius:8px;padding:10px 12px;color:#fff"></textarea>
-    </label>
-    <div style="display:grid;gap:12px;grid-template-columns:1fr 2fr">
-      <label style="display:grid;gap:6px">
-        <span style="font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:.06em">Leaf index</span>
-        <input id="vleaf" inputmode="numeric" placeholder="3" class="mono"
-               style="background:#0E0E0E;border:1px solid #272727;border-radius:8px;padding:10px 12px;color:#fff">
-      </label>
-      <label style="display:grid;gap:6px">
-        <span style="font-size:12px;color:#6E6E6E;text-transform:uppercase;letter-spacing:.06em">Sibling path (comma-separated hashes)</span>
-        <input id="vproof" placeholder="0x…, 0x…" class="mono"
-               style="background:#0E0E0E;border:1px solid #272727;border-radius:8px;padding:10px 12px;color:#fff">
-      </label>
-    </div>
-    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-      <button class="btn primary" type="submit">Ask the contract</button>
-      <button class="btn" type="button" id="vsample">Load a real capture</button>
-      <button class="btn" type="button" id="vepisode">Load a real episode</button>
-      <span id="vout" class="verdict wait">nothing checked yet</span>
-    </div>
-  </form>
-  <div id="vdecoded" hidden style="margin-top:26px">
-    <h3 style="font-size:15px;margin:0 0 4px">What this episode committed to</h3>
-    <p style="color:#9B9B9B;font-size:13px;margin:0 0 12px;max-width:62ch">
-      Decoded from the preimage itself, not from an index we keep. The world
-      below is rebuilt from the task and the seed — the same arrangement the
-      demonstration was recorded in.
+  <!-- ==================================================== Leaf mode -->
+  <div class="modepanel" id="panelLeaf">
+    <p style="color:#9B9B9B;font-size:14px;margin:0 0 16px;max-width:62ch">
+      Paste any preimage the log holds — 154 bytes (0x01 clip), 197 (0x02
+      episode), 145 (0x03 corpus manifest) or 141 (0x04 verification claim) —
+      its position, and the sibling path. This page checks it two ways: against
+      the chosen chain's <span class="mono">LeafVerifier</span>, and again
+      entirely on your own machine with no network at all.
     </p>
-    <div class="figs" id="vfacts"></div>
-    <canvas class="scene" id="vscene" aria-label="The sampled world this episode was recorded in"></canvas>
-    <p style="color:#6E6E6E;font-size:12px;margin-top:8px" id="vscenecap"></p>
+    <form id="vform" style="display:grid;gap:12px;max-width:760px">
+      <label class="field">
+        <span>Anchor index</span>
+        <input id="vindex" inputmode="numeric" placeholder="1" class="mono">
+      </label>
+      <label class="field">
+        <span>Preimage (hex)</span>
+        <textarea id="vpre" rows="3" placeholder="0x01…" class="mono"></textarea>
+      </label>
+      <div style="display:grid;gap:12px;grid-template-columns:1fr 2fr">
+        <label class="field">
+          <span>Leaf index</span>
+          <input id="vleaf" inputmode="numeric" placeholder="3" class="mono">
+        </label>
+        <label class="field">
+          <span>Sibling path (comma-separated hashes)</span>
+          <input id="vproof" placeholder="0x…, 0x…" class="mono">
+        </label>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <button class="btn primary" type="submit">Check this leaf</button>
+      </div>
+    </form>
+    <div id="vresult" style="margin-top:18px"></div>
   </div>
 
-  <p style="color:#6E6E6E;font-size:13px;margin-top:14px;max-width:62ch">
-    A failed check here is the system working. If a preimage is altered by one
-    byte the proof stops matching, which is the whole reason the commitment is a
-    hash and not a record in our database.
-  </p>
+  <!-- ================================================== Report mode -->
+  <div class="modepanel" id="panelReport" hidden>
+    <p style="color:#9B9B9B;font-size:14px;margin:0 0 16px;max-width:62ch">
+      Paste a report JSON, or link one with <span class="mono">?report=&lt;url&gt;</span>.
+      This runs PLAN §10.10 steps 3–7 in the browser: log inclusion, the
+      consistency proof from the corpus's sealing anchor to this report's
+      anchor, consent status, every claim, and corpus inclusion. Step 1 (file
+      hashes) cannot run here — this page never has the delivered files — and
+      says so rather than skipping silently.
+    </p>
+    <label class="field" style="max-width:760px">
+      <span>Report JSON</span>
+      <textarea id="rjson" rows="6" class="mono" placeholder="paste a report, or use ?report=&lt;url&gt;"></textarea>
+    </label>
+    <div style="display:flex;gap:12px;margin-top:12px">
+      <button class="btn primary" type="button" id="rcheck">Verify report</button>
+    </div>
+    <div id="rresult" style="margin-top:18px"></div>
+  </div>
+
+  <!-- =================================================== Corpus mode -->
+  <div class="modepanel" id="panelCorpus" hidden>
+    <p style="color:#9B9B9B;font-size:14px;margin:0 0 16px;max-width:62ch">
+      Prove one episode leaf belongs to a sealed corpus, against the corpus's
+      own root — the same tree <span class="mono">sealCorpus</span> commits to
+      on chain (PLAN §10.7).
+    </p>
+    <form id="cform" style="display:grid;gap:12px;max-width:760px">
+      <label class="field">
+        <span>Episode leaf hash</span>
+        <input id="cleaf" class="mono" placeholder="0x…">
+      </label>
+      <div style="display:grid;gap:12px;grid-template-columns:1fr 1fr">
+        <label class="field">
+          <span>Index in corpus</span>
+          <input id="cindex" inputmode="numeric" class="mono">
+        </label>
+        <label class="field">
+          <span>Episode count</span>
+          <input id="ccount" inputmode="numeric" class="mono">
+        </label>
+      </div>
+      <label class="field">
+        <span>Corpus root</span>
+        <input id="croot" class="mono" placeholder="0x…">
+      </label>
+      <label class="field">
+        <span>Sibling path (comma-separated hashes)</span>
+        <input id="cproof" class="mono" placeholder="0x…, 0x…">
+      </label>
+      <div style="display:flex;gap:12px">
+        <button class="btn primary" type="submit">Check corpus inclusion</button>
+      </div>
+    </form>
+    <div id="cresult" style="margin-top:18px"></div>
+  </div>
 </section>
 </main>
 <!-- FOOT:START -->
@@ -187,264 +233,180 @@
 </div></footer>
 <!-- FOOT:END -->
 <script type="module">
-import { CHAIN, readAnchors } from "./grasp-chain.js";
-import { sampleScene, drawScene } from "./scene.js";
+import {
+  listChains, readChainHead, verifyLeafOnChain, verifyLeafLocal,
+  verifyReport, verifyCorpusInclusion,
+} from "./verify.js";
+import { episodeSourceWording } from "./wording.js";
 
 const $ = (s) => document.querySelector(s);
 const short = (h) => h.slice(0, 10) + "…" + h.slice(-6);
-const ZERO = "0x" + "0".repeat(64);
 
-$("#logaddr").textContent = short(CHAIN.log);
-$("#logaddr").href = `${CHAIN.explorer}/address/${CHAIN.log}`;
-$("#mktaddr").textContent = short(CHAIN.market);
-$("#mktaddr").href = `${CHAIN.explorer}/address/${CHAIN.market}`;
+/* ---------------------------------------------------------- Chain selector */
+const chains = listChains();
+const chainSel = $("#cchain");
+chainSel.innerHTML = chains.map((c, i) => `<option value="${i}">${c.name} (${c.role})</option>`).join("");
+let currentChain = chains[0];
+$("#crpc").value = currentChain.rpc;
 
-let anchorCount = null;
-(async () => {
-  try {
-    const { count, anchors } = await readAnchors(25);
-    anchorCount = count;
-    const head = anchors[anchors.length - 1];
-    $("#headline").textContent = count === 0
-      ? "nothing anchored yet"
-      : `${head.size} captures across ${count} anchors`;
-
-    const rows = anchors.slice().reverse().map((a) => `
-      <tr>
-        <td>${a.index}</td>
-        <td class="mono"><a href="${CHAIN.explorer}/block/${a.blockNumber}" style="color:#8E6BFF">${short(a.root)}</a></td>
-        <td>${a.size}</td>
-        <td class="mono">${a.blockNumber}</td>
-        <td>${a.revocationRoot === ZERO ? '<span style="color:#6E6E6E">none</span>' : '<span style="color:#FA9DCD">carries a withdrawal</span>'}</td>
-      </tr>`).join("");
-    $("#anchors tbody").innerHTML = rows || `<tr><td colspan="5" style="color:#6E6E6E">the log is empty</td></tr>`;
-  } catch (e) {
-    $("#headline").textContent = "could not reach the chain";
-    $("#anchors tbody").innerHTML =
-      `<tr><td colspan="5" style="color:#FA9DCD">Could not reach the chain, so nothing is shown. Refresh to retry.</td></tr>`;
-  }
-})();
-
-/* verifyClip(uint256,bytes,bytes32[],uint64) — encoded by hand so this page
-   ships without a web3 bundle. Head: index, offset(bytes), offset(bytes32[]),
-   leafIndex; then the two dynamic tails. */
-const SELECTOR = "0x6253dafc"; // cast sig verifyLeaf(uint256,bytes,bytes32[],uint64)
-const pad = (n) => BigInt(n).toString(16).padStart(64, "0");
-
-function encodeVerify(index, preimage, proof, leafIndex) {
-  const raw = preimage.replace(/^0x/, "");
-  if (raw.length % 2) throw new Error("preimage must be whole bytes");
-  const bytesLen = raw.length / 2;
-  const padded = raw.padEnd(Math.ceil(bytesLen / 32) * 64, "0");
-  const headWords = 4;
-  const bytesOffset = headWords * 32;
-  const bytesWords = 1 + Math.ceil(bytesLen / 32);
-  const proofOffset = bytesOffset + bytesWords * 32;
-  return SELECTOR
-    + pad(index)
-    + pad(bytesOffset)
-    + pad(proofOffset)
-    + pad(leafIndex)
-    + pad(bytesLen) + padded
-    + pad(proof.length) + proof.map((h) => h.replace(/^0x/, "").padStart(64, "0")).join("");
-}
-
-/* A worked example nobody can reproduce is not evidence. This loads a capture
-   that is genuinely in the anchored log, written by the end-to-end run. */
-if (applyDeepLink()) setTimeout(() => $("#vform button[type=submit]").click(), 400);
-
-/* Keyboard, for anyone checking more than one thing. */
-addEventListener("keydown", (e) => {
-  // e.target is not always an Element — a synthetic event can target window,
-  // and calling .matches on that throws and kills the handler silently.
-  const t = e.target instanceof Element ? e.target : null;
-  const typing = !!t && (t.matches("input, textarea") || t.isContentEditable);
-  if (typing && !(e.metaKey || e.ctrlKey)) return;
-  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); $("#vform button[type=submit]").click(); }
-  else if (e.key === "s" && !e.metaKey && !e.ctrlKey) { e.preventDefault(); $("#vsample").click(); }
-  else if (e.key === "e" && !e.metaKey && !e.ctrlKey) { e.preventDefault(); $("#vepisode").click(); }
-});
-
-$("#vsample").addEventListener("click", async () => {
-  const out = $("#vout");
-  try {
-    const s = await fetch("./sample-proof.json").then((r) => r.json());
-    $("#vindex").value = s.anchorIndex;
-    $("#vpre").value = s.preimage;
-    $("#vleaf").value = s.leafIndex;
-    $("#vproof").value = s.proof.join(", ");
-    out.className = "verdict wait";
-    out.textContent = "loaded — now ask the contract";
-    showDecoded(s.preimage);
-  } catch {
-    out.className = "verdict no";
-    out.textContent = "no sample published yet";
-  }
-});
-
-$("#vepisode").addEventListener("click", async () => {
-  const out = $("#vout");
-  try {
-    const s = await fetch("./sample-episode.json").then((r) => r.json());
-    $("#vindex").value = s.anchorIndex;
-    $("#vpre").value = s.preimage;
-    $("#vleaf").value = s.leafIndex;
-    $("#vproof").value = s.proof.join(", ");
-    out.className = "verdict wait";
-    out.textContent = `loaded episode — task ${s.taskId.slice(0, 10)}…, world seed ${s.worldSeed}`;
-    showDecoded(s.preimage);
-  } catch {
-    out.className = "verdict no";
-    out.textContent = "no episode sample published yet";
-  }
-});
-
-/* Decode the 197-byte episode leaf and rebuild the world it names. The layout
-   is EpisodeLeaf.sol's, and packages/protocol/test/episode.ts holds both to it. */
-function decodeEpisode(preimage) {
-  const raw = preimage.replace(/^0x/, "");
-  if (raw.length / 2 !== 197) return null;
-  const at = (off, len) => "0x" + raw.slice(off * 2, (off + len) * 2);
-  return {
-    taskId: at(129, 32),
-    capturedAt: Number(BigInt(at(161, 8))),
-    durationMs: Number(BigInt(at(177, 4))),
-    channels: Number(BigInt(at(185, 1))),
-    worldSeed: BigInt(at(186, 8)),
-    success: Number(BigInt(at(194, 1))) === 1,
-    qualityScore: Number(BigInt(at(195, 2))),
-  };
-}
-
-let taskSpec = null;
-const specReady = fetch("./sample-task.json")
-  .then((r) => r.json())
-  .then((d) => { taskSpec = d.spec; return d.spec; })
-  .catch(() => null);
-
-async function showDecoded(preimage) {
-  const panel = $("#vdecoded");
-  const cap = $("#vscenecap");
-  const f = decodeEpisode(preimage);
-  // Captures are 154 bytes and carry no task or seed, so there is nothing to
-  // rebuild — that is not an error, it is the other leaf version.
-  if (!f) {
-    panel.hidden = true;
+async function refreshHead() {
+  const state = $("#cstate");
+  state.textContent = "reading the chain…";
+  const rpc = $("#crpc").value.trim() || currentChain.rpc;
+  const r = await readChainHead(currentChain, rpc);
+  if (!r.reachable) {
+    state.textContent = `${currentChain.name} — unreachable (${r.error}). Nothing is drawn rather than guessed.`;
     return;
   }
-  panel.hidden = false;
-  try {
-    await renderDecoded(f, cap);
-  } catch (e) {
-    cap.textContent = `Could not rebuild the world: ${e.message}`;
-  }
+  state.textContent = r.count === 0
+    ? `${currentChain.name} via ${rpc} — reachable, but nothing anchored yet.`
+    : `${currentChain.name} via ${rpc} — head is size ${r.head.size}, root ${short(r.head.root)}, block ${r.head.blockNumber}.`;
 }
 
-async function renderDecoded(f, cap) {
-  const panel = $("#vdecoded");
-  const fig = (k, v) => `<div class="fig"><div class="k">${k}</div><div class="v small">${v}</div></div>`;
-  $("#vfacts").innerHTML =
-    fig("Verdict", f.success ? '<span style="color:#7CE0A5">succeeded</span>' : '<span style="color:#FA9DCD">failed</span>') +
-    fig("Quality", `${(f.qualityScore / 100).toFixed(2)}%`) +
-    fig("World seed", String(f.worldSeed)) +
-    fig("Duration", `${(f.durationMs / 1000).toFixed(1)} s`) +
-    fig("Channels", String(f.channels)) +
-    fig("Captured", new Date(f.capturedAt * 1000).toISOString().slice(0, 16).replace("T", " "));
+chainSel.addEventListener("change", () => {
+  currentChain = chains[Number(chainSel.value)];
+  $("#crpc").value = currentChain.rpc;
+  refreshHead();
+});
+$("#crpc").addEventListener("change", refreshHead);
+refreshHead();
 
-  const cv = $("#vscene");
-  // The spec may still be in flight on a fast click; wait for it rather than
-  // reporting that it does not exist.
-  if (!taskSpec) taskSpec = await specReady;
-  if (!taskSpec) {
-    cap.textContent = "The task spec is not published here, so the world cannot be rebuilt.";
-    return;
+/* -------------------------------------------------------------- Mode tabs */
+const tabs = { Leaf: $("#tabLeaf"), Report: $("#tabReport"), Corpus: $("#tabCorpus") };
+const panels = { Leaf: $("#panelLeaf"), Report: $("#panelReport"), Corpus: $("#panelCorpus") };
+function selectTab(name) {
+  for (const k of Object.keys(tabs)) {
+    tabs[k].setAttribute("aria-selected", String(k === name));
+    panels[k].hidden = k !== name;
   }
-  const scene = sampleScene(taskSpec, f.taskId, f.worldSeed);
-  drawScene(cv, scene, taskSpec);
-  cap.textContent =
-    `Rebuilt from task ${f.taskId.slice(0, 10)}… and seed ${f.worldSeed}. ` +
-    `Dashed outlines are the ranges the curator authored; the shapes are where this seed placed them.`;
-  addEventListener("resize", () => drawScene(cv, scene, taskSpec), { passive: true });
 }
+tabs.Leaf.addEventListener("click", () => selectTab("Leaf"));
+tabs.Report.addEventListener("click", () => selectTab("Report"));
+tabs.Corpus.addEventListener("click", () => selectTab("Corpus"));
 
-/* A verification anyone can be sent. */
-function applyDeepLink() {
-  const q = new URLSearchParams(location.search);
-  let used = false;
-  for (const [key, sel] of [["anchor", "#vindex"], ["leaf", "#vleaf"], ["preimage", "#vpre"]]) {
-    const v = q.get(key);
-    if (v) { $(sel).value = v; used = true; }
-  }
-  const proof = q.get("proof");
-  if (proof) { $("#vproof").value = proof.split(",").join(", "); used = true; }
-  if (used && q.get("preimage")) showDecoded(q.get("preimage").trim());
-  return used && q.get("go") === "1";
+/* ---------------------------------------------------------------- Leaf mode */
+function renderStepList(host, steps) {
+  host.innerHTML = `<ul class="steplist">${steps.map((s) => `
+    <li class="${s.ok ? "ok" : "fail"}">
+      <span class="dot"></span>
+      <span><span class="name">${escapeHtml(s.name)}</span>
+      <span class="detail">${escapeHtml(s.detail || "")}</span></span>
+    </li>`).join("")}</ul>`;
 }
-
-/** Put the current form in the address bar, so the result is shareable. */
-function shareLink() {
-  const q = new URLSearchParams({
-    anchor: $("#vindex").value.trim(), leaf: $("#vleaf").value.trim(),
-    preimage: $("#vpre").value.trim(),
-    proof: $("#vproof").value.split(",").map((s) => s.trim()).filter(Boolean).join(","),
-    go: "1",
-  });
-  return `${location.origin}${location.pathname}?${q}`;
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
 $("#vform").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const out = $("#vout");
-  out.className = "verdict wait";
-  out.textContent = "asking the contract…";
+  const out = $("#vresult");
+  out.innerHTML = `<span class="verdict wait">checking…</span>`;
+  const anchorIndex = Number($("#vindex").value.trim() || 0);
+  const preimage = $("#vpre").value.trim();
+  const leafIndex = Number($("#vleaf").value.trim() || 0);
+  const proof = $("#vproof").value.split(",").map((s) => s.trim()).filter(Boolean);
+
+  const rpc = $("#crpc").value.trim() || currentChain.rpc;
+  const [onChain, head] = await Promise.all([
+    verifyLeafOnChain(currentChain, rpc, { anchorIndex, preimage, proof, leafIndex }),
+    readChainHead(currentChain, rpc),
+  ]);
+
+  let local;
   try {
-    const index = $("#vindex").value.trim();
-    if (index !== "" && anchorCount !== null && Number(index) >= anchorCount) {
-      throw new Error(`There is no anchor #${index}. The log has ${anchorCount}, numbered 0 to ${anchorCount - 1}.`);
-    }
-    const pre = $("#vpre").value.trim();
-    const leaf = $("#vleaf").value.trim();
-    const proof = $("#vproof").value.split(",").map((s) => s.trim()).filter(Boolean);
-
-    const body = pre.replace(/^0x/, "");
-    if (!/^[0-9a-fA-F]*$/.test(body)) {
-      throw new Error("That preimage is not hexadecimal. It should be 0x followed by hex digits.");
-    }
-    if (body.length % 2) throw new Error("That preimage has an odd number of hex digits, so it is not whole bytes.");
-    const bytes = body.length / 2;
-    // A capture is 154 bytes and an episode 197. Anything else is neither, and
-    // saying which is expected is more use than "invalid input".
-    if (bytes !== 154 && bytes !== 197) {
-      throw new Error(`a preimage is 154 bytes (capture) or 197 (episode); that is ${bytes}`);
-    }
-    const version = parseInt(pre.replace(/^0x/, "").slice(0, 2), 16);
-    if ((version === 1 && bytes !== 154) || (version === 2 && bytes !== 197)) {
-      throw new Error(`version ${version} does not match a ${bytes}-byte preimage`);
-    }
-
-    // LeafVerifier handles both versions; the log itself only knows captures.
-    const data = encodeVerify(index || 0, pre, proof, leaf || 0);
-    const res = await fetch(CHAIN.rpc, {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call",
-        params: [{ to: CHAIN.verifier, data }, "latest"] }),
-    }).then((r) => r.json());
-
-    if (res.error) {
-      const raw = res.error.message || "";
-      throw new Error(/revert/i.test(raw)
-        ? "The contract refused that. Check the anchor index, the leaf index and the sibling path belong together."
-        : raw);
-    }
-    const yes = BigInt(res.result) === 1n;
-    if (yes) { history.replaceState(null, "", shareLink()); showDecoded(pre); }
-    out.className = `verdict ${yes ? "yes" : "no"}`;
-    out.textContent = yes
-      ? `in the log — the contract confirms this ${bytes === 197 ? "episode" : "capture"}`
-      : "not in the log under that proof";
+    // Local check needs the anchor's (root,size); prefer the head the chain
+    // just reported, since that is the anchor a freshly submitted proof is
+    // almost always checked against.
+    const size = head.reachable && head.head ? head.head.size : null;
+    const root = head.reachable && head.head ? head.head.root : null;
+    if (size === null) throw new Error("no local anchor (root,size) available — chain unreachable");
+    local = verifyLeafLocal({ preimage, proof, leafIndex, size, root });
   } catch (err) {
-    out.className = "verdict no";
-    out.textContent = err.message;
+    local = { ok: false, error: err.message };
+  }
+
+  const steps = [
+    { name: "on chain — LeafVerifier.verifyLeaf", ok: onChain.reachable ? onChain.ok : false,
+      detail: onChain.reachable ? (onChain.ok ? "the contract confirms inclusion" : "the contract does not confirm inclusion under this proof") : `unreachable (${onChain.error})` },
+    { name: "locally — merkle.js, no network", ok: !!(local && local.ok),
+      detail: local && local.ok ? `decoded as ${local.decoded.kind}; leaf ${short(local.leaf)} folds to the head root` : (local && local.error) || "did not fold to the expected root" },
+  ];
+  renderStepList(out, steps);
+});
+
+/* -------------------------------------------------------------- Report mode */
+function applyReportDeepLink() {
+  const q = new URLSearchParams(location.search);
+  const url = q.get("report");
+  if (url) {
+    selectTab("Report");
+    fetch(url).then((r) => r.json()).then((j) => {
+      $("#rjson").value = JSON.stringify(j, null, 2);
+      runReportCheck(j);
+    }).catch((e) => {
+      $("#rresult").innerHTML = `<span class="verdict no">could not fetch ${escapeHtml(url)}: ${escapeHtml(e.message)}</span>`;
+    });
+  }
+}
+
+function renderReport(result, report) {
+  const out = $("#rresult");
+  const summary = result.allPassed
+    ? `<span class="verdict yes">all checkable steps passed</span>`
+    : `<span class="verdict no">at least one step failed — see below</span>`;
+  let episodeTable = "";
+  if (report && Array.isArray(report.episodes) && report.episodes.length) {
+    episodeTable = `<div class="scroller"><table class="vtable"><thead><tr>
+      <th>Episode</th><th>Badges</th><th>Consent</th><th>Source</th><th>Wording</th>
+    </tr></thead><tbody>${report.episodes.map((ep) => `<tr>
+      <td class="mono">${short(ep.leaf)}</td>
+      <td>${(ep.badges || []).join(", ") || "—"}</td>
+      <td>${escapeHtml(ep.consent ? ep.consent.status : "—")}</td>
+      <td>${ep.source ? escapeHtml(episodeSourceWording(ep)) : "—"}</td>
+      <td>${(ep.wording || []).map(escapeHtml).join("<br>")}</td>
+    </tr>`).join("")}</tbody></table></div>`;
+  }
+  out.innerHTML = summary + episodeTable;
+  const stepsHost = document.createElement("div");
+  renderStepList(stepsHost, result.steps);
+  out.appendChild(stepsHost);
+}
+
+function runReportCheck(report) {
+  const result = verifyReport(report);
+  renderReport(result, report);
+}
+
+$("#rcheck").addEventListener("click", () => {
+  const out = $("#rresult");
+  let report;
+  try {
+    report = JSON.parse($("#rjson").value);
+  } catch (e) {
+    out.innerHTML = `<span class="verdict no">not valid JSON: ${escapeHtml(e.message)}</span>`;
+    return;
+  }
+  runReportCheck(report);
+});
+
+applyReportDeepLink();
+
+/* -------------------------------------------------------------- Corpus mode */
+$("#cform").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const out = $("#cresult");
+  try {
+    const leaf = $("#cleaf").value.trim();
+    const index = Number($("#cindex").value.trim());
+    const episodeCount = Number($("#ccount").value.trim());
+    const corpusRoot = $("#croot").value.trim();
+    const proof = $("#cproof").value.split(",").map((s) => s.trim()).filter(Boolean);
+    const ok = verifyCorpusInclusion({ leaf, index, episodeCount, proof, corpusRoot });
+    out.innerHTML = ok
+      ? `<span class="verdict yes">included — this leaf folds to the corpus root at index ${index}</span>`
+      : `<span class="verdict no">not included under that proof</span>`;
+  } catch (err) {
+    out.innerHTML = `<span class="verdict no">${escapeHtml(err.message)}</span>`;
   }
 });
 </script>

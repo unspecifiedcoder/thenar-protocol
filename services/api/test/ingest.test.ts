@@ -180,7 +180,10 @@ async function uploadFixture(deps: Deps, orgId: string) {
     logStore.createOrg({ orgId: SUPPLIER_ORG, name: "ingest supplier", kind: "supplier", status: "active", createdAt: Math.floor(Date.now() / 1000) });
   }
   registry.registerKey(SUPPLIER_ORG, { alg: "ed25519", pubkey: orgPubkey });
-  const resignedManifest = { ...firstManifest, org_id: SUPPLIER_ORG };
+  // A distinct manifest (fresh consent_commitment, so a distinct
+  // manifestHash) submitted through the SDK path — this must succeed once
+  // and then be refused as a duplicate on a second, identical submission.
+  const resignedManifest = { ...firstManifest, org_id: SUPPLIER_ORG, consent_commitment: keccak256(toHex("a-fresh-commitment-for-the-sdk-path")) };
   const mHash = computeManifestHash(resignedManifest);
   const sig = await signObject("ed25519", "manifest", mHash, toHex(orgSk));
   resignedManifest.signature = { alg: "ed25519", key_id: deriveKeyId(orgPubkey), sig };
@@ -192,7 +195,7 @@ async function uploadFixture(deps: Deps, orgId: string) {
   const dupRes1 = await req(app, "/v1/episodes", {
     method: "POST", headers, body: JSON.stringify({ manifest: resignedManifest }),
   });
-  ok(dupRes1.status === 200, "POST /episodes with a freshly-signed manifest -> 200", String(dupRes1.status) + " " + JSON.stringify(await dupRes1.clone().json().catch(() => null)));
+  ok(dupRes1.status === 200, "POST /episodes with a fresh manifest -> 200 (new leaf)", String(dupRes1.status) + " " + JSON.stringify(await dupRes1.clone().json().catch(() => null)));
   const dupRes2 = await req(app, "/v1/episodes", {
     method: "POST", headers, body: JSON.stringify({ manifest: resignedManifest }),
   });
@@ -221,7 +224,11 @@ async function uploadFixture(deps: Deps, orgId: string) {
 // Dataset with 0 episodes -> 422 (an info.json with no episodes at all)
 // =========================================================================
 {
-  const deps = makeDeps({ logStore: new LogStore(":memory:") });
+  const logStore0 = new LogStore(":memory:");
+  const registry0 = new Registry(logStore0);
+  const operator0 = await makeOperator();
+  ensureOperatorKey(logStore0, registry0, operator0);
+  const deps = makeDeps({ logStore: logStore0, registry: registry0, operator: operator0 });
   const app = createApp(deps);
   const headers = { "content-type": "application/json", Authorization: `Bearer ${SUPPLIER_KEY}` };
 
@@ -247,7 +254,7 @@ async function uploadFixture(deps: Deps, orgId: string) {
       consent: { holder: "contributor", pubkey: hex(0x01, 32), alg: "ed25519", scope_bits: 1 },
     }),
   });
-  ok(ingestRes.status === 422, "dataset with 0 episodes -> 422", String(ingestRes.status));
+  ok(ingestRes.status === 422, "dataset with 0 episodes -> 422", String(ingestRes.status) + " " + JSON.stringify(await ingestRes.clone().json().catch(() => null)));
 }
 
 // =========================================================================

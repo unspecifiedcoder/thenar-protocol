@@ -62,3 +62,96 @@ export function pendingWording() {
 export function checkFailedWording(name, summary) {
   return `Check ${name} failed: ${summary}.`;
 }
+
+/* ------------------------------------------------------------------ *
+ * PLAN §1.1 — the source axis (D-30), orthogonal to levels.
+ *
+ * Not yet in `packages/protocol/src/wording.ts` (T-040 lands it there);
+ * this is a direct, verbatim port of the §1.1 table and the
+ * attested-physical template, added here per T-026's supervisor scope
+ * addition so `/verify` never renders a declared `source` as unqualified
+ * "physical". Guard (I-16, §27 trap #23): the word "physical" must never
+ * appear on this page without "declared" or "attested" on the same line —
+ * every branch below satisfies that by construction.
+ * ------------------------------------------------------------------ */
+
+const SOURCE_TEXT = {
+  sim: "simulation",
+  teleop_sim: "human-driven simulation",
+  teleop_real: "human-driven physical robot",
+  autonomous_real: "autonomous physical robot",
+  mixed: "mixed",
+};
+
+/**
+ * `Source — declared by the signer: {text}. Not attested.` — the default
+ * rendering for every `source` value, always used unless
+ * `isAttestedPhysical` (below) holds.
+ */
+export function sourceWording(source) {
+  const text = SOURCE_TEXT[source];
+  if (!text) throw new Error(`unknown source "${source}"`);
+  return `Source — declared by the signer: ${text}. Not attested.`;
+}
+
+/**
+ * `Source — attested physical capture: controller key attested by
+ * {manufacturer} ({model}); simulation-signature check passed.`
+ */
+export function attestedPhysicalWording(manufacturer, model) {
+  return `Source — attested physical capture: controller key attested by ${manufacturer} (${model}); simulation-signature check passed.`;
+}
+
+/**
+ * The attested-physical rule, implemented exactly as PLAN §1.1 states it —
+ * every clause is required, so a report missing any of them (which is
+ * every report today; no episode carries `attestation`/`checks` shaped
+ * this way yet) simply never satisfies it. `latestCheckResult(check)` looks
+ * up the most recent claim of that check name among `claims` and returns
+ * its `result`, or `undefined` if none exists.
+ */
+export function isAttestedPhysical({ source, attestation, claims, hasVideoChannel }) {
+  if (source !== "teleop_real" && source !== "autonomous_real") return false;
+  if (!attestation || attestation.level !== 2 || attestation.subject !== "robot_controller") return false;
+  const latest = (check) => {
+    const matches = (claims || []).filter((c) => c.check === check);
+    if (matches.length === 0) return undefined;
+    // "latest" — the claim with the highest issued_at, or last in array if unordered.
+    return matches.reduce((a, b) => ((b.issued_at ?? 0) >= (a.issued_at ?? 0) ? b : a)).result;
+  };
+  if (latest("sim_signature.v1") !== "pass") return false;
+  if (hasVideoChannel && latest("sensor_consistency.v1") !== "pass") return false;
+  return true;
+}
+
+/**
+ * Renders the correct source line for one episode: the attested template
+ * if (and only if) `isAttestedPhysical` holds, else the declared template.
+ * `attestation` (when the attested branch fires) supplies
+ * `{manufacturer, model}`.
+ */
+export function episodeSourceWording(episode) {
+  const attested = isAttestedPhysical({
+    source: episode.source,
+    attestation: episode.attestation,
+    claims: episode.claims,
+    hasVideoChannel: episode.hasVideoChannel,
+  });
+  if (attested) {
+    return attestedPhysicalWording(episode.attestation.manufacturer, episode.attestation.model);
+  }
+  return sourceWording(episode.source);
+}
+
+/**
+ * Corpus-level rollup: `Sources — {list}; {n} of {m} episodes declared
+ * physical, {k} attested.` `episodes` is `[{source, attested}]`.
+ */
+export function corpusSourcesWording(episodes) {
+  const list = [...new Set(episodes.map((e) => e.source))].sort().join(", ");
+  const m = episodes.length;
+  const physicalSources = new Set(["teleop_real", "autonomous_real"]);
+  const n = episodes.filter((e) => physicalSources.has(e.source)).length;
+  const k = episodes.filter((e) => e.attested).length;
+  return `Sources — ${list}; ${n} of ${m} episodes declared physical, ${k} attested.`;
+}

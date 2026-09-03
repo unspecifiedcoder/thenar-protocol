@@ -73,6 +73,7 @@ const LOG_ABI = parseAbi([
 ]);
 
 const REGISTRY_ABI = parseAbi([
+  "function corpusCount() view returns (uint256)",
   "function corpusAt(uint256) view returns ((bytes32 corpusManifestHash, bytes32 corpusRoot, bytes32 termsHash, uint64 episodeCount, address supplier, uint128 price, address token, bool open, uint64 sealedAt, bytes32 anchorRoot, uint64 anchorSize))",
   "function receiptAt(uint256) view returns ((address buyer, uint256 corpusId, bytes32 termsHash, bytes32 corpusRoot, bytes32 corpusManifestHash, uint256 amount, address token, uint64 at, uint64 blockNumber))",
   "function receiptsOf(address) view returns (uint256[])",
@@ -172,6 +173,11 @@ export class ViemChainReader {
 
   private targetById(chainId: number): ChainReaderTarget | undefined {
     return this.chains.find((c) => c.id === chainId);
+  }
+
+  /** The primary chain's id (D-9), or `null` when no chains are configured — for callers (T-027's `/corpora/{id}/onchain`) that need to name which chain a `LicenceRegistry` read came from. */
+  get primaryChainId(): number | null {
+    return this.primary?.id ?? null;
   }
 
   private async cachedRead<T>(chainId: number, call: string, args: readonly unknown[], fetch: () => Promise<T>): Promise<ReadOutcome<T>> {
@@ -282,6 +288,10 @@ export class ViemChainReader {
     });
     if (!r.ok) return { unreachable: true, chain_id: primary.id };
     return { ...r.value, stale_at: r.staleAt, chain_id: primary.id } as Live<T>;
+  }
+
+  corpusCount(): Promise<ChainResult<{ count: number }>> {
+    return this.readRegistry("corpusCount", [], (raw: bigint) => ({ count: Number(raw) }));
   }
 
   corpusAt(id: number | bigint): Promise<ChainResult<RegistryCorpus>> {
