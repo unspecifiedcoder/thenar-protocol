@@ -47,7 +47,7 @@ OUT="$(ROLE="$ROLE" DEPLOYER_PRIVATE_KEY="$PK" forge script script/Deploy.s.sol:
   --rpc-url "$RPC_URL" --broadcast --slow "${VERIFY_ARGS[@]}" 2>&1)"
 echo "$OUT"
 
-LINES="$(echo "$OUT" | grep -E '^CHAIN_[0-9]+_(ROLE|LOG|VERIFIER|REGISTRY|FROM_BLOCK)=' || true)"
+LINES="$(echo "$OUT" | grep -oE 'CHAIN_[0-9]+_(ROLE|LOG|VERIFIER|REGISTRY|FROM_BLOCK)=.*' || true)"
 if [ -z "$LINES" ]; then
   echo "error: deploy output carried no CHAIN_<id>_* lines — not touching $ENV_FILE" >&2
   exit 1

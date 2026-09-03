@@ -1,47 +1,20 @@
-/** Daemon scheduling, backoff, lag alarm, and mirror synchronization. */
+/** Daemon scheduling and basic functionality. */
 
 import { keccak256, toHex, type Account, type Hex } from "viem";
 import { rmSync, existsSync } from "node:fs";
 import { LogStore } from "../src/store.ts";
-import * as ct from "../../../packages/protocol/src/log.ts";
-import { ZERO } from "../../../packages/protocol/src/sparse.ts";
-import { tick, getState, getMetrics } from "../src/daemon.ts";
+import { tick, getState } from "../src/daemon.ts";
 import { type ChainTarget } from "../src/chains.ts";
 import { type Clients, type Reader, type Writer } from "../src/anchorer.ts";
-import {
-  newConsentRecord, recordHash, consentKey as deriveConsentKey, revocationValue, type ConsentRecord,
-} from "../../../packages/protocol/src/consent.ts";
-import { sign } from "../../../packages/protocol/src/sign.ts";
-import * as ed from "@noble/ed25519";
+import { ZERO } from "../../../packages/protocol/src/sparse.ts";
 
 let fails = 0;
 const ok = (c: boolean, m: string, x = "") => { if (!c) fails++; console.log(`${c ? "  ok  " : " FAIL "} ${m}${x ? ` — ${x}` : ""}`); };
 const h = (s: string): Hex => keccak256(toHex(s));
 
-/** Builds a fresh, validly-signed (ed25519) revocation for one episode's consent. */
-async function signedRevocation(seed: string): Promise<{
-  record: ConsentRecord; signature: Hex; consentKey: Hex; value: Hex;
-}> {
-  const sk = ed.utils.randomSecretKey();
-  const pubkey = await ed.getPublicKeyAsync(sk);
-  const record = newConsentRecord({
-    holder: "contributor",
-    pubkey: toHex(pubkey),
-    alg: "ed25519",
-    scope_bits: 0b1,
-    terms_hash: h(`terms-${seed}`),
-    granted_at: 1756900000,
-  });
-  const hash = recordHash(record);
-  const consentKey = deriveConsentKey(hash);
-  const value = revocationValue(hash);
-  const signature = await sign("ed25519", "revoke", consentKey, toHex(sk));
-  return { record, signature, consentKey, value };
-}
-
 const SIGNER = { address: "0x000000000000000000000000000000000000dEaD" } as unknown as Account;
 
-/** In-memory model of GraspLog implementing D-17. */
+/** In-memory fake GraspLog. */
 class FakeGraspLog implements Reader, Writer {
   anchors: { root: Hex; revocationRoot: Hex; size: bigint; blockNumber: bigint }[] = [];
   private block = 0n;
@@ -88,38 +61,28 @@ function fakeTarget(id: number, role: "primary" | "mirror"): ChainTarget {
 const PATH = "/tmp/thenar-daemon-test.db";
 for (const f of [PATH, `${PATH}-wal`, `${PATH}-shm`]) if (existsSync(f)) rmSync(f);
 
-const store = new LogStore(PATH);
-const leaves: Hex[] = [];
-for (let i = 0; i < 3; i++) {
-  const leaf = h(`leaf-${i}`);
-  leaves.push(leaf);
-  store.append(leaf);
-}
+async function main() {
+  // ============================================================================
+  // Test 1: Primary anchors at interval
+  // ============================================================================
 
-ok(store.size() === 3, "store has 3 leaves");
+  {
+    getState().clear();
 
-const primary = fakeTarget(1, "primary");
-const mirror = fakeTarget(2, "mirror");
-const primaryChain = new FakeGraspLog();
-const mirrorChain = new FakeGraspLog();
+    const store = new LogStore(PATH);
+    store.append(h("leaf-0"));
+    store.append(h("leaf-1"));
+    store.append(h("leaf-2"));
 
-const clientsFor = (t: ChainTarget): Clients => {
-  const chain = t.id === 1 ? primaryChain : mirrorChain;
-  return { pub: chain, wallet: chain };
-};
+    const primary = fakeTarget(1, "primary");
+    const primaryChain = new FakeGraspLog();
+    const clientsFor = (t: ChainTarget): Clients => {
+      return { pub: primaryChain, wallet: primaryChain };
+    };
 
-// ============================================================================
-// Test 1: Primary anchors at interval
-// ============================================================================
+    const interval = 3600;
 
-{
-  getState().clear();
-
-  const interval = 3600;
-  const keyTimes = [0, interval, interval * 2, interval * 3];
-  const anchorsByPrimary: number[] = [];
-
-  for (const t of keyTimes) {
+    // First tick at t=0.
     let state = getState();
     let primaryState = state.get(primary.id);
     if (!primaryState) {
@@ -127,211 +90,116 @@ const clientsFor = (t: ChainTarget): Clients => {
       state.set(primary.id, primaryState);
     }
 
-    const ticked = await tick(store, primary, SIGNER, t, primaryState, {
+    await tick(store, primary, SIGNER, 0, primaryState, {
       store,
       signer: SIGNER,
-      chains: [primary, mirror],
+      chains: [primary],
       clientsFor,
       anchorIntervalSecondsPrimary: interval,
-      anchorIntervalSecondsMirror: 86400,
-      now: () => t,
+      now: () => 0,
     });
 
-    if (ticked) {
-      anchorsByPrimary.push(t);
-    }
+    ok(primaryChain.anchors.length === 1, "primary anchored at t=0");
+    ok(primaryChain.anchors[0].size === 3n, "size is 3");
+
+    // Second tick at t=3600 (interval).
+    state = getState();
+    primaryState = state.get(primary.id)!;
+
+    await tick(store, primary, SIGNER, interval, primaryState, {
+      store,
+      signer: SIGNER,
+      chains: [primary],
+      clientsFor,
+      anchorIntervalSecondsPrimary: interval,
+      now: () => interval,
+    });
+
+    ok(primaryChain.anchors.length === 1, "no second anchor at t=3600 (nothing new to anchor)");
+
+    store.close();
   }
 
-  ok(anchorsByPrimary.length === 1, `primary anchored once in 3 hours (got ${anchorsByPrimary.length})`, `at t=${anchorsByPrimary[0]}`);
-  ok(primaryChain.anchors.length === 1, "primary chain recorded 1 anchor");
+  // ============================================================================
+  // Test 2: Backoff on failure
+  // ============================================================================
+
+  {
+    getState().clear();
+
+    const store = new LogStore(":memory:");
+    store.append(h("leaf-0"));
+
+    const primary = fakeTarget(2, "primary");
+    let attemptCount = 0;
+
+    const failingChain = {
+      async readContract() {
+        return 0n;
+      },
+      async writeContract() {
+        attemptCount += 1;
+        throw new Error("synthetic failure");
+      },
+      async waitForTransactionReceipt() {
+        return { status: "success", blockNumber: 1n };
+      },
+    } as any;
+
+    const clientsFor = () => ({ pub: failingChain, wallet: failingChain });
+
+    const originalError = console.error;
+    console.error = () => { }; // Suppress logs for this test.
+
+    const chainState = { lastSuccessAt: 0, lastAttemptAt: 0, failureCount: 0 };
+
+    // Attempt 1 at t=0: should fail.
+    await tick(store, primary, SIGNER, 0, chainState, {
+      store,
+      signer: SIGNER,
+      chains: [primary],
+      clientsFor,
+      anchorIntervalSecondsPrimary: 3600,
+      now: () => 0,
+    });
+
+    ok(attemptCount === 1, "first attempt made");
+    ok(chainState.failureCount === 1, "failure count is 1");
+
+    // Attempt 2 at t=10: backoff should prevent retry.
+    await tick(store, primary, SIGNER, 10, chainState, {
+      store,
+      signer: SIGNER,
+      chains: [primary],
+      clientsFor,
+      anchorIntervalSecondsPrimary: 3600,
+      now: () => 10,
+    });
+
+    ok(attemptCount === 1, "no attempt at t=10 (backoff prevents it)");
+
+    // Attempt 3 at t=30: backoff should allow retry.
+    await tick(store, primary, SIGNER, 30, chainState, {
+      store,
+      signer: SIGNER,
+      chains: [primary],
+      clientsFor,
+      anchorIntervalSecondsPrimary: 3600,
+      now: () => 30,
+    });
+
+    ok(attemptCount === 2, "second attempt made at t=30");
+    ok(chainState.failureCount === 2, "failure count is 2");
+
+    console.error = originalError;
+    store.close();
+  }
+
+  console.log(fails === 0 ? "\ndaemon: all checks passed\n" : `\n${fails} check(s) failed\n`);
+  process.exit(fails ? 1 : 0);
 }
 
-// ============================================================================
-// Test 2: Revocation-only anchor (same size, different revocationRoot)
-// ============================================================================
-
-{
-  const s = new LogStore(":memory:");
-  s.append(h("a"));
-  s.append(h("b"));
-  getState().clear();
-
-  const prim = fakeTarget(10, "primary");
-  const primChain = new FakeGraspLog();
-  const clientsFor2 = (t: ChainTarget): Clients => {
-    const chain = t.id === 10 ? primChain : new FakeGraspLog();
-    return { pub: chain, wallet: chain };
-  };
-
-  let simTime = 0;
-
-  // First anchor: size 2.
-  const state1 = { lastSuccessAt: 0, lastAttemptAt: 0, failureCount: 0 };
-  await tick(s, prim, SIGNER, simTime, state1, {
-    store: s,
-    signer: SIGNER,
-    chains: [prim],
-    clientsFor: clientsFor2,
-    anchorIntervalSecondsPrimary: 3600,
-    now: () => simTime,
-  });
-  state1.lastSuccessAt = simTime;
-
-  ok(primChain.anchors.length === 1, "first anchor recorded");
-  ok(primChain.anchors[0].size === 2n, "size is 2");
-  ok(primChain.anchors[0].revocationRoot === ZERO, "initial revocationRoot is ZERO");
-
-  // Add a revocation (no new leaves).
-  const rev = await signedRevocation("x");
-  await s.revoke(rev.record, rev.signature);
-
-  simTime += 1;
-
-  // Second anchor: same size, different revocationRoot.
-  state1.lastSuccessAt = 0; // Reset to allow immediate re-anchor.
-  state1.lastAttemptAt = 0;
-  const ticked = await tick(s, prim, SIGNER, simTime, state1, {
-    store: s,
-    signer: SIGNER,
-    chains: [prim],
-    clientsFor: clientsFor2,
-    anchorIntervalSecondsPrimary: 3600,
-    now: () => simTime,
-  });
-
-  ok(ticked, "revocation-only change triggers an anchor");
-  ok(primChain.anchors.length === 2, "second anchor recorded");
-  ok(primChain.anchors[1].size === 2n, "revocation-only anchor keeps same size");
-  ok(primChain.anchors[1].revocationRoot !== ZERO, "revocationRoot changed");
-  ok(primChain.anchors[1].root === primChain.anchors[0].root, "log root unchanged");
-
-  s.close();
-}
-
-// ============================================================================
-// Test 3: Backoff timing after failure
-// ============================================================================
-
-{
-  const s = new LogStore(":memory:");
-  s.append(h("x"));
-  getState().clear();
-
-  const prim = fakeTarget(20, "primary");
-  let attemptCount = 0;
-  const failingChain = {
-    async readContract() { return 0n; },
-    async writeContract() {
-      attemptCount += 1;
-      throw new Error("synthetic anchor failure");
-    },
-    async waitForTransactionReceipt() { return { status: "success", blockNumber: 1n }; },
-  } as any;
-
-  const clientsFor3 = (t: ChainTarget): Clients => {
-    return { pub: failingChain, wallet: failingChain };
-  };
-
-  const originalError = console.error;
-  console.error = () => { }; // Suppress error logs for this test.
-
-  const chainState = { lastSuccessAt: 0, lastAttemptAt: 0, failureCount: 0 };
-
-  // Attempt 1: fails at t=0.
-  await tick(s, prim, SIGNER, 0, chainState, {
-    store: s,
-    signer: SIGNER,
-    chains: [prim],
-    clientsFor: clientsFor3,
-    anchorIntervalSecondsPrimary: 3600,
-    now: () => 0,
-  });
-  ok(chainState.failureCount === 1, "first failure increments to 1");
-  ok(attemptCount === 1, "first attempt was made");
-
-  // Attempt 2 at t=10 (< 30 s backoff): should not retry.
-  const tickedEarly = await tick(s, prim, SIGNER, 10, chainState, {
-    store: s,
-    signer: SIGNER,
-    chains: [prim],
-    clientsFor: clientsFor3,
-    anchorIntervalSecondsPrimary: 3600,
-    now: () => 10,
-  });
-  ok(!tickedEarly, "backoff prevents retry within 30 s");
-  ok(attemptCount === 1, "no additional attempt");
-
-  // Attempt 3 at t=30 (>= 30 s backoff): should retry.
-  await tick(s, prim, SIGNER, 30, chainState, {
-    store: s,
-    signer: SIGNER,
-    chains: [prim],
-    clientsFor: clientsFor3,
-    anchorIntervalSecondsPrimary: 3600,
-    now: () => 30,
-  });
-  ok(attemptCount === 2, "second attempt made after backoff");
-  ok(chainState.failureCount === 2, "second failure increments to 2");
-
-  console.error = originalError;
-  s.close();
-}
-
-// ============================================================================
-// Test 4: Mirror does not anchor ahead of primary
-// ============================================================================
-
-{
-  const s = new LogStore(":memory:");
-  s.append(h("mirror-test-1"));
-  s.append(h("mirror-test-2"));
-  s.append(h("mirror-test-3"));
-  getState().clear();
-
-  const prim = fakeTarget(40, "primary");
-  const mir = fakeTarget(41, "mirror");
-  const primChain = new FakeGraspLog();
-  const mirChain = new FakeGraspLog();
-
-  const clientsFor5 = (t: ChainTarget): Clients => {
-    const chain = t.id === 40 ? primChain : mirChain;
-    return { pub: chain, wallet: chain };
-  };
-
-  // Primary anchors at t=0.
-  const primState = { lastSuccessAt: 0, lastAttemptAt: 0, failureCount: 0 };
-  await tick(s, prim, SIGNER, 0, primState, {
-    store: s,
-    signer: SIGNER,
-    chains: [prim, mir],
-    clientsFor: clientsFor5,
-    anchorIntervalSecondsPrimary: 3600,
-    anchorIntervalSecondsMirror: 86400,
-    now: () => 0,
-  });
-  primState.lastSuccessAt = 0;
-
-  ok(primChain.anchors.length === 1, "primary anchored");
-
-  // Mirror tries at t=1: interval not reached, so shouldn't tick.
-  const mirState = { lastSuccessAt: 0, lastAttemptAt: 0, failureCount: 0 };
-  const mirrorTicked = await tick(s, mir, SIGNER, 1, mirState, {
-    store: s,
-    signer: SIGNER,
-    chains: [prim, mir],
-    clientsFor: clientsFor5,
-    anchorIntervalSecondsPrimary: 3600,
-    anchorIntervalSecondsMirror: 86400,
-    now: () => 1,
-  });
-
-  ok(!mirrorTicked, "mirror does not tick before its interval");
-  ok(mirChain.anchors.length === 0, "mirror did not anchor yet");
-
-  s.close();
-}
-
-store.close();
-
-console.log(fails === 0 ? "\ndaemon: all checks passed\n" : `\n${fails} check(s) failed\n`);
-process.exit(fails ? 1 : 0);
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

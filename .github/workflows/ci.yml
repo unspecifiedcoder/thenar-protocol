@@ -48,6 +48,14 @@ jobs:
       - name: Vectors are up to date and deterministic
         run: pnpm vectors && git diff --exit-code packages/contracts/test/Vectors.sol packages/protocol/test/fixtures/vectors.json
 
+      # T-009: `apps/web/chains.js` is generated from `.env.contracts`
+      # (absent here — no secrets in CI) falling back to
+      # `.env.contracts.example`. Regenerating it must reproduce the
+      # checked-in file byte-for-byte, or a page could ship an address the
+      # deploy scripts never produced.
+      - name: chains.js is up to date
+        run: pnpm gen:chains && git diff --exit-code apps/web/chains.js
+
       - name: Log store
         run: pnpm test:log
 

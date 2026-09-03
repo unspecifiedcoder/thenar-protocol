@@ -63,11 +63,11 @@ function getInterval(role: "primary" | "mirror", opts: DaemonOpts): number {
 
 /**
  * Calculate the backoff delay in seconds.
- * 30 s → 60 s → 120 s → 240 s → 300 s (5 min cap).
+ * 1st failure: 30 s, 2nd: 60 s, 3rd: 120 s, 4th: 240 s, 5th+: 300 s (5 min cap).
  */
 function backoffDelay(failureCount: number): number {
   const delays = [30, 60, 120, 240, 300];
-  return delays[Math.min(failureCount, delays.length - 1)];
+  return delays[Math.min(failureCount - 1, delays.length - 1)];
 }
 
 /**

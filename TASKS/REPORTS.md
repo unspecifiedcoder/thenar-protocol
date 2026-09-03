@@ -370,3 +370,11 @@ nodes — commented and tested), §27 trap #4 (`abi.encodePacked`, tested via
 `PREIMAGE_BYTES` length assertions already present in each leaf library).
 
 Open questions / conflicts filed: none.
+
+## T-011 — LeRobot v3 dataset reader — 2026-09-03 — STRONG (Sonnet); report filed by supervisor after direct verification
+Created: services/api/src/ingest/lerobot.ts, services/api/test/lerobot.test.ts, services/api/test/fixtures/lerobot-v3/, services/api/test/fixtures/lerobot-v2/, scripts/fixtures/make-lerobot-fixture.ts, docs/OPERATIONS.md
+Changed: package.json (test:api chain)
+Tests: npx tsx services/api/test/lerobot.test.ts → all tests passed (chunked + per-episode fixtures, missing file, traversal)
+Deviations from PLAN.md: none. Fixture generated in TS (hyparquet-writer); ffmpeg absent, so the .mp4 is a deterministic blob flagged `thenar_fixture: true` in info.json (reader never decodes video).
+Invariants touched: I-12 (read-only), D-18 (no slicing)
+Open questions: none

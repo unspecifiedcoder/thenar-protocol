@@ -171,9 +171,9 @@ function throwsApiError(fn: () => unknown, code: string): boolean {
 // HTTP routes: create/list/revoke, org mismatch -> 403
 // =========================================================================
 {
-  function makeDeps(registry: Registry): Deps {
+  function makeDeps(registry: Registry, orgId: string): Deps {
     return {
-      keyStore: new KeyStore([{ key_sha256: sha256("supplier-key"), org_id: "org_a", role: "supplier" }]),
+      keyStore: new KeyStore([{ key_sha256: sha256("supplier-key"), org_id: orgId, role: "supplier" }]),
       idempotencyStore: new MemoryIdempotencyStore(),
       rateLimiter: new TokenBucketLimiter(),
       nowMinute: () => Math.floor(Date.now() / 60_000),
@@ -189,11 +189,12 @@ function throwsApiError(fn: () => unknown, code: string): boolean {
 
   const store = new LogStore(":memory:");
   const registry = new Registry(store);
-  registry.createOrg("A", "supplier"); // orgId isn't org_a; routes key off the caller's org_id from the API key, not the org row
-  const app = createApp(makeDeps(registry));
+  const org = registry.createOrg("A", "supplier");
+  const orgId = org.orgId;
+  const app = createApp(makeDeps(registry, orgId));
   const authed = { Authorization: "Bearer supplier-key" };
 
-  const created = await app.fetch(new Request("http://localhost/v1/orgs/org_a/keys", {
+  const created = await app.fetch(new Request(`http://localhost/v1/orgs/${orgId}/keys`, {
     method: "POST", headers: { ...authed, "content-type": "application/json" },
     body: JSON.stringify({ alg: "ed25519", pubkey: ed25519Pubkey(6) }),
   }));
@@ -202,32 +203,32 @@ function throwsApiError(fn: () => unknown, code: string): boolean {
   ok(createdBody.attestation === undefined, "POST response omits attestation (public shape)");
   ok(typeof createdBody.key_id === "string", "POST response includes key_id");
 
-  const dup = await app.fetch(new Request("http://localhost/v1/orgs/org_a/keys", {
+  const dup = await app.fetch(new Request(`http://localhost/v1/orgs/${orgId}/keys`, {
     method: "POST", headers: { ...authed, "content-type": "application/json" },
     body: JSON.stringify({ alg: "ed25519", pubkey: ed25519Pubkey(6) }),
   }));
   ok(dup.status === 409, "POST duplicate pubkey -> 409", String(dup.status));
 
-  const list = await app.fetch(new Request("http://localhost/v1/orgs/org_a/keys"));
+  const list = await app.fetch(new Request(`http://localhost/v1/orgs/${orgId}/keys`));
   ok(list.status === 200, "GET /orgs/{orgId}/keys -> 200 public, no auth needed", String(list.status));
   const listBody = await list.json();
   ok(Array.isArray(listBody.items) && listBody.items.length === 1, "GET list: one key listed");
   ok(!("attestation" in listBody.items[0]), "GET list: public shape omits attestation");
 
-  const mismatch = await app.fetch(new Request("http://localhost/v1/orgs/org_b/keys", {
+  const mismatch = await app.fetch(new Request("http://localhost/v1/orgs/some-other-org/keys", {
     method: "POST", headers: { ...authed, "content-type": "application/json" },
     body: JSON.stringify({ alg: "ed25519", pubkey: ed25519Pubkey(7) }),
   }));
-  ok(mismatch.status === 403, "POST /orgs/org_b/keys with an org_a key -> 403", String(mismatch.status));
+  ok(mismatch.status === 403, "POST /orgs/{otherOrgId}/keys with this org's key -> 403", String(mismatch.status));
 
-  const revoke = await app.fetch(new Request(`http://localhost/v1/orgs/org_a/keys/${createdBody.key_id}/revoke`, {
+  const revoke = await app.fetch(new Request(`http://localhost/v1/orgs/${orgId}/keys/${createdBody.key_id}/revoke`, {
     method: "POST", headers: authed,
   }));
   ok(revoke.status === 200, "POST revoke -> 200", String(revoke.status));
   const revokeBody = await revoke.json();
   ok(typeof revokeBody.valid_to === "number", "POST revoke response has valid_to set");
 
-  const revokeAgain = await app.fetch(new Request(`http://localhost/v1/orgs/org_a/keys/${createdBody.key_id}/revoke`, {
+  const revokeAgain = await app.fetch(new Request(`http://localhost/v1/orgs/${orgId}/keys/${createdBody.key_id}/revoke`, {
     method: "POST", headers: authed,
   }));
   ok(revokeAgain.status === 409, "POST revoke twice -> 409", String(revokeAgain.status));
