@@ -185,9 +185,13 @@ async function main() {
     // different root, refused — this is exactly what happened when this
     // task first ran `--live` twice against a scratch log; see
     // TASKS/REPORTS.md). `THENAR_LOG_DB`/`BUNDLE_STORE_ROOT` therefore
-    // default to a fixed, checked-in-`.gitignore`d path under `.data/` that
-    // every `--live` run reuses and extends, exactly like the real log
-    // service would in production.
+    // default to a fixed path under `.data/` (same convention
+    // `services/api/src/app.ts`'s own `defaultDeps` uses for
+    // `BUNDLE_STORE_ROOT`) that every `--live` run reuses and extends,
+    // exactly like the real log service would in production. `.data/` is
+    // not yet in the root `.gitignore` — outside this task's file scope to
+    // add; flagged in TASKS/REPORTS.md so whoever owns `.gitignore` next
+    // can add it before `.data/log.db` shows up in `git status`.
     dbPath = process.env.THENAR_LOG_DB ?? join(REPO_ROOT, ".data/log.db");
     bundleRoot = process.env.BUNDLE_STORE_ROOT ?? join(REPO_ROOT, ".data/bundles");
     mkdirSync(dirname(dbPath), { recursive: true });
