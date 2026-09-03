@@ -1,4 +1,4 @@
-# TASKS — execution order for PLAN.md v2.1
+# TASKS — execution order for PLAN.md v2.2
 
 Each file is one task an implementation agent executes alone under
 `PLAN.md §25–§26`. This file is the single source for **order**. Legend:
@@ -46,7 +46,9 @@ Phase C — Checks
     ↓
   T-020 claim issuance               B
     ↓
-  T-021 badges + wording             B            ✓ C1: fixture run yields claims; injected duplicate flagged (fail or inconclusive per FD-1)
+  T-021 badges + wording             B
+    ↓
+  T-040 source axis (D-30)           B            ✓ C1: fixture run yields claims; injected duplicate flagged (fail or inconclusive per FD-1); every episode shows a declared source
 
 Phase E — Wedge product
   parallel:
@@ -57,8 +59,10 @@ Phase E — Wedge product
     T-030 adversarial suite          ─┤
     T-032 static analysis + review pack ┘
 
-Phase D — Capture (post-wedge; optional; do not start before E1)
+Phase D — Capture (post-wedge; GATED by D-34: do not start before E2 = three paid reports)
   T-037 devices/sessions → T-022 SDK → T-023 attestation   G FD-3
+  T-040 → T-038 lab arm recorder (browser arm as `sim` source, passkey-signed)
+  T-020 + T-040 → T-039 task_compliance.v1                 G FD-5
 
 Phase F — Hygiene (any time after A1)
   T-034 shelve foundry (DELETE exporter, DEPRECATE /build)   P
@@ -93,6 +97,7 @@ Phase F — Hygiene (any time after A1)
 | T-019 | `sensor_consistency.v1`, `sim_signature.v1` (indicative; FD-2) | C | STRONG + G | T-036 |
 | T-020 | Claim issuance, signing, logging, `/claims`, checks config | C | STRONG | T-003, T-004, T-024, T-036 |
 | T-021 | Badge engine and fixed wording | C | CHEAP | T-020, T-024 |
+| T-040 | Source axis: enum, corpus `sources[]`, declared/attested wording | C | STRONG | T-035, T-021, T-019 |
 | T-025 | Provenance Report (JSON + PDF) | E | STRONG | T-006, T-012, T-016, T-021 |
 | T-026 | `/verify` v2 | E | STRONG | T-005, T-009, T-021 |
 | T-027 | Licence: seal + purchase scripts, minimal buyer page | E | STRONG | T-006, T-015, T-016 |
@@ -103,7 +108,12 @@ Phase F — Hygiene (any time after A1)
 | T-037 | Devices and capture sessions | D | STRONG | T-024 |
 | T-022 | Recorder SDK (Python) | D | STRONG | T-036, T-037, T-008 |
 | T-023 | Attestation ingestion (FD-3) | D | STRONG + G | T-037 |
+| T-038 | Lab arm recorder: browser arm → signed `sim` manifests | D | STRONG | T-036, T-040, T-024 |
+| T-039 | `task_compliance.v1` (port of the live scorer; FD-5) | D | STRONG + G | T-020, T-040 |
 | T-034 | Shelve the foundry | F | CHEAP | — |
 | T-031 | Observability and failure injection | F | CHEAP | T-010, T-013 |
+
+## Review-B verdicts (2026-09-03)
+KEEP: all wedge-path tasks. MODIFY: T-026 (render source line), T-034 (`/lab` hosts builder + future arm). DEFER (D-34 gate): T-022, T-023, T-037, T-038, T-039. DELETE: T-028. ADD: T-038, T-039, T-040.
 
 Reports → `REPORTS.md`; conflicts and open frontier decisions → `CONFLICTS.md`.

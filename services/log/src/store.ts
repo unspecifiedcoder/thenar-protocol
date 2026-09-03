@@ -6,7 +6,7 @@ import type { Hex } from "viem";
 import * as tree from "./tree.ts";
 import { recordHash, consentKey as deriveConsentKey, revocationValue, type ConsentRecord } from "../../../packages/protocol/src/consent.ts";
 import { verify as verifySignature } from "../../../packages/protocol/src/sign.ts";
-import type { ILogStore, EpisodeMeta, ClaimRow, OrgRow, ApiKeyRow, SigningKeyRow, CorpusRow } from "./store-interface.ts";
+import type { ILogStore, EpisodeMeta, ClaimRow, OrgRow, ApiKeyRow, SigningKeyRow, CorpusRow, DatasetRow, JobRow } from "./store-interface.ts";
 
 /**
  * The log itself — one append-only tree, persisted.
@@ -339,6 +339,22 @@ export class LogStore implements ILogStore {
     return rows.map(rowToStoredLeaf);
   }
 
+  /** T-036 duplicate check: the episode row logged for `orgId` with this exact `manifestHash`, or null. */
+  episodeByManifestHash(orgId: string, manifestHash: Hex): EpisodeMeta | null {
+    const r = this.db.prepare("SELECT * FROM leaf WHERE org_id = ? AND manifest_hash = ?").get(orgId, manifestHash) as any;
+    if (!r) return null;
+    return {
+      ...rowToStoredLeaf(r),
+      manifest: r.manifest ?? null,
+      manifestHash: r.manifest_hash ?? null,
+      payloadHash: r.payload_hash ?? null,
+      datasetId: r.dataset_id ?? null,
+      orgId: r.org_id ?? null,
+      consentKey: r.consent_key ?? null,
+      submittedAt: r.submitted_at ?? null,
+    };
+  }
+
   // ------------------------------------------------------------------ claims
 
   /** Record a VerificationClaim (PLAN Sec9.3) leaf's row. Insert-only — `claim` rejects UPDATE/DELETE. */
@@ -423,6 +439,64 @@ export class LogStore implements ILogStore {
       keyId: r.key_id, orgId: r.org_id, alg: r.alg, pubkey: r.pubkey,
       validFrom: r.valid_from, validTo: r.valid_to, attestation: r.attestation, status: r.status,
     }));
+  }
+
+  // ------------------------------------------------------- datasets/jobs (T-036)
+
+  /** Insert-only (PLAN Sec8 Dataset: `files` append-only; this task never updates a dataset row after creation). */
+  createDataset(row: DatasetRow): void {
+    this.db.prepare(
+      `INSERT INTO dataset (dataset_id, org_id, source_uri, info_json_hash, files_json, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    ).run(row.datasetId, row.orgId, row.sourceUri, row.infoJsonHash, row.filesJson, row.status, row.createdAt);
+  }
+
+  datasetById(datasetId: string): DatasetRow | null {
+    const r = this.db.prepare("SELECT * FROM dataset WHERE dataset_id = ?").get(datasetId) as any;
+    if (!r) return null;
+    return {
+      datasetId: r.dataset_id, orgId: r.org_id, sourceUri: r.source_uri ?? null,
+      infoJsonHash: r.info_json_hash, filesJson: r.files_json, status: r.status, createdAt: r.created_at,
+    };
+  }
+
+  createJob(row: JobRow): void {
+    this.db.prepare(
+      `INSERT INTO job (job_id, kind, status, payload, error, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    ).run(row.jobId, row.kind, row.status, row.payload ?? null, row.error ?? null, row.createdAt, row.updatedAt);
+  }
+
+  jobById(jobId: string): JobRow | null {
+    const r = this.db.prepare("SELECT * FROM job WHERE job_id = ?").get(jobId) as any;
+    if (!r) return null;
+    return {
+      jobId: r.job_id, kind: r.kind, status: r.status, payload: r.payload ?? null,
+      error: r.error ?? null, createdAt: r.created_at, updatedAt: r.updated_at,
+    };
+  }
+
+  updateJob(jobId: string, patch: { status?: string; payload?: string | null; error?: string | null }): void {
+    const cur = this.jobById(jobId);
+    if (!cur) throw new Error(`job ${jobId} not found`);
+    const status = patch.status ?? cur.status;
+    const payload = patch.payload !== undefined ? patch.payload : cur.payload;
+    const error = patch.error !== undefined ? patch.error : cur.error;
+    this.db.prepare("UPDATE job SET status = ?, payload = ?, error = ?, updated_at = ? WHERE job_id = ?")
+      .run(status, payload, error, Date.now(), jobId);
+  }
+
+  /**
+   * `INSERT`-and-see: the `salt_hash` primary key rejects a repeat, which is
+   * exactly the "has this salt been used before" check (PLAN Sec10.5) —
+   * atomic by construction, no separate read-then-write race.
+   */
+  claimSalt(saltHash: Hex, orgId: string): boolean {
+    try {
+      this.db.prepare("INSERT INTO consent_salt (salt_hash, org_id, created_at) VALUES (?, ?, ?)").run(saltHash, orgId, Date.now());
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   close() { this.db.close(); }

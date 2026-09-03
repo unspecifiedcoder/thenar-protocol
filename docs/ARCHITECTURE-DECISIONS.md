@@ -132,3 +132,72 @@ identifiers invite mismatch. Invariant: I-8.
 
 **D-29 W1 reads chain state directly with a short cache; no indexer.** Why:
 tens of rows. Revisit if: query volume or multi-chain receipts justify it.
+
+---
+
+## Added by review B (2026-09-03) — the live product and the protocol
+
+**D-30 Source is an axis orthogonal to evidence levels, and is always
+"declared" unless attested.**
+Decision: `CaptureManifest.source ∈ { sim, teleop_sim, teleop_real,
+autonomous_real, mixed }`. Every surface renders `source` with the word
+"declared" unless the *attested-physical* condition holds: L2 attestation of
+the robot controller's key AND `sim_signature.v1 = pass` (and, when video
+exists, `sensor_consistency.v1 = pass`). `sim`/`teleop_sim` can never render
+as physical. CorpusManifest carries `sources[]`; a corpus mixing declared
+physical and sim episodes is `mixed`.
+Why: evidence levels answer "are these bytes what the signer says?"; they
+never answer "did a robot do this?". Conflating them is the single most
+damaging over-claim available. Alternatives: fold source into levels
+(rejected — a sim episode can legitimately be L1+L3); trust the declared
+value (rejected — it is the fraud vector). Invariant: I-16. Reconsider if:
+never for the axis; the attested condition may gain checks by ADR.
+
+**D-31 The browser arm survives as `/lab/arm`, a reference capture source of
+kind `sim`, capped at L1 + L3, signed by a WebAuthn passkey, paying nobody.**
+Why: it is the only capture loop THENAR controls end to end (demo of
+capture→settlement) and a deterministic fixture generator for the verifier.
+Alternatives: delete (loses the demo and fixtures); keep as a bounty
+marketplace (zero usage after a full loop shipped; physics-free trajectories
+train nothing); add MuJoCo physics (a programme with no buyer). Invariant:
+lab episodes are `source: "sim"`, `holder: "organisation"`, never
+protocol-paid. Reconsider if: a customer asks for simulation-provenance
+tooling.
+
+**D-32 The live scorer (placement/smoothness/time) becomes a check, not a
+payment rule.**
+Decision: `task_compliance.v1` (check id 0x0007), FD-5 gated, deferred.
+Why: task compliance is the second thing buyers filter on; as a payment rule
+it invites gaming, as a signed claim with recorded thresholds it is evidence.
+Alternatives: keep as payout scaling (rejected — no protocol payouts).
+Invariant: I-15 applies. Reconsider if: E2 buyers ask for success labels.
+
+**D-33 The live site's marketplace mechanics are retired, not ported.**
+Retired: escrow bounties, referrals, prize pools, work-weighted treasury vote,
+soulbound certificates, contribution counter, confidential payouts,
+Warp-signed receipts, the local L1, time-boxed "access not rights". Kept as
+ideas already in v2: corpus manifest (as a logged leaf), licence receipt (as
+`LicenceRegistry`), passkey signing (as P-256 keys, D-26). The Axon contract
+addresses are archived on `/company` as history, like Monad.
+Why: none of the retired pieces serves a relying party; each is a bounty
+feature. Alternatives: keep both products (two half-companies). Invariant:
+D-16, D-22 stand. Reconsider if: a customer asks to *pay contributors through*
+the registry — then a supplier-side payout list, not a marketplace.
+
+**D-34 Phase D (SDK, attestation, devices, lab arm recorder) starts only after
+E2 yields three paid Provenance Reports.**
+Why: every Phase D task is supply-side infrastructure; the thesis is unproven
+until a buyer pays. Alternatives: build the SDK in parallel (rejected —
+capital and attention). Invariant: `TASKS/README.md` gate. Reconsider if: a
+supplier offers to pay for the SDK before E2 completes.
+
+**D-35 "Trusted machine experience" is the category name; "data foundry"
+and "CT for machine experience" are retired as taglines.**
+Why: the first sells a problem we do not solve; the second names a mechanism,
+not a value. Product tagline stays "Provenance and rights for physical-AI
+data." Reconsider if: customer language differs after E2.
+
+**D-36 Deploying this repository's site to thenar.io replaces the Axon site
+and is a founder decision taken after T-033 runs, not before.**
+Why: outward-facing; the live site is the only public artefact today.
+Invariant: no agent repoints DNS or hosting.

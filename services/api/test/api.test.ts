@@ -124,13 +124,16 @@ async function json(res: Response) {
 // Idempotency
 // =========================================================================
 {
-  const app = createApp(makeDeps());
+  // T-036: POST /v1/datasets is a real handler now — a file hash that was
+  // never stored (as here) is refused 422, still exercised through the
+  // idempotency wrapper the same way the old stub was.
+  const app = createApp(makeDeps({ logStore: new LogStore(":memory:") }));
   const datasetBody = JSON.stringify({ info_json_hash: hex(0xaa), files: [{ path: "a.parquet", bytes: 10, hash: hex(0xbb) }] });
   const headers = { "content-type": "application/json", Authorization: `Bearer ${SUPPLIER_KEY}`, "Idempotency-Key": "idem-1" };
 
   const first = await req(app, "/v1/datasets", { method: "POST", body: datasetBody, headers });
   const firstBody = await json(first);
-  ok(first.status === 501, "first idempotent request reaches the stub", String(first.status));
+  ok(first.status === 422, "first idempotent request reaches the real handler", String(first.status));
 
   const second = await req(app, "/v1/datasets", { method: "POST", body: datasetBody, headers });
   const secondBody = await json(second);
@@ -367,18 +370,21 @@ function validManifest() {
   const unsortedResult = CaptureManifest.safeParse(unsortedFiles);
   ok(!unsortedResult.success, "CaptureManifest: unsorted files[] is rejected");
 
-  // through the real route: auth + validation both fire, in order
-  const app = createApp(makeDeps());
+  // through the real route: auth + validation both fire, in order (T-036:
+  // the handler is real now — `services/api/test/ingest.test.ts` exercises
+  // the full signed/committed path; here only the ordering is checked).
+  const app = createApp(makeDeps({ logStore: new LogStore(":memory:") }));
   const res = await req(app, "/v1/episodes", {
     method: "POST", body: JSON.stringify({ manifest: withChainId }),
     headers: { "content-type": "application/json", Authorization: `Bearer ${SUPPLIER_KEY}` },
   });
-  ok(res.status === 400, "POST /v1/episodes rejects a manifest with chain_id before reaching 501", String(res.status));
+  ok(res.status === 400, "POST /v1/episodes rejects a manifest with chain_id before reaching the handler", String(res.status));
   const validRes = await req(app, "/v1/episodes", {
     method: "POST", body: JSON.stringify({ manifest: validManifest() }),
     headers: { "content-type": "application/json", Authorization: `Bearer ${SUPPLIER_KEY}` },
   });
-  ok(validRes.status === 501, "POST /v1/episodes accepts a valid manifest and reaches the stub", String(validRes.status));
+  // schema-valid but unsigned -> reaches the signature check and is refused there, not 501
+  ok(validRes.status === 401, "POST /v1/episodes with no signature -> 401", String(validRes.status));
 }
 
 // --- CorpusManifest v1 (§9.2) ------------------------------------------------
@@ -447,6 +453,15 @@ function validManifest() {
 }
 
 // =========================================================================
+// GET /v1/jobs/{jobId} (T-036: real now) — an unknown job -> 404, not 501.
+// =========================================================================
+{
+  const app = createApp(makeDeps({ logStore: new LogStore(":memory:") }));
+  const res = await req(app, "/v1/jobs/job_1", { headers: { Authorization: `Bearer ${SUPPLIER_KEY}` } });
+  ok(res.status === 404, "GET /v1/jobs/{unknown} -> 404", String(res.status));
+}
+
+// =========================================================================
 // Every §12 route exists and is a real 501 (except /healthz), auth-gated
 // as the table says. `/corpora/{id}` and `/anchors` are T-016's — they are
 // wired to a real store/reader now, so they are asserted separately below.
@@ -455,7 +470,6 @@ function validManifest() {
   const app = createApp(makeDeps());
   const authed = { Authorization: `Bearer ${SUPPLIER_KEY}` };
   const routes: [string, string, HeadersInit?][] = [
-    ["GET", "/v1/jobs/job_1", authed],
     ["GET", "/v1/episodes/" + hex(0x01)],
     ["GET", "/v1/proofs/inclusion?leaf=" + hex(0x01) + "&root=" + hex(0x02) + "&size=1"],
     ["GET", "/v1/proofs/consistency?from_size=1&to_size=2"],

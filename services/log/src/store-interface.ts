@@ -8,8 +8,25 @@ import type { StoredLeaf } from "./store.ts";
  * `node:sqlite` — and so a future non-SQLite implementation (Postgres,
  * D-24, deferred) has a fixed target.
  */
+/**
+ * Episode metadata a caller may attach at `append` time (PLAN Sec8 Episode
+ * row) on top of the base `StoredLeaf` fields — kept as its own type rather
+ * than widening `StoredLeaf` itself, since `manifest`/`manifestHash`/
+ * `payloadHash`/`datasetId`/`orgId`/`consentKey`/`submittedAt` are episode
+ * (0x02 leaf) concepts, not something every leaf kind carries.
+ */
+export type LeafMeta = Partial<Omit<StoredLeaf, "index" | "leaf" | "createdAt">> & {
+  manifest?: string;
+  manifestHash?: Hex;
+  payloadHash?: Hex;
+  datasetId?: string;
+  orgId?: string;
+  consentKey?: Hex;
+  submittedAt?: number;
+};
+
 export interface ILogStore {
-  append(leaf: Hex, meta?: Partial<Omit<StoredLeaf, "index" | "leaf" | "createdAt">>): number;
+  append(leaf: Hex, meta?: LeafMeta): number;
   size(): number;
   leaves(upTo?: number): Hex[];
   leafAt(index: number): StoredLeaf | null;
@@ -46,6 +63,9 @@ export interface ILogStore {
 
   episodeMeta(leafHash: Hex): EpisodeMeta | null;
 
+  /** The episode (0x02 leaf) row logged for `orgId` with this exact `manifestHash`, or null (T-036 duplicate check). */
+  episodeByManifestHash(orgId: string, manifestHash: Hex): EpisodeMeta | null;
+
   recordClaim(claim: ClaimRow): void;
   claimsFor(leafHash: Hex): ClaimRow[];
 
@@ -65,8 +85,47 @@ export interface ILogStore {
   revokeSigningKey(keyId: Hex, validTo: number): void;
   signingKeysForOrg(orgId: string): SigningKeyRow[];
 
+  // ------------------------------------------------------- datasets/jobs (T-036)
+
+  createDataset(row: DatasetRow): void;
+  datasetById(datasetId: string): DatasetRow | null;
+
+  createJob(row: JobRow): void;
+  jobById(jobId: string): JobRow | null;
+  updateJob(jobId: string, patch: { status?: string; payload?: string | null; error?: string | null }): void;
+
+  /**
+   * Atomically claims `saltHash = keccak(salt)` for `orgId`: returns `true`
+   * and records the claim the first time a given hash is presented, `false`
+   * on a repeat (PLAN Sec10.5, Sec27 trap #9 — the salt itself never passes
+   * through here, only its hash).
+   */
+  claimSalt(saltHash: Hex, orgId: string): boolean;
+
   close(): void;
 }
+
+/** PLAN Sec8 Dataset row (`dataset` table). `filesJson` is the dataset's `files[]` (FileEntry[]) as JSON text. */
+export type DatasetRow = {
+  datasetId: string;
+  orgId: string;
+  sourceUri: string | null;
+  infoJsonHash: Hex;
+  filesJson: string;
+  status: "uploading" | "committed";
+  createdAt: number;
+};
+
+/** `job` table row (T-036 ingest job). `payload` is a JSON blob the job kind defines the shape of. */
+export type JobRow = {
+  jobId: string;
+  kind: string;
+  status: string;
+  payload: string | null;
+  error: string | null;
+  createdAt: number;
+  updatedAt: number;
+};
 
 export type EpisodeMeta = StoredLeaf & {
   manifest: string | null;

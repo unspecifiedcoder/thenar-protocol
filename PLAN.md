@@ -1,4 +1,9 @@
-# PLAN.md — THENAR / GRASP v2.1
+# PLAN.md — THENAR / GRASP v2.2
+
+**v2.2 (2026-09-03, review B):** adds the *source axis* (D-30), the role of
+the live thenar.io browser arm (D-31…D-33), the Phase D evidence gate (D-34),
+roadmaps (§28) and explicit non-goals (§29). See
+`docs/REVIEW-2026-09-03-B.md`.
 
 **Status:** normative. This file is the source of truth for implementation.
 An implementation agent reads the sections its task points at and executes
@@ -28,6 +33,26 @@ that is still true — without asking anyone to trust THENAR.
 
 ## 1. Product thesis and claim levels
 
+### 1.0 What THENAR is, what we build now, what the existing product becomes
+
+- **What THENAR is:** *trusted machine experience* — the neutral provenance,
+  verification and rights layer for physical-AI data, with settlement as a
+  primitive (D-35).
+- **What we build now (Phases A–C–E):** the Provenance Report on existing
+  real datasets, the log/verifier/registry behind it, and the experiments
+  E1–E4 (§28) that test whether buyers pay for L3.
+- **What the existing thenar.io product becomes (D-31…D-33, D-36):** the
+  browser arm survives as `/lab/arm`, a *reference capture source of kind
+  `sim`* that emits signed manifests through the same path as the SDK, capped
+  at L1 + L3, always shown as "declared: simulation", paying nobody. Its
+  marketplace mechanics (escrow bounties, referrals, prize pools, treasury
+  vote, soulbound certificates, contribution counter, confidential payouts,
+  Warp receipts, the local L1) are retired; its contract addresses are
+  archived on `/company`. The site switch-over is a founder decision after
+  T-033 (D-36).
+- **What the long-term platform becomes (§23):** third-party verifiers,
+  training-run receipts, pooled fleet data under rights — with the same log.
+
 - **Customer:** data suppliers who must sell to enterprise counsel; buyers and
   their counsel de-risking a purchase.
 - **Wedge product (W1):** the *Provenance Report* — ingest an existing
@@ -53,6 +78,34 @@ that is still true — without asking anyone to trust THENAR.
 Forbidden words on any surface for any level: *authentic, genuine, real,
 proven real, verified* (except inside "Checked by … see details" wording),
 *independent* (until third-party verifiers exist). Test: T-021 grep guard.
+
+### 1.1 The source axis (D-30) — orthogonal to levels
+
+Levels answer *"are these bytes what the signer says?"*. They never answer
+*"did a physical robot do this?"*. That is `source`, a **claim by the
+signer**, rendered with the word "declared" unless the attested-physical
+condition holds:
+
+| `source` | Rendered as | Can become "attested"? |
+| --- | --- | --- |
+| `sim` | `Source — declared by the signer: simulation. Not attested.` | never |
+| `teleop_sim` | `… human-driven simulation. Not attested.` | never |
+| `teleop_real` | `… human-driven physical robot. Not attested.` | yes, see rule |
+| `autonomous_real` | `… autonomous physical robot. Not attested.` | yes, see rule |
+| `mixed` | `… mixed. Not attested.` | never as a whole |
+
+```
+attestedPhysical = source ∈ {teleop_real, autonomous_real}
+                && attestation.level == 2 && attestation.subject == "robot_controller"
+                && latest(sim_signature.v1) == "pass"
+                && (no video channel || latest(sensor_consistency.v1) == "pass")
+→ `Source — attested physical capture: controller key attested by {manufacturer} ({model}); simulation-signature check passed.`
+```
+A phone's secure element attests the *signer's device*
+(`attestation.subject = "signer_device"`), never the robot; it can never
+satisfy the rule. Corpus wording: `Sources — {list}; {n} of {m} episodes
+declared physical, {k} attested.` Guard: the word "physical" may not appear on
+any surface without "declared" or "attested" in the same line (T-040).
 
 ## 2. Current architecture (as of `11facc8`)
 
@@ -127,6 +180,7 @@ proven real, verified* (except inside "Checked by … see details" wording),
 | I-13 | A verifier signs what it claims; unsigned or unregistered claims are refused. | Attribution of L3. | T-020 tests |
 | I-14 | Key validity is evaluated at first-anchor time (D-20). | Back-dating resistance. | T-021, T-020 tests |
 | I-15 | Thresholds and versions of every check are recorded in the claim `detail`; a claim without them is invalid. | A heuristic must never become an unrecorded guarantee. | T-020 schema |
+| I-16 | `source` is rendered as "declared" unless the §1.1 attested-physical rule holds; `sim`/`teleop_sim` can never render as physical; no protocol funds ever pay for a `sim` episode. | The most damaging over-claim available (D-30, D-31). | T-040 truth table + grep guard |
 
 ## 6. Trust model
 
@@ -216,7 +270,7 @@ unsorted or duplicate entries** (D-28). Field order below is documentation.
   "kind": "capture_manifest",
   "org_id": "01J…",                         // ULID
   "dataset_id": "01J…" | null,
-  "source": "real" | "sim" | "mixed",       // a claim
+  "source": "sim" | "teleop_sim" | "teleop_real" | "autonomous_real" | "mixed",   // a CLAIM (D-30); "real" is rejected since v2.2
   "layout": "chunked" | "per_episode",      // chunked: files contain several episodes; range required
   "embodiment": "so_arm100",                // registry id or free string
   "rate_hz": 30,
@@ -260,6 +314,7 @@ this is what rejects `chain_id`).
   "episode_count": 2,
   "terms_hash": "0x…",
   "task_id": "0x…" | null,
+  "sources": ["sim", "teleop_real"],        // SORTED, unique; derived by the server from member episodes (D-30)
   "filters": { "min_badges": ["L0"], "exclude_failed_checks": true },
   "sealed_at": 1756900000 }
 ```
@@ -401,7 +456,8 @@ Message bytes: `utf8(domain) ‖ 0x00 ‖ objectHash` with `domain ∈
 ### 10.9 Check ids and parameter classes
 Ids: `0x0001 dedup.v1`, `0x0002 timing.v1`, `0x0003 kinematics.v1`,
 `0x0004 sensor_consistency.v1`, `0x0005 sim_signature.v1`,
-`0x0006 attestation.v1`. Append-only.
+`0x0006 attestation.v1`, `0x0007 task_compliance.v1` (reserved; T-039,
+FD-5). Append-only.
 
 | Class | Examples | Who sets | Where recorded |
 | --- | --- | --- | --- |
@@ -558,9 +614,9 @@ reads `anchorCount/anchorAt/indexOfRoot`, `corpusAt`, `receiptAt`,
 | --- | --- | --- |
 | **A — Protocol v2** | canonical JSON, payloadHash, leaves 0x03/0x04, consent + signed revocation, manifest schema + mapping, contracts, anchorer, vectors, deploy | T-001, T-002, T-003, T-004, T-035, T-005, T-006, T-007, T-008, T-009 |
 | **B — Log service** | API skeleton, store hardening, uploads/bundle store, org keys, dataset reader, commit, proofs, daemon, chain reads | T-010, T-014, T-015, T-024, T-011, T-036, T-012, T-013, T-016 |
-| **C — Checks** | timing, kinematics, dedup, consistency/sim, claim issuance, badges | T-018, T-017, T-019, T-020, T-021 |
+| **C — Checks** | timing, kinematics, dedup, consistency/sim, claim issuance, badges, source axis | T-018, T-017, T-019, T-020, T-021, T-040 |
 | **E — Wedge product** | report, verify v2, licence script + page, copy, adversarial suite, review pack, golden demo | T-025, T-026, T-027, T-029, T-030, T-032, T-033 |
-| **D — Capture (post-wedge, optional)** | SDK, attestation, devices/sessions | T-022, T-023, T-037 |
+| **D — Capture (post-wedge; gated by D-34: three paid reports)** | SDK, attestation, devices/sessions, lab arm recorder, task-compliance check | T-022, T-023, T-037, T-038, T-039 |
 | **F — Hygiene (any time)** | shelve foundry, observability | T-034, T-031 |
 
 ## 17. Dependency graph
@@ -685,6 +741,8 @@ these holds. It does not "make a reasonable assumption" for these.
 8. A trust assumption (§6) or threat control (§7) would change.
 9. The agent believes the architecture is wrong or the task cannot meet its acceptance criteria as written.
 10. A test that guards an invariant fails and the only fix is to change the test.
+11. The task would render, store or pay for a `source` in a way §1.1 / I-16 does not allow, or would change the attested-physical rule or attestation semantics.
+12. The task would add a marketplace mechanic (bounty, escrow for operators, referral, prize pool, treasury vote, soulbound badge) — these are retired by D-33 and need an ADR to return.
 
 ## 27. Cheap-model traps (each has a guard)
 
@@ -712,3 +770,37 @@ these holds. It does not "make a reasonable assumption" for these.
 | 20 | Deleting/loosening a failing vector test | §26.10 |
 | 21 | Presenting fixture data as real in a demo or page | I-1; fixture files carry `source: "sim"` or a `fixture: true` marker in `dataset.source_uri` |
 | 22 | Running `git stash`/`checkout --`/`reset` in the shared checkout | §25.4; this happened once on 2026-09-03 and cost an hour |
+| 23 | Rendering a `sim`/`teleop_sim` episode, or any declared source, as "physical"/"real" without "declared" or "attested" | I-16; T-040 grep guard |
+| 24 | Porting a live-site mechanic (escrow bounty, referral, prize pool, treasury vote, soulbound badge) "because it exists" | D-33; §26.12 |
+
+## 28. Roadmaps and experiments
+
+### 28.1 Experiments that decide the company (run in the 90 days)
+| Id | Experiment | Measures | Pass |
+| --- | --- | --- | --- |
+| E1 | `dedup.v1` over five public HF datasets; publish duplicate rate per dataset | whether dedup finds money | any dataset > 2 % near-duplicates |
+| E2 | Offer three labs a Provenance Report on a corpus they are evaluating, priced | willingness to pay | ≥ 3 paid reports in 90 days |
+| E3 | Offer two suppliers a "pre-checked" badge | supplier pull | a buyer asks for it unprompted within 60 days |
+| E4 | In E2 deals, quote with and without L3 | the L3 premium (THESIS §4.5 flywheel variable) | any positive delta, recorded |
+
+### 28.2 90 days
+Weeks 1–3: finish Phases B/C/E (T-012, T-020, T-021, T-040, T-025, T-026,
+T-027, T-030, T-033); deploy Fuji + Sepolia (needs a funded key). Weeks 3–6:
+E1 published; three unpaid reports on public datasets as case studies.
+Weeks 6–12: E2/E3/E4; FD-1 decided from T-017 ROC; site switch-over
+decision (D-36). No Phase D work before E2 passes (D-34).
+
+### 28.3 12 months
+Months 4–6: Recorder SDK (T-022) with two suppliers; lab arm as reference
+`sim` source (T-038); C-Chain mainnet + Ethereum mirror after FD-4 and an
+external review. Months 6–12: attestation for one Android device and one
+TPM rig (T-023); `task_compliance.v1` (T-039); ten suppliers logging; ISO
+26264 liaison; first unprompted counsel request. Decision point at month 12:
+if E4's delta is zero across three deals, THENAR is a compliance SaaS (still
+worth building) and the verification roadmap stops.
+
+## 29. Explicit non-goals (v2.2)
+No marketplace for operators; no protocol payouts to contributors; no
+token, staking, slashing; no own L1; no MuJoCo/physics for the browser arm;
+no Postgres/indexer before volume; no Quest support claim; no "real" or
+"authentic" anywhere; no deployment or DNS change by an agent.

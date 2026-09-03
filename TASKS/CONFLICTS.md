@@ -32,3 +32,5 @@ Format: `C-<n>: <task> — <what> — <options> — <status>`
 ## Conflicts filed by agents
 
 (none yet)
+- **FD-5 — T-039 task_compliance.v1 weights/thresholds** (port of the live
+  scorer: placement 55 % / smoothness 25 % / time 20 %). Status: OPEN, Phase D.

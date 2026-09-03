@@ -13,3 +13,5 @@ export * from "./consent";
 export * from "./sign";
 export * from "./schemas";
 export * from "./mapping";
+export * from "./wording";
+export * from "./badges";

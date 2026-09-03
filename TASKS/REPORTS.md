@@ -925,3 +925,86 @@ compared to itself.
 Open questions / conflicts filed: none (FD-1 itself remains open per its
 pre-registered status in `TASKS/CONFLICTS.md`, unchanged by this report —
 this task supplies its gating input, not its resolution).
+
+## T-016 — Chain reads with cache (no indexer; D-29) — 2026-09-03 — CHEAP
+
+Created: `services/api/src/chain.ts` (`ViemChainReader`, `loadChainReaderTargets`,
+15 s `ReadCache`), `services/api/test/chain.test.ts` (Anvil + `forge script`
+end-to-end).
+Changed: `services/api/src/routes/anchors.ts` (`GET /v1/anchors` — real,
+paginated, store + live per-chain confirmation), `services/api/src/routes/corpora.ts`
+(`GET /v1/corpora/{id}` — real, store row + `corpusAt` + computed
+`contains_revoked`), `services/api/src/app.ts` (new optional `Deps.logStore`,
+`Deps.graspReader`; `defaultDeps` wires a real `ViemChainReader` from
+`.env.contracts`), `services/log/src/store.ts` +
+`services/log/src/store-interface.ts` (new `corpusById`, `corpusEpisodeLeaves`,
+test-only `_insertCorpusUnchecked`/`_insertCorpusEpisodeUnchecked`; `at` added
+to `anchorChains`/`anchorsForChain` rows), `services/api/test/api.test.ts`
+(removed `/v1/corpora/corpus_1` and `/v1/anchors` from the "real 501" list;
+added a T-016 block for both routes), root `package.json` (`test:api` now
+runs `chain.test.ts`).
+
+Tests: `tsx services/api/test/chain.test.ts` → pass (28 assertions, real
+Anvil + `forge script script/Deploy.s.sol:Deploy`: `anchorCount`, one
+on-chain `anchor()`, `anchorAt`/`indexOfRoot`/`anchorAtOnChain`, `termsAt`/
+`receiptsOf` through the primary's `LicenceRegistry`, cache `stale_at`
+behaviour under a fake clock — a cache hit inside the 15 s window returns
+the pre-anchor count even though a second anchor already landed on chain,
+a read past the TTL refetches — and `unreachable` against a dead port for
+both `GraspLog` and `LicenceRegistry` reads). `tsx services/api/test/api.test.ts`
+→ pass, including the new `GET /v1/corpora/{id}` (404 unknown, 200 +
+`contains_revoked` computed from a revoked episode's consent key, `on_chain:
+null` with no `on_chain_id`) and `GET /v1/anchors` (store anchor listed,
+`chains[]` with `live.unreachable: true` and `prev_root: null` when no
+`graspReader` is configured — never fabricated). `pnpm test:api` (registered
+line) → pass for every file in isolation; a combined run under this
+session's heavy concurrent CPU load did not finish inside its own 180 s
+probe timeout (exit 143, `timeout`'s own kill) — not a test failure, and
+`services/api/test/api.test.ts` alone passed both before and after other
+agents' concurrent T-036 edits landed in the shared checkout.
+
+Deviations from PLAN.md:
+1. `services/api/src/chainReader.ts`'s narrow `ChainReader` interface
+   (`receiptAt`/`corpusEpisodes`, T-015's injection point for `GET
+   /licences/{id}/download`) is left untouched, still defaulting to
+   `NotImplementedChainReader` — the task's binding rules list a much
+   larger read surface (`anchorCount`, `anchorAt`, `indexOfRoot`, `head`,
+   `corpusAt`, `receiptAt`, `receiptsOf`, `termsAt`) that interface was
+   never shaped for, and the same binding rules say to replace only the
+   `/anchors` and `/corpora/{id}` stubs, "leave others" — so `chain.ts`
+   is a separate module wired through two new optional `Deps` fields
+   (`logStore`, `graspReader`) instead of being shoehorned behind that
+   interface. `/licences/{id}/download` keeps refusing until whichever
+   task is meant to wire it up.
+2. `GET /v1/corpora/{id}`'s "store row" reads a `corpus` table that no
+   route writes yet (`POST /corpora`/`/corpora/{id}/log` are still 501,
+   out of this task's scope) — `corpusById`/`corpusEpisodeLeaves` plus a
+   test-only `_insertCorpusUnchecked`/`_insertCorpusEpisodeUnchecked`
+   escape hatch (same pattern as T-004's `_revokeUnchecked`) were added
+   so the route and its tests have something to read; production rows
+   only start appearing once the seal/log pipeline lands.
+3. `LicenceRegistry.termsAt`/`corpusAt`/`receiptAt` revert (`UnknownTerms`/
+   `UnknownCorpus`) rather than returning an `exists: false`/zero struct
+   for an unknown id — `readRegistry` folds any failed call, revert or
+   RPC failure alike, into `{ unreachable: true, chain_id }`. This is
+   coarser than distinguishing "definitely doesn't exist" from "couldn't
+   ask," but never invents a struct the chain didn't return (I-11), and
+   splitting the two was outside what this task specified.
+4. Anchor response shape (`GET /v1/anchors`) is not in PLAN §12's table
+   verbatim (§8 gives the `Anchor` fields, §12 doesn't give the exact
+   JSON) — used `{ root, size, prev_root, revocation_root, chains: [{
+   chain_id, index, at, block_number, tx_hash, live }] }`, `live` being
+   `{ confirmed, stale_at }` or `{ unreachable: true }` per chain; `GET
+   /v1/corpora/{id}` similarly serialises `CorpusRow` + `on_chain` with
+   snake_case keys matching the rest of §12's responses.
+5. `anchorChains`/`anchorsForChain` (`services/log`) gained an `at` field
+   (the anchor's already-stored on-chain timestamp) — additive, existing
+   callers untouched, needed for `GET /v1/anchors`'s `chains[].at`.
+
+Invariants touched: I-11 (every unreachable/not-yet-existing chain or
+corpus value is a named `unreachable`/404, never a fabricated row — this
+is the invariant driving nearly every design choice above). D-9 (primary-
+first GraspLog reads with mirror fallback; LicenceRegistry primary-only,
+no fallback attempted). D-29 (15 s cache, `stale_at` on every live value).
+
+Open questions / conflicts filed: none.

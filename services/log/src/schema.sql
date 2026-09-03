@@ -70,6 +70,16 @@ CREATE TABLE IF NOT EXISTS upload (
   created_at INTEGER NOT NULL
 );
 
+-- Salt-reuse guard (T-036, PLAN Sec10.5): the 32-byte salt itself is never
+-- stored (only held by the org that draws it); this table records just
+-- keccak(salt) so a repeated salt can be refused without letting anyone
+-- recover a salt (and thus a consent commitment) from the database.
+CREATE TABLE IF NOT EXISTS consent_salt (
+  salt_hash  TEXT PRIMARY KEY,
+  org_id     TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
 -- ------------------------------------------------------------------- leaves
 
 -- `leaf` is the log itself — one append-only tree. `idx` is the log index,

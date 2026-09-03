@@ -21,6 +21,8 @@ import { Registry } from "./registry.ts";
 import { LogStore } from "../../log/src/store.ts";
 import type { ILogStore } from "../../log/src/store-interface.ts";
 import { ViemChainReader, loadChainReaderTargets } from "./chain.ts";
+import { ensureOperatorKey, loadOperatorSigner } from "./ingest/operator.ts";
+import type { OperatorSigner } from "./ingest/receipt.ts";
 import {
   metricsRegistry, apiErrorsTotalCounter, claimsTotalCounter, revocationsTotalCounter,
   anchorLagGauge, logSizeGauge, ingestQueueGauge, verificationQueueGauge,
@@ -68,6 +70,14 @@ export type Deps = {
    * unreachable rather than guessing (I-11).
    */
   graspReader?: ViemChainReader;
+  /**
+   * T-036: the log service's own Ed25519 key, used to sign every
+   * AppendReceipt (PLAN §9.5/§10.6) — distinct from any org's or
+   * verifier's key. Optional for the same reason as `logStore`/
+   * `graspReader`: a route that needs it and finds it undefined refuses
+   * rather than signing with something invented (I-11).
+   */
+  operator?: OperatorSigner;
 };
 
 export type AppEnv = { Variables: { deps: Deps; parsedBody?: { value: unknown } } };
@@ -80,6 +90,14 @@ export function defaultDeps(env: NodeJS.ProcessEnv = process.env): Deps {
   // reading `API_KEYS_JSON`, same as before this task (kept for tests).
   const dbPath = env.THENAR_LOG_DB;
   const logStore = new LogStore(dbPath ?? ":memory:");
+  const registry = new Registry(logStore);
+  // T-036: OPERATOR_KEY (a 32-byte ed25519 seed, hex) is the log service's
+  // own signing key. `ensureOperatorKey` registers its derived pubkey as a
+  // signing key of a fixed `org_operator` organisation on boot, if it is
+  // not registered yet, so `resolveKey`/`sign.verify` have a key to check
+  // an AppendReceipt's signature against.
+  const operator = loadOperatorSigner(env.OPERATOR_KEY);
+  if (operator) ensureOperatorKey(logStore, registry, operator);
   return {
     keyStore: dbPath
       ? new KeyStore([], logStore)
@@ -92,8 +110,9 @@ export function defaultDeps(env: NodeJS.ProcessEnv = process.env): Deps {
     // Untouched by T-016 — `/licences/{id}/download` (PLAN §12) is not one of the
     // two routes this task wires up; refuse rather than fabricate (I-11) until it is.
     chainReader: new NotImplementedChainReader(),
-    registry: new Registry(logStore),
+    registry,
     logStore,
+    operator: operator ?? undefined,
     // `.env.contracts` (T-009) may not exist yet on a clean checkout — `loadChainReaderTargets`
     // then returns no chains and every read reports `unreachable`, which is correct (I-11),
     // not a reason to leave `graspReader` unset and 500 instead.

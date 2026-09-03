@@ -128,12 +128,130 @@ acceleration spikes > 50 rad/s^2 flagged, for embodiments with recorded
 `services/verify/src/checks/timing.ts` and `.../kinematics.ts` for the
 exact rules and `detail` fields.
 
-## `sensor_consistency.v1` (id `0x0004`) and `sim_signature.v1` (id `0x0005`)
+## `sensor_consistency.v1` (id `0x0004`) and `sim_signature.v1` (id `0x0005`, T-019)
 
-**Status: FD-2 open.** Not yet implemented as of this document (T-019).
-`config/checks.json` lists both as `enabled: true, blocking: false,
-emit_fail: false` as placeholders consistent with FD-2 ("`sim_signature.v1`
-is indicative only in v2 (never blocks L3)").
+**Status: FD-2 open** (`TASKS/CONFLICTS.md`). `config/checks.json` pins both
+`enabled: true, blocking: false, emit_fail: false`. Both checks
+unconditionally downgrade a would-be `fail` to `inconclusive` with
+`detail.downgraded_from: "fail"` — a code-level guard (not just the config
+flag), mirroring `dedup.v1`'s FD-1 downgrade. `sim_signature.v1` stays
+indicative only — never blocking L3 — in v2 regardless of FD-2's outcome
+(`TASKS/CONFLICTS.md`).
+
+`ffmpeg` is not installed in this environment (this task's supervisor
+adjustment): both checks are pure functions taking a pre-computed
+`motion: number[] | null` (`src/checks/sensor_consistency.ts`,
+`src/checks/sim_signature.ts`), so they and their tests never touch
+`ffmpeg` at all. The motion itself comes from an injectable
+`MotionEnergyProvider` (`src/video/motion.ts`): `FfmpegMotionEnergy` is the
+real implementation, exercised only by production wiring
+(`src/run.ts:computeMotion`), never by `pnpm test:verify` here; tests use an
+in-memory fake. When `ffmpeg`/`ffprobe` can't be run (missing binary, spawn
+failure, non-zero exit, unparseable output), `FfmpegMotionEnergy` throws a
+typed `FfmpegUnavailable`, which `src/run.ts` catches and turns into a loud
+skip: `sensor_consistency.v1` comes back `inconclusive` with
+`detail.reason = "ffmpeg unavailable"` (its existing "no video" path,
+motion is `null`), and `sim_signature.v1` keeps whatever its other three
+features produce, annotated with `detail.ffmpeg_error = "ffmpeg
+unavailable"`.
+
+### `sensor_consistency.v1`
+
+**Objective:** does video motion correlate with proprioceptive motion? A
+real episode's joint speed and its camera's frame-difference motion energy
+should move together; a mismatch is evidence of a mislabeled or synthetic
+recording.
+
+**Algorithm** (TASK-019.md "Rules", fixed): `s(t)` = joint-speed norm —
+finite-difference velocity of `observation.state` at the episode's own
+timestamps, L2-normed across joints, linearly resampled onto the 5 Hz grid
+`motion` was sampled on (`t0 + k/5`, `t0` = the episode's first timestamp,
+matching the video window `src/run.ts` passed to the motion provider).
+`m(t)` = motion energy, passed in directly. Pearson `ρ` between the two.
+`ρ >= ρ_pass` (prov. `0.4`) -> `pass`; `ρ < ρ_fail` (prov. `0.2`) -> `fail`
+(downgraded per FD-2); otherwise `inconclusive`. No video (`motion ===
+null`) -> `inconclusive` (`detail.reason = "no video"`). A constant `s(t)`
+or `m(t)` (zero variance — Pearson undefined) -> `inconclusive`
+(`detail.reason = "degenerate variance"`), never treated as either extreme.
+`detail = { check_version: "sensor_consistency.v1.0", thresholds, rho,
+samples }` (`downgraded_from` added when applicable).
+
+**Known evasions (§22: evidence, not proof):**
+- A replay that dubs an unrelated, but similarly-timed, video clip over a
+  real joint trajectory (or vice versa) can land `ρ` in the mid-band and
+  read as `inconclusive` rather than a clear mismatch.
+- Camera framing that keeps the moving parts out of frame (or a camera
+  aimed at a fixed background while a different, unfilmed arm executes the
+  motion) produces a low-variance `m(t)` that is `inconclusive`, not a
+  flagged mismatch.
+- The correlation is a single scalar over the whole episode; a trajectory
+  that is genuine for most of its duration but substitutes a mismatched
+  clip for a short segment can still average to a passing `ρ`.
+- `t0` is taken from the episode's own first `timestamp`, not from an
+  independently verified video start; a manifest that misdeclares the
+  video/data alignment shifts both series together in ways this check
+  cannot detect from the data alone.
+
+### `sim_signature.v1`
+
+**Objective:** does data declared `real` carry simulation signatures?
+
+**Algorithm** (TASK-019.md "Rules", fixed features; per-feature trip
+thresholds not named by the task are this implementation's documented
+"implementation detail"-class choice, recorded in `check_version` and
+`detail.features`, not `detail.thresholds` — that field is reserved for the
+FD-2-gated `score_*` pair): four independent features, each contributing at
+most 1 to `score`:
+1. **Exact-repeat fraction of state floats beyond quantisation** — fraction
+   of `(frame, joint)` scalar deltas that are exactly `0`; trips above
+   `0.05`.
+2. **Zero Δt variance** — population variance of consecutive `timestamp`
+   deltas; trips below `1e-12`.
+3. **Spectral power above 5 Hz** — fraction of the joint-speed-norm
+   signal's total DFT power (direct DFT, rectangular window, uniformly
+   resampled at 20 Hz) at frequencies > 5 Hz; trips below `1e-6`
+   (TASK-019.md's own figure). **Known limitation:** a rectangular-window
+   DFT over a signal whose duration isn't an exact integer number of
+   cycles leaks a non-negligible fraction of genuinely sub-5Hz power into
+   higher bins, so in practice this feature reliably trips only for
+   near-static or exactly window-periodic signals — it rarely fires on its
+   own for arbitrary smooth low-frequency motion and is redundant with the
+   other three rather than a strong independent signal.
+4. **Zero frame-difference energy on >= 20% of frames** — from `motion`;
+   fraction of frames whose energy is exactly `0`; trips at `>= 0.20`
+   (TASK-019.md's own figure). Skipped (not counted toward `score`, `motion
+   === null`; `sim_signature.v1` does not gate its whole result on video's
+   absence the way `sensor_consistency.v1` does).
+
+`score` = count of tripped features (of those evaluated). `score >=
+score_fail` (prov. `3`) -> `fail` (downgraded per FD-2, and stays
+indicative regardless — see above); `score >= score_inconclusive` (prov.
+`2`) -> `inconclusive`; else `pass`. `source === "sim"` -> `pass`
+unconditionally with `detail.note = "declared sim"` (a declared simulation
+is not being asked whether it looks synthetic); `"mixed"` is treated like
+`"real"` (no free pass). `detail = { check_version: "sim_signature.v1.0",
+thresholds: { score_inconclusive, score_fail }, score, features: [{ name,
+value, tripped }, …] }` (`downgraded_from` added when applicable).
+
+**Known evasions (§22: evidence, not proof):**
+- The `score` thresholds treat all four features as equally weighted votes;
+  a genuinely synthetic recording engineered to avoid exactly one or two of
+  the four artifacts (e.g. injected per-frame float noise to defeat feature
+  1, jittered timestamps to defeat feature 2) stays under `score_fail` (or
+  even `score_inconclusive`) despite being simulated.
+- Feature 3 (spectral power) is, per its documented limitation above, weak
+  in practice — a well-tuned simulator that adds any broadband dithering
+  to its output evades it easily, and honest real data with an unlucky
+  window length can leak power in the other direction.
+- Feature 4 depends entirely on the paired `sensor_consistency.v1`/`motion`
+  pipeline's camera and window choice; a video with any per-frame
+  compression noise (most real codecs) never reads as exactly zero, so
+  this feature under-fires on borderline near-static real footage just as
+  readily as it fires on true renders.
+- All four features operate on a single episode in isolation; a simulator
+  whose output statistically resembles real per-frame noise (matched
+  quantisation, matched timing jitter, matched spectral content) is not
+  something any of these four heuristics is designed to catch.
 
 ## `attestation.v1` (id `0x0006`)
 

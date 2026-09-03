@@ -1,4 +1,4 @@
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { describe, it } from "node:test";
@@ -6,6 +6,7 @@ import assert from "node:assert";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const webDir = resolve(__dirname, "..");
+const repoRoot = resolve(__dirname, "..", "..");
 
 /**
  * Copy test: verify no forbidden content in HTML/Markdown/JS files.
@@ -17,7 +18,21 @@ const webDir = resolve(__dirname, "..");
  * - 0x40-hex addresses outside chains.js
  * - chainId: literals outside chains.js
  * - chain_id literals outside chains.js
+ *
+ * Forbidden words are from PLAN §1; imported or duplicated with comment from
+ * packages/protocol/src/wording.ts. The L3 template ("Checked by … see details")
+ * is a legitimate context for these words; other surfaces must avoid them.
  */
+
+// Forbidden words from PLAN §1 (duplicated here; also in packages/protocol/src/wording.ts)
+const FORBIDDEN_WORDS_LIST = [
+  "authentic",
+  "genuine",
+  "real",
+  "proven real",
+  "verified",
+  "independent",
+];
 
 function readFileIfExists(path) {
   try {
@@ -52,16 +67,15 @@ function testContent(filePath, content, baseName) {
     tests.push(`${baseName}: contains "Contact Audit"`);
   }
 
-  // Test 5: No forbidden words in specific contexts
-  // "authentic", "genuine", "verified" (except inside quoted wording)
-  const forbiddenWords = [
-    { word: "authentic", context: "authentic" },
-    { word: "genuine", context: "genuine" },
-  ];
-  for (const { word } of forbiddenWords) {
+  // Test 5: No forbidden words (PLAN §1, except inside "Checked by" L3 template)
+  // The L3 template legitimately contains these words in the context "Checked by … see details"
+  for (const word of FORBIDDEN_WORDS_LIST) {
     const regex = new RegExp(`\\b${word}\\b`, "i");
-    if (regex.test(content) && !content.includes("Checked by")) {
-      tests.push(`${baseName}: contains "${word}"`);
+    if (regex.test(content)) {
+      // Allow the word if it's part of the L3 template context ("Checked by")
+      if (!content.includes("Checked by")) {
+        tests.push(`${baseName}: contains forbidden word "${word}" outside L3 template`);
+      }
     }
   }
 
@@ -168,5 +182,44 @@ describe("Copy guard", () => {
     }
 
     assert.strictEqual(errors.length, 0, errors.join("\n"));
+  });
+
+  it("no forbidden words in services/api/src/report (if it exists)", () => {
+    const reportDir = resolve(repoRoot, "services", "api", "src", "report");
+    if (!existsSync(reportDir)) {
+      // Directory doesn't exist yet; skip gracefully
+      return;
+    }
+
+    // Scan all TypeScript files in the report directory for forbidden words
+    const fs = require("fs");
+    const path = require("path");
+
+    function walkDir(dir, callback) {
+      try {
+        const files = fs.readdirSync(dir);
+        for (const file of files) {
+          const filePath = path.join(dir, file);
+          const stat = fs.statSync(filePath);
+          if (stat.isDirectory()) {
+            walkDir(filePath, callback);
+          } else if (file.endsWith(".ts") || file.endsWith(".tsx")) {
+            callback(filePath);
+          }
+        }
+      } catch {
+        // Directory access error; skip
+      }
+    }
+
+    const allErrors = [];
+    walkDir(reportDir, (filePath) => {
+      const content = readFileIfExists(filePath);
+      if (!content) return;
+      const errors = testContent(filePath, content, path.basename(filePath));
+      allErrors.push(...errors);
+    });
+
+    assert.strictEqual(allErrors.length, 0, allErrors.join("\n"));
   });
 });
