@@ -26,6 +26,17 @@ export const uploadRoutes = new Hono<AppEnv>()
     const hash = body.hash as Hex;
 
     if (await bundleStore.has(hash)) {
+      // The content is already in the bundle store (persisted separately
+      // from `uploadRegistry`, which is per-process/in-memory) — attribute
+      // it to *this* caller's org before marking it stored, the same way
+      // the pending-upload branch below does. Without this, a caller
+      // hitting the store's content-addressed cache on a process that has
+      // never seen this hash before gets a registry row with no org
+      // (`markStored` on an unknown hash defaults `orgId: ""`), and every
+      // later `orgId` check (e.g. `POST /episodes`, `POST /datasets`)
+      // then wrongly refuses it as "not a stored upload of this
+      // organisation".
+      await uploadRegistry.putPending(hash, body.bytes, principal.orgId);
       await uploadRegistry.markStored(hash);
       return c.json({ stored: true });
     }
@@ -45,14 +56,19 @@ export const uploadRoutes = new Hono<AppEnv>()
   // PUT /v1/uploads/{hash} — org, local store only. Streams the body into the store.
   .put("/uploads/:hash", async (c) => {
     const { keyStore, bundleStore, uploadRegistry } = c.get("deps");
-    requireAuth(keyStore, c.req.header("Authorization"));
+    const principal = requireAuth(keyStore, c.req.header("Authorization"));
     const hash = c.req.param("hash") as Hex;
 
     if (await bundleStore.has(hash)) {
-      // Idempotent: drain the body (if any) and report success without re-reading.
+      // Idempotent: drain the body (if any) and report success without
+      // re-reading. Same org-attribution fix as POST /uploads above —
+      // `body.bytes` is not known here, so 0 is recorded if a fresh
+      // pending row must be created; harmless, since `bundleStore` (not
+      // this row) is the source of truth for the content's actual size.
       for await (const _chunk of bodyStream(c)) {
         /* discard */
       }
+      await uploadRegistry.putPending(hash, 0, principal.orgId);
       await uploadRegistry.markStored(hash);
       return c.json({ stored: true }, 201);
     }

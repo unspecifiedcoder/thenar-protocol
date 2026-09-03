@@ -36,6 +36,8 @@ import { buildFileEntries, payloadHash } from "../../../packages/protocol/src/pa
 import { manifestHash as computeManifestHash } from "../../../packages/protocol/src/mapping.ts";
 import { sign as signObject, keyId as deriveKeyId, verify as verifySignature } from "../../../packages/protocol/src/sign.ts";
 import { hashObjectExcluding } from "../../../packages/protocol/src/canonical.ts";
+import { newConsentRecord, recordHash, consentKey as deriveConsentKey, consentCommitment } from "../../../packages/protocol/src/consent.ts";
+import { SparseTree } from "../../../packages/protocol/src/sparse.ts";
 
 let fails = 0;
 const ok = (c: boolean, m: string, x = "") => { if (!c) fails++; console.log(`${c ? "  ok  " : " FAIL "} ${m}${x ? ` — ${x}` : ""}`); };
@@ -193,12 +195,13 @@ async function uploadFixture(deps: Deps, orgId: string) {
     await deps.uploadRegistry.putPending(f.hash, f.bytes, SUPPLIER_ORG);
     await deps.uploadRegistry.markStored(f.hash);
   }
+  const dupConsentKey = keccak256(toHex("dup-episode-consent-key"));
   const dupRes1 = await req(app, "/v1/episodes", {
-    method: "POST", headers, body: JSON.stringify({ manifest: resignedManifest }),
+    method: "POST", headers, body: JSON.stringify({ manifest: resignedManifest, consent_key: dupConsentKey }),
   });
   ok(dupRes1.status === 200, "POST /episodes with a fresh manifest -> 200 (new leaf)", String(dupRes1.status) + " " + JSON.stringify(await dupRes1.clone().json().catch(() => null)));
   const dupRes2 = await req(app, "/v1/episodes", {
-    method: "POST", headers, body: JSON.stringify({ manifest: resignedManifest }),
+    method: "POST", headers, body: JSON.stringify({ manifest: resignedManifest, consent_key: dupConsentKey }),
   });
   ok(dupRes2.status === 409, "POST /episodes with the same manifest again -> 409 duplicate refused", String(dupRes2.status));
   ok(logStore.size() === 4, "duplicate write added nothing to the log", String(logStore.size()));
@@ -355,7 +358,10 @@ async function uploadFixture(deps: Deps, orgId: string) {
     task: null, outcome: null, sim: null,
     signature: { alg: "ed25519", key_id: deriveKeyId(orgPubkey), sig: hex(0x00, 64) }, // garbage sig
   };
-  const res = await req(app, "/v1/episodes", { method: "POST", headers, body: JSON.stringify({ manifest }) });
+  const res = await req(app, "/v1/episodes", {
+    method: "POST", headers,
+    body: JSON.stringify({ manifest, consent_key: keccak256(toHex("bad-sig-consent-key")) }),
+  });
   ok(res.status === 401, "POST /episodes with a bad signature -> 401", String(res.status));
 }
 
@@ -374,6 +380,116 @@ async function uploadFixture(deps: Deps, orgId: string) {
       JSON.stringify(["autonomous_real", "sim", "teleop_real", "teleop_sim"]),
     "deriveSources: bytewise sort order across all enum members",
   );
+}
+
+// =========================================================================
+// C-3/D-37 — SDK path (`POST /episodes` with `consent_key`): a revocation
+// of that exact key flips `GET /v1/corpora/{id}.contains_revoked` and the
+// report shows the onset. End to end through the real HTTP routes
+// (`POST /episodes`, `POST /corpora`, `POST /corpora/{id}/log`,
+// `POST /consent/{key}/revoke`, `GET /corpora/{id}`,
+// `GET /corpora/{id}/report`); the anchor itself is written directly on
+// the store (same "fake chain reader" stance as `report.test.ts`: no
+// `graspReader` wired in here).
+// =========================================================================
+{
+  const logStore = new LogStore(":memory:");
+  const operator = await makeOperator();
+  const verifierSk = ed.utils.randomSecretKey();
+  const verifier = { keyId: deriveKeyId(toHex(await ed.getPublicKeyAsync(verifierSk))), privateKey: toHex(verifierSk) };
+  const registry = new Registry(logStore);
+  ensureOperatorKey(logStore, registry, operator);
+  const deps = makeDeps({ logStore, registry, operator, verifier });
+  const app = createApp(deps);
+  const headers = { "content-type": "application/json", Authorization: `Bearer ${SUPPLIER_KEY}` };
+  logStore.createOrg({ orgId: SUPPLIER_ORG, name: "c3 supplier", kind: "supplier", status: "active", createdAt: Math.floor(Date.now() / 1000) });
+
+  const orgSk = ed.utils.randomSecretKey();
+  const orgPubkey = toHex(await ed.getPublicKeyAsync(orgSk));
+  registry.registerKey(SUPPLIER_ORG, { alg: "ed25519", pubkey: orgPubkey });
+
+  const holderSk = ed.utils.randomSecretKey();
+  const holderPubkey = toHex(await ed.getPublicKeyAsync(holderSk));
+  const termsHash = keccak256(toHex("c3-report-test terms"));
+  const record = newConsentRecord({ holder: "organisation", pubkey: holderPubkey, alg: "ed25519", scope_bits: 1, terms_hash: termsHash, granted_at: 1_756_900_000 });
+  const rHash = recordHash(record);
+  const consentKeyHex = deriveConsentKey(rHash);
+  const salt = toHex(randomBytes(32));
+  const commitment = consentCommitment(rHash, salt);
+
+  const files = [{ path: "data/c3.parquet", bytes: 4, hash: keccak256(toHex("c3-file")) }];
+  await deps.uploadRegistry.putPending(files[0].hash, files[0].bytes, SUPPLIER_ORG);
+  await deps.uploadRegistry.markStored(files[0].hash);
+  const manifest: any = {
+    v: 1, kind: "capture_manifest", org_id: SUPPLIER_ORG, dataset_id: null,
+    source: "teleop_real", layout: "per_episode", embodiment: "so_arm100",
+    rate_hz: 30, duration_ms: 333, captured_at: 1_756_900_000,
+    channels: [{ name: "action", dtype: "float32", shape: [1] }],
+    files, range: null,
+    payload_hash: payloadHash(files),
+    consent_commitment: commitment, terms_hash: termsHash, scope_bits: 1,
+    task: null, outcome: null, sim: null, signature: null,
+  };
+  const mHash = computeManifestHash(manifest);
+  const manifestSig = await signObject("ed25519", "manifest", mHash, toHex(orgSk));
+  manifest.signature = { alg: "ed25519", key_id: deriveKeyId(orgPubkey), sig: manifestSig };
+
+  const epRes = await req(app, "/v1/episodes", {
+    method: "POST", headers, body: JSON.stringify({ manifest, consent_key: consentKeyHex }),
+  });
+  ok(epRes.status === 200, "C-3: POST /episodes with consent_key -> 200", String(epRes.status) + " " + JSON.stringify(await epRes.clone().json().catch(() => null)));
+  const { leaf_hash: leafHash } = await json(epRes);
+
+  ok(logStore.episodeMeta(leafHash)?.consentKey === consentKeyHex, "C-3: the episode row carries the consent_key supplied over the wire");
+
+  const corpusRes = await req(app, "/v1/corpora", {
+    method: "POST", headers,
+    body: JSON.stringify({
+      v: 1, kind: "corpus_manifest", org_id: SUPPLIER_ORG, title: "c3 corpus",
+      episodes: [leafHash], terms_hash: termsHash, task_id: null, filters: {},
+    }),
+  });
+  ok(corpusRes.status === 200, "C-3: POST /corpora -> 200", String(corpusRes.status) + " " + JSON.stringify(await corpusRes.clone().json().catch(() => null)));
+  const { corpus_id: corpusId } = await json(corpusRes);
+
+  const logRes = await req(app, `/v1/corpora/${corpusId}/log`, { method: "POST", headers, body: "{}" });
+  ok(logRes.status === 200, "C-3: POST /corpora/{id}/log -> 200", String(logRes.status) + " " + JSON.stringify(await logRes.clone().json().catch(() => null)));
+
+  // Anchor once so the sealed corpus leaf (and later the revocation) are
+  // covered by an anchor — needed for the report's sealing_anchor/onset.
+  function anchorNow(chainId = 43113, blockNumber = 9000) {
+    const idx = logStore.anchors().length;
+    const size = logStore.size();
+    const root = logStore.root(size);
+    const smt = new SparseTree();
+    for (const r of logStore.revocations()) smt.set(r.consentKey, r.value);
+    const revocationRoot = smt.root();
+    const tx = ("0x" + "cd".repeat(32)) as Hex;
+    logStore.recordAnchor(idx, root, size, revocationRoot, tx, blockNumber + idx);
+    logStore.recordAnchorChain(chainId, idx, root, size, revocationRoot, tx, blockNumber + idx);
+  }
+  anchorNow();
+
+  const revokeSig = await signObject("ed25519", "revoke", consentKeyHex, toHex(holderSk));
+  const revokeRes = await req(app, `/v1/consent/${consentKeyHex}/revoke`, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ record, signature: { alg: "ed25519", key_id: deriveKeyId(holderPubkey), sig: revokeSig } }),
+  });
+  ok(revokeRes.status === 200, "C-3: POST /consent/{key}/revoke with a genuine signature -> 200", String(revokeRes.status) + " " + JSON.stringify(await revokeRes.clone().json().catch(() => null)));
+
+  anchorNow(43113, 9100); // covers the revocation too
+
+  const corpusAfter = await req(app, `/v1/corpora/${corpusId}`);
+  const corpusAfterBody = await json(corpusAfter);
+  ok(corpusAfterBody.contains_revoked === true, "C-3: GET /v1/corpora/{id}.contains_revoked is true after revoking the SDK-path episode's consent_key", JSON.stringify(corpusAfterBody));
+
+  const reportRes = await req(app, `/v1/corpora/${corpusId}/report`);
+  ok(reportRes.status === 200, "C-3: GET /v1/corpora/{id}/report -> 200", String(reportRes.status));
+  const report = await json(reportRes);
+  ok(report.corpus.contains_revoked === true, "C-3: report.corpus.contains_revoked is true");
+  const [repEp] = report.episodes;
+  ok(repEp.consent.status === "revoked", "C-3: report episode consent status is revoked");
+  ok(!!repEp.consent.onset && typeof repEp.consent.onset.block === "number", "C-3: report episode consent carries an onset block", JSON.stringify(repEp.consent));
 }
 
 console.log(fails === 0 ? "\nall ingest tests passed" : `\n${fails} ingest test(s) failed`);

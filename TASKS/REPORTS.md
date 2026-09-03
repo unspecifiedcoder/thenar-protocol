@@ -2,6 +2,21 @@
 
 Append one entry per completed task using the format in `PLAN.md §25.3`.
 
+## T-033 completion / C-3 (D-37) — 2026-09-03 — STRONG (Sonnet) + supervisor
+Changed: services/api/src/routes/episodes.ts, src/schemas/requests.ts, src/routes/uploads.ts, openapi.json, scripts/golden.mjs (uses GET /corpora/{id}/report; consent_key on SDK path), tests (api, ingest, adversarial), .gitignore (.data/)
+Tests: pnpm test:api → green (background run, exit 0). pnpm demo:golden --local → 8/8 steps passed.
+Live (Fuji 43113 primary, local Anvil 31338 mirror), persistent log `.data/log.db`:
+- step 0: Fuji GraspLog 0xde2E34b8… anchorCount=1 head (0xadb5b70d…, 24); store 24 — ok
+- step 1–2: 3 episodes + 1 jittered; dedup.v1 = inconclusive (FD-1)
+- step 3: anchor tx 0x39c2b268…9da51 block 58154513 → (0x85f602f2…, 48); mirror tx 0x1b2bcd3e… same root/size
+- step 4: seal-corpus tx 0x105d9ec3…386c1 → on-chain corpus 0
+- step 5: mock USDC mint tx 0xb0fd86d6…; license tx 0x3da65287…cbe66 → receipt 0 names corpusManifestHash 0x731f38d8…0532
+- step 6: receipt-gated download; offline verifier (§10.10) passes
+- step 7: revocation-only anchor tx 0xee87898f…394d, size unchanged 55, revocationRoot 0xb8ebbbca…; buyer's earlier report still verifies
+- step 8: byte flip → verifier names data/chunk-000/file-000.parquet and leaf 0x8f783d87…
+- 8/8 steps passed
+Deviations from PLAN.md: none. Invariants touched: I-3, I-8, I-11, I-16, D-17, D-37.
+
 ## T-012 — Proof and consent endpoints — 2026-09-03 — CHEAP
 Changed: `services/api/src/routes/proofs.ts` (GET /v1/proofs/inclusion, GET /v1/proofs/consistency with store fallback), `services/api/src/routes/consent.ts` (GET /v1/consent/{consentKey}, POST /v1/consent/{consentKey}/revoke with rate limiter before body parsing; signed revocation_receipt; validates signature.alg == record.alg and signature.key_id == keyId(record.pubkey); passes signature.sig to store.revoke()), `services/api/src/routes/episodes.ts` (GET /v1/episodes/{leafHash} using T-021 computeBadges; removed placeholders per I-11), `services/api/src/routes/anchors.ts` (GET /v1/anchors/audit per chain), `services/api/src/registry.ts` (getStore() accessor), `services/api/test/api.test.ts` (removed T-012 routes from 501 stub test; added positive assertions), `services/api/test/proofs.test.ts` (fixed testLeafHash to use toHex(randomBytes); fixed revoke consent tests to construct proper Signature objects with alg, key_id, sig fields), `package.json` (added proofs.test.ts to test:api).
 Created: `services/api/test/proofs.test.ts` (endpoint tests for inclusion/consistency proofs, consent status with SMT, revocation receipts, episodes, audit).

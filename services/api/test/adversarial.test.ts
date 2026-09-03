@@ -222,7 +222,7 @@ console.log("T-030 — adversarial suite, API level");
     const mutatedSig = (honestSig.slice(0, -1) + (honestSig.endsWith("0") ? "1" : "0")) as Hex;
     manifest.signature = { alg: "ed25519", key_id: deriveKeyId(orgPubkey), sig: mutatedSig };
 
-    const res = await req(app, "/v1/episodes", { method: "POST", headers, body: JSON.stringify({ manifest }) });
+    const res = await req(app, "/v1/episodes", { method: "POST", headers, body: JSON.stringify({ manifest, consent_key: hex(0x77) }) });
     ok(res.status === 401, "attack 10a: a manifest signature mutated after signing -> 401", String(res.status));
     ok((await json(res)).error?.code === "unauthorized", "attack 10a: error code is unauthorized");
   }
@@ -245,7 +245,7 @@ console.log("T-030 — adversarial suite, API level");
     ok(await verifySignature("ed25519", "manifest", mHash, sig, orgPubkey), "attack 10b sanity: the raw signature itself is cryptographically valid");
     manifest.signature = { alg: "ed25519", key_id: deriveKeyId(orgPubkey), sig };
 
-    const res = await req(app, "/v1/episodes", { method: "POST", headers, body: JSON.stringify({ manifest }) });
+    const res = await req(app, "/v1/episodes", { method: "POST", headers, body: JSON.stringify({ manifest, consent_key: hex(0x88) }) });
     ok(res.status === 401, "attack 10b: a manifest signed with a currently-invalid (revoked) key -> 401", String(res.status));
     ok((await json(res)).error?.code === "unauthorized", "attack 10b: error code is unauthorized");
   }

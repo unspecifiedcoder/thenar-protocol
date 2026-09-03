@@ -61,7 +61,7 @@ export const episodeRoutes = new Hono<AppEnv>()
       principal.orgId,
       manifest,
       manifest.dataset_id ?? null,
-      null,
+      body.consent_key as Hex,
     );
 
     return c.json({

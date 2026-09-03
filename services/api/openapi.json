@@ -1381,10 +1381,15 @@
               "signature"
             ],
             "additionalProperties": false
+          },
+          "consent_key": {
+            "type": "string",
+            "pattern": "^0x[0-9a-f]{64}$"
           }
         },
         "required": [
-          "manifest"
+          "manifest",
+          "consent_key"
         ],
         "additionalProperties": false
       },

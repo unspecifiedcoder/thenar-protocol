@@ -375,12 +375,12 @@ function validManifest() {
   // the full signed/committed path; here only the ordering is checked).
   const app = createApp(makeDeps({ logStore: new LogStore(":memory:") }));
   const res = await req(app, "/v1/episodes", {
-    method: "POST", body: JSON.stringify({ manifest: withChainId }),
+    method: "POST", body: JSON.stringify({ manifest: withChainId, consent_key: hex(0x01) }),
     headers: { "content-type": "application/json", Authorization: `Bearer ${SUPPLIER_KEY}` },
   });
   ok(res.status === 400, "POST /v1/episodes rejects a manifest with chain_id before reaching the handler", String(res.status));
   const validRes = await req(app, "/v1/episodes", {
-    method: "POST", body: JSON.stringify({ manifest: validManifest() }),
+    method: "POST", body: JSON.stringify({ manifest: validManifest(), consent_key: hex(0x01) }),
     headers: { "content-type": "application/json", Authorization: `Bearer ${SUPPLIER_KEY}` },
   });
   // schema-valid but unsigned -> reaches the signature check and is refused there, not 501

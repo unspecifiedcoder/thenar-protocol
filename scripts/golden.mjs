@@ -176,6 +176,11 @@ async function pollJob(apiBase, headers, jobId, timeoutMs = 30_000) {
 async function main() {
   const mode = process.argv.includes("--live") ? "live" : "local";
   const resetLocal = process.argv.includes("--reset-local");
+  // T-025 shipped `GET /v1/corpora/{id}/report`; the real route is now the
+  // default report source. `--assemble-locally` keeps `assembleReport`
+  // (scripts/lib/assemble-report.mjs) available as a fallback that never
+  // needs the route to exist.
+  const assembleLocally = process.argv.includes("--assemble-locally");
   if (resetLocal && mode !== "local") {
     throw new Error("--reset-local only applies to --local (--live always appends to the one persistent, real log — see TASKS/REPORTS.md's T-033 follow-up)");
   }
@@ -256,16 +261,22 @@ async function main() {
     }
     writeFileSync(envContractsPath, primaryLines.join("\n") + "\n");
 
-    const mirror = await spawnAnvil(31338);
-    cleanups.push(() => mirror.proc.kill("SIGKILL"));
-    deployChain(mirror.rpc, "mirror", envContractsPath, ANVIL_KEY0);
-
     const deployerEnv = parseEnvFile(join(REPO_ROOT, ".env.deployer"));
     if (!deployerEnv.DEPLOYER_PRIVATE_KEY) throw new Error(".env.deployer has no DEPLOYER_PRIVATE_KEY");
     const relayerPk = deployerEnv.ANCHOR_RELAYER_KEY || deployerEnv.DEPLOYER_PRIVATE_KEY;
     anchorSigner = privateKeyToAccount(relayerPk);
     supplierKey = deployerEnv.DEPLOYER_PRIVATE_KEY;
     buyerKey = deployerEnv.DEPLOYER_PRIVATE_KEY; // demo buys from itself on Fuji — see TASKS/REPORTS.md T-033 note
+
+    const mirror = await spawnAnvil(31338);
+    cleanups.push(() => mirror.proc.kill("SIGKILL"));
+    // `Deploy.s.sol` defaults `anchorer` to the deploying key (`ANVIL_KEY0`
+    // here) unless `ANCHOR_RELAYER` names a different address — the
+    // primary's real Fuji `GraspLog` was deployed with `anchorSigner`'s
+    // address as its anchorer (that is why step 3's Fuji anchor tx above
+    // succeeds), so the mirror needs the same or `anchorAll` sending from
+    // `anchorSigner` reverts there with `NotAnchorer`.
+    deployChain(mirror.rpc, "mirror", envContractsPath, ANVIL_KEY0, { ANCHOR_RELAYER: anchorSigner.address });
 
     // The relayer's real-world address holds no funds on a brand-new local
     // Anvil mirror (only Anvil's own well-known dev accounts start funded)
@@ -527,7 +538,7 @@ async function main() {
 
       const outcome = await req(API_BASE, "/v1/episodes", {
         method: "POST", headers: { ...headers, "content-type": "application/json" },
-        body: JSON.stringify({ manifest }),
+        body: JSON.stringify({ manifest, consent_key: cKey }),
       });
       extraEpisode = { leafHash: outcome.leaf_hash, manifest, manifestHash: mHash, consentKey: cKey, holderSk, record };
       console.log(`  episode 4 (SDK path, revocable): leaf ${outcome.leaf_hash}`);
@@ -664,23 +675,32 @@ async function main() {
     console.log(`  downloaded ${downloadResult.files.length} file(s) to ${deliverDir}, all hashes verified`);
 
     const { job, jitterJob, extraEpisode: ee, realClaims } = global.__golden;
-    const episodesForReport = job.episodes.map((e, i) => ({
-      leafHash: e.leaf_hash,
-      manifest: JSON.parse(store.episodeMeta(e.leaf_hash).manifest),
-      manifestHash: store.episodeMeta(e.leaf_hash).manifestHash,
-      consentKey: store.episodeMeta(e.leaf_hash).consentKey,
-      claims: realClaims[i],
-    })).concat([{
-      leafHash: ee.leafHash, manifest: ee.manifest, manifestHash: ee.manifestHash,
-      consentKey: ee.consentKey, claims: store.claimsFor(ee.leafHash), orgPubkey,
-    }]);
 
-    const report = await assembleReport({
-      apiBase: API_BASE, corpusId, reportAnchor: sealingAnchor, sealingAnchor,
-      operator: { name: "THENAR golden demo", keyId: deps.operator.keyId },
-      terms: { hash: termsHash, uri: termsUri },
-      episodes: episodesForReport, limitations: LIMITATIONS,
-    });
+    // T-025 shipped the real route — use it by default; `assembleReport`
+    // (scripts/lib/assemble-report.mjs) stays available as a fallback
+    // behind `--assemble-locally` (it never needs the route to exist).
+    let report;
+    if (assembleLocally) {
+      const episodesForReport = job.episodes.map((e, i) => ({
+        leafHash: e.leaf_hash,
+        manifest: JSON.parse(store.episodeMeta(e.leaf_hash).manifest),
+        manifestHash: store.episodeMeta(e.leaf_hash).manifestHash,
+        consentKey: store.episodeMeta(e.leaf_hash).consentKey,
+        claims: realClaims[i],
+      })).concat([{
+        leafHash: ee.leafHash, manifest: ee.manifest, manifestHash: ee.manifestHash,
+        consentKey: ee.consentKey, claims: store.claimsFor(ee.leafHash), orgPubkey,
+      }]);
+
+      report = await assembleReport({
+        apiBase: API_BASE, corpusId, reportAnchor: sealingAnchor, sealingAnchor,
+        operator: { name: "THENAR golden demo", keyId: deps.operator.keyId },
+        terms: { hash: termsHash, uri: termsUri },
+        episodes: episodesForReport, limitations: LIMITATIONS,
+      });
+    } else {
+      report = await req(API_BASE, `/v1/corpora/${corpusId}/report`);
+    }
     reportPath = join(REPO_ROOT, "apps/web/samples/golden-report.json");
     writeFileSync(reportPath, JSON.stringify(report, null, 2) + "\n");
     console.log(`  wrote ${reportPath} (report_hash ${report.report_hash.slice(0, 10)}…)`);
@@ -703,38 +723,13 @@ async function main() {
 
     const revokeSigHex = await signObject(ee.record.alg, "revoke", ee.consentKey, toHex(ee.holderSk));
     const revokeSignature = { alg: ee.record.alg, key_id: deriveKeyId(ee.record.pubkey), sig: revokeSigHex };
-    let revokeResp;
-    try {
-      revokeResp = await req(API_BASE, `/v1/consent/${ee.consentKey}/revoke`, {
-        method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ record: ee.record, signature: revokeSignature }),
-      });
-    } catch (e) {
-      // BLOCKED — not this script's bug. `POST /v1/consent/{consentKey}/revoke`
-      // (services/api/src/routes/consent.ts, the `.post("/consent/:consentKey/revoke", ...)`
-      // handler) calls `store.revoke(body.record, body.signature)` — but
-      // `body.signature` is validated by `RevokeConsentBody` (services/api/
-      // src/schemas/requests.ts) as the *object* `{alg, key_id, sig}`, while
-      // `LogStore.revoke(record, signature: Hex)` (services/log/src/store.ts)
-      // expects `signature` to be the raw hex `sig` string alone and passes
-      // it straight to `sign.ts`'s `verify(alg, domain, objectHash, sig: Hex,
-      // pubkey)`. Any correctly-formed, correctly-signed revocation request
-      // therefore gets `401 {"code":"unauthorized","message":"revoke: invalid
-      // signature"}` — verified above with a genuine ed25519 signature over
-      // this exact consentKey (see the `signObject(...)` call two lines up),
-      // not a malformed or wrong-key one. `services/api/src/routes/consent.ts`
-      // and `services/log/src/store.ts` are both outside this task's file
-      // scope (T-033's hard rule confines edits to scripts/, scripts/lib/,
-      // apps/web/samples/); per this task's supervisor instruction, stopping
-      // here rather than faking step 7 — see TASKS/CONFLICTS.md.
-      throw new Error(
-        `step 7 BLOCKED: POST /v1/consent/{consentKey}/revoke rejects a genuinely valid signature — ` +
-        `services/api/src/routes/consent.ts passes the Signature *object* to LogStore.revoke, which expects ` +
-        `just the sig hex string (services/log/src/store.ts's revoke(record, signature: Hex) forwards it to ` +
-        `sign.ts's verify(), whose 5th param must be Hex). This is a bug in a route/store outside T-033's file ` +
-        `scope, not something this script can fake around. Underlying error: ${e.message}`,
-      );
-    }
+    // C-1 (services/api/src/routes/consent.ts now passes signature.sig to
+    // LogStore.revoke, matching sign.ts's verify() shape) — a genuinely
+    // valid signature is accepted.
+    const revokeResp = await req(API_BASE, `/v1/consent/${ee.consentKey}/revoke`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ record: ee.record, signature: revokeSignature }),
+    });
     if (!revokeResp.accepted) throw new Error(`revoke was not accepted: ${JSON.stringify(revokeResp)}`);
 
     const revocationOutcomes = await anchorAll(store, anchorSigner, chains);
@@ -751,30 +746,13 @@ async function main() {
     if (consentAfter.status !== "revoked") throw new Error(`GET /v1/consent/${ee.consentKey} does not show revoked: ${JSON.stringify(consentAfter)}`);
     console.log(`  GET /v1/consent/${ee.consentKey} -> revoked${consentAfter.onset ? `, onset block ${consentAfter.onset.block}` : ""}`);
 
+    // C-3/D-37 — episode 4 was submitted with `consent_key` on the wire
+    // (POST /episodes), so it is stored on the leaf row and the revocation
+    // above resolves to it.
     const corpusAfter = await req(API_BASE, `/v1/corpora/${corpusId}`);
     if (!corpusAfter.contains_revoked) {
-      // BLOCKED — not this script's bug (see C-2, TASKS/CONFLICTS.md).
-      // `computeContainsRevoked` (services/api/src/routes/corpora.ts) checks
-      // `logStore.episodeMeta(leafHash).consentKey` against the revocation
-      // table — but `POST /episodes` (services/api/src/routes/episodes.ts,
-      // the SDK path episode 4 above went through, precisely because the
-      // ingest-job path never returns a `ConsentRecord` to revoke, C-1)
-      // hard-codes `null` as `commitEpisode`'s `consentKeyHex` argument, so
-      // this episode's leaf row was written with no `consentKey` at all —
-      // there is no request field in `CreateEpisodeBody`
-      // (services/api/src/schemas/requests.ts) for a caller to supply the
-      // consentKey it already derived. The `leaf` table's own triggers
-      // (`BEFORE UPDATE OR DELETE ... RAISE(ABORT)`, PLAN §14) make this
-      // unfixable after the fact from any store escape hatch. Both files
-      // are outside T-033's file scope; stopping here rather than faking
-      // `contains_revoked`.
-      throw new Error(
-        `step 7 BLOCKED: GET /v1/corpora/${corpusId} does not show contains_revoked, even though the ` +
-        `revocation itself is genuinely recorded (GET /v1/consent/${ee.consentKey} above showed "revoked"). ` +
-        `POST /episodes (services/api/src/routes/episodes.ts) always commits with consentKeyHex=null, so ` +
-        `computeContainsRevoked (services/api/src/routes/corpora.ts) has no consentKey on this episode's leaf ` +
-        `row to match against the revocation table. Outside T-033's file scope to fix — see C-2 in TASKS/CONFLICTS.md.`,
-      );
+      throw new Error(`GET /v1/corpora/${corpusId} does not show contains_revoked, even though the ` +
+        `revocation itself is genuinely recorded (GET /v1/consent/${ee.consentKey} above showed "revoked").`);
     }
     console.log(`  GET /v1/corpora/${corpusId} -> contains_revoked: true`);
 
