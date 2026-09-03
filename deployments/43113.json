@@ -1,0 +1,32 @@
+{
+  "chain_id": 43113,
+  "network": "Avalanche Fuji (C-Chain testnet)",
+  "role": "primary",
+  "rpc": "https://api.avax-test.network/ext/bc/C/rpc",
+  "explorer": "https://testnet.snowtrace.io",
+  "deployed_at_block": 58152901,
+  "deployer_and_relayer": "0x72db032c0dFB6E7502e16A73fabdab31712dc706",
+  "contracts": {
+    "GraspLog": "0xde2E34b8A97774807842470b2619dC8BB099EaF1",
+    "LeafVerifier": "0x44589a2464C4CD29df57CB757fC3e1296c38b565",
+    "LicenceRegistry": "0x1a89aB71F65E50B36Eae138268Dc8D8f44f23Ccd",
+    "MockUSDC_testnet_only": "0x5f344d9dba76f8da0ec0cb0211d077a121175e07"
+  },
+  "golden_demo_live": {
+    "anchor_tx": "0x39c2b268d729db01c1379605d8e78c8e8dcd8240b393563f61748833bdf9da51",
+    "anchor_block": 58154513,
+    "seal_corpus_tx": "0x105d9ec3727be84441c21eacf6314299c607a1d68cd12ef9cc461fb9617386c1",
+    "license_tx": "0x3da6528751d84c2ae4943fb1c8f6dd0365e3963518ad136673930fe98cbe7d66",
+    "revocation_only_anchor_tx": "0xee87898f69f5760ca283720ea2f8a05fa86afd3a72daa34c538a8a62d37d394d"
+  },
+  "superseded": [
+    {
+      "deployed_at_block": 58151548,
+      "reason": "log carries one anchor from a scratch store; not coherent",
+      "GraspLog": "0xDF1F8B068229C868be073eA4883186513AC059Fd",
+      "LeafVerifier": "0x46bb2769C3F55A4Ae0cdA0885F14d191b5D1E307",
+      "LicenceRegistry": "0xe4565B5Fd752A368DDbF90AB6ca4B321cb4df26D"
+    }
+  ],
+  "mirror": "deferred to the mainnet checklist (Ethereum Sepolia)"
+}

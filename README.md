@@ -93,6 +93,8 @@ The contracts are built and tested; deployment is pending. The web reader and
 
 ## Live deployment (v2, Avalanche Fuji)
 
+Machine-readable: `deployments/43113.json`. Runtime config: `.env.contracts` (from `.env.contracts.example`); the site reads `apps/web/chains.js`.
+
 | Contract | Address (Avalanche Fuji, 43113) |
 | --- | --- |
 | `GraspLog` | `0xde2E34b8A97774807842470b2619dC8BB099EaF1` |
